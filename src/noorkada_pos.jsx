@@ -1,0 +1,4693 @@
+import React, { useState, useMemo } from "react";
+import ReactDOM from "react-dom";
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+// STYLISTS and STYLIST_COLORS are now fetched from the backend dynamically.
+
+// SERVICES and PRICES are now fetched from the backend.
+
+
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmt = (n, compact = false) => { const v = Number(n) || 0; if (compact && v >= 1000) return `PKR ${(v / 1000).toFixed(1)}k`; return `PKR ${v.toLocaleString("en-PK")}`; };
+const esc = (str) => String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const todayStr = () => new Date().toISOString().split("T")[0];
+const genSlip = () => `NK${Date.now().toString().slice(-6)}`;
+
+// Transactions are now fetched from the backend api.
+const DEMO = [];
+
+// ─── CATALOGUE DATA (from Noor Kada Men & Women Catalogues) ───────────────────
+const MOCK_CATEGORIES = [
+  { id: 1,  name: "Hair Cut & Styling (Men)",   icon: "✂️",  color: "#1A3A5C" },
+  { id: 2,  name: "Beard Grooming",              icon: "🪒",  color: "#3C2218" },
+  { id: 3,  name: "Hair Treatments (Men)",       icon: "💆",  color: "#1A3C28" },
+  { id: 4,  name: "Hair Chemicals (Men)",        icon: "🎨",  color: "#2C1A3C" },
+  { id: 5,  name: "Facial Treatment",            icon: "✨",  color: "#5C3A1A" },
+  { id: 6,  name: "Aesthetic Treatment",         icon: "💎",  color: "#1A2C5C" },
+  { id: 7,  name: "Hands & Feet",                icon: "🤲",  color: "#3C3A1A" },
+  { id: 8,  name: "Waxing (Men)",                icon: "🕯️", color: "#283C1A" },
+  { id: 9,  name: "Royal Massage",               icon: "💆",  color: "#1A3C3C" },
+  { id: 10, name: "Groom Make Overs",            icon: "🤵",  color: "#1A1A3C" },
+  { id: 11, name: "Groom Packages",              icon: "📦",  color: "#3C1A2C" },
+  { id: 12, name: "Executive Deals (Men)",       icon: "⭐",  color: "#3C2C1A" },
+  { id: 13, name: "Everyday Deals (Men)",        icon: "🌟",  color: "#3C261A" },
+  { id: 14, name: "Hair Cut & Styling (Women)",  icon: "✂️",  color: "#5C1A3A" },
+  { id: 15, name: "Hair Treatment (Women)",      icon: "💆",  color: "#3A1A5C" },
+  { id: 16, name: "Hair Chemicals (Women)",      icon: "🎨",  color: "#5C1A5C" },
+  { id: 17, name: "Waxing (Women)",              icon: "🕯️", color: "#3A2C1A" },
+  { id: 18, name: "Nail Art & Enhancement",      icon: "💅",  color: "#5C1A2C" },
+  { id: 19, name: "Eye Lashes",                  icon: "👁️", color: "#1A3A5C" },
+  { id: 20, name: "Mehndi Artist",               icon: "🌿",  color: "#2C5C1A" },
+  { id: 21, name: "Hair Extension",              icon: "🌊",  color: "#1A4A5C" },
+  { id: 22, name: "Bridal Make Overs",           icon: "👰",  color: "#5C1A1A" },
+  { id: 23, name: "Bridal Packages",             icon: "🎊",  color: "#5C2E1A" },
+  { id: 24, name: "Party Make Ups",              icon: "🎉",  color: "#3A1A5C" },
+  { id: 25, name: "Executive Skin & Wax",        icon: "💫",  color: "#5C2A3A" },
+  { id: 26, name: "Executive Skin & Hair",       icon: "💄",  color: "#2A5C3A" },
+  { id: 27, name: "Everyday Skin & Wax",         icon: "🌸",  color: "#5C3A2A" },
+  { id: 28, name: "Everyday Skin & Hair",        icon: "🌺",  color: "#3A2A5C" },
+  { id: 29, name: "Everyday Other Deals",        icon: "🎁",  color: "#2A3A5C" },
+];
+
+const _c = (cat) => (MOCK_CATEGORIES.find(c => c.name === cat) || {}).color || "#B08040";
+const MOCK_SERVICES = [
+  // ── Hair Cut & Styling (Men) ───────────────────────────────────────────────
+  { id: 101, name: "Executive Cut",                        category: "Hair Cut & Styling (Men)", price: 1999,  icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 102, name: "Exclusive Child Cut",                  category: "Hair Cut & Styling (Men)", price: 1799,  icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 103, name: "Classic Precision Cut",                category: "Hair Cut & Styling (Men)", price: 1499,  icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 104, name: "Classic Child Cut",                    category: "Hair Cut & Styling (Men)", price: 1349,  icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 105, name: "Head Shave",                           category: "Hair Cut & Styling (Men)", price: 1499,  icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 106, name: "Exclusive Couture Design",             category: "Hair Cut & Styling (Men)", price: 1499,  icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 107, name: "Signature Luxe Hair Design",           category: "Hair Cut & Styling (Men)", price: 999,   icon: "✂️",  color: _c("Hair Cut & Styling (Men)") },
+  { id: 108, name: "Head Wash",                            category: "Hair Cut & Styling (Men)", price: 349,   icon: "🚿",  color: _c("Hair Cut & Styling (Men)") },
+  // ── Beard Grooming ────────────────────────────────────────────────────────
+  { id: 201, name: "Executive Wet Shave",                  category: "Beard Grooming", price: 999,  icon: "🪒", color: _c("Beard Grooming") },
+  { id: 202, name: "Fade Beard",                           category: "Beard Grooming", price: 999,  icon: "🪒", color: _c("Beard Grooming") },
+  { id: 203, name: "Simple Wet Shave",                     category: "Beard Grooming", price: 699,  icon: "🪒", color: _c("Beard Grooming") },
+  { id: 204, name: "Basic Beard & Shaping",                category: "Beard Grooming", price: 699,  icon: "🪒", color: _c("Beard Grooming") },
+  { id: 205, name: "Beard Trimming",                       category: "Beard Grooming", price: 699,  icon: "🪒", color: _c("Beard Grooming") },
+  { id: 206, name: "Neck Line Hair Remover",               category: "Beard Grooming", price: 449,  icon: "🪒", color: _c("Beard Grooming") },
+  { id: 207, name: "Moustache & Shaping",                  category: "Beard Grooming", price: 449,  icon: "🪒", color: _c("Beard Grooming") },
+  // ── Hair Treatments (Men) ─────────────────────────────────────────────────
+  { id: 301, name: "Keratin A",                            category: "Hair Treatments (Men)", price: 17999, icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 302, name: "Keratin B",                            category: "Hair Treatments (Men)", price: 11999, icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 303, name: "Hair Perming Treatment",               category: "Hair Treatments (Men)", price: 10999, icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 304, name: "Dry & Damage Treatment",               category: "Hair Treatments (Men)", price: 4899,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 305, name: "Anti-Dandruff Treatment",              category: "Hair Treatments (Men)", price: 4899,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 306, name: "Metal Detox Treatment",                category: "Hair Treatments (Men)", price: 4899,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 307, name: "Pre-Light Damage Treatment",           category: "Hair Treatments (Men)", price: 4899,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 308, name: "Protein Treatment",                    category: "Hair Treatments (Men)", price: 4899,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 309, name: "Keratin Mask (Frequency Treatment)",   category: "Hair Treatments (Men)", price: 4899,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 310, name: "Basic Protein Treatment",              category: "Hair Treatments (Men)", price: 3499,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  { id: 311, name: "Keratin Mask",                         category: "Hair Treatments (Men)", price: 1599,  icon: "💆", color: _c("Hair Treatments (Men)") },
+  // ── Hair Chemicals (Men) ──────────────────────────────────────────────────
+  { id: 401, name: "Hair Color (Transformation)",          category: "Hair Chemicals (Men)", price: 25999, icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 402, name: "Sticking Up To 10 Levels Full Head",   category: "Hair Chemicals (Men)", price: 19999, icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 403, name: "Sticking Up To 7 Levels Full Head",    category: "Hair Chemicals (Men)", price: 14999, icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 404, name: "Ammonia Free Full Dye",                category: "Hair Chemicals (Men)", price: 3499,  icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 405, name: "Hair Dye",                             category: "Hair Chemicals (Men)", price: 2999,  icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 406, name: "Ammonia Free Beard Dye",               category: "Hair Chemicals (Men)", price: 1999,  icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 407, name: "Beard Dye",                            category: "Hair Chemicals (Men)", price: 1499,  icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 408, name: "Hair Shiner",                          category: "Hair Chemicals (Men)", price: 1499,  icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 409, name: "Sticking Per Slick",                   category: "Hair Chemicals (Men)", price: 1499,  icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 410, name: "Side Burns Color",                     category: "Hair Chemicals (Men)", price: 999,   icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 411, name: "Beard Shiner",                         category: "Hair Chemicals (Men)", price: 749,   icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  { id: 412, name: "Moustache Color",                      category: "Hair Chemicals (Men)", price: 499,   icon: "🎨", color: _c("Hair Chemicals (Men)") },
+  // ── Facial Treatment (shared) ─────────────────────────────────────────────
+  { id: 501, name: "Guinot Whitening Facial",              category: "Facial Treatment", price: 10999, icon: "✨", color: _c("Facial Treatment") },
+  { id: 502, name: "Thalgo Whitening Facial",              category: "Facial Treatment", price: 7499,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 503, name: "Janssen Whitening Facial",             category: "Facial Treatment", price: 5999,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 504, name: "Regular Whitening Facial",             category: "Facial Treatment", price: 3899,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 505, name: "Guinot Short Facial",                  category: "Facial Treatment", price: 5999,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 506, name: "Thalgo Short Facial",                  category: "Facial Treatment", price: 4499,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 507, name: "Janssen Short Facial",                 category: "Facial Treatment", price: 3499,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 508, name: "Regular Short Facial",                 category: "Facial Treatment", price: 1899,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 509, name: "Collagen Mask",                        category: "Facial Treatment", price: 1449,  icon: "✨", color: _c("Facial Treatment") },
+  { id: 510, name: "Mineral Mask",                         category: "Facial Treatment", price: 649,   icon: "✨", color: _c("Facial Treatment") },
+  { id: 511, name: "Sheet Mask",                           category: "Facial Treatment", price: 449,   icon: "✨", color: _c("Facial Treatment") },
+  { id: 512, name: "Face & Neck Polish",                   category: "Facial Treatment", price: 349,   icon: "✨", color: _c("Facial Treatment") },
+  { id: 513, name: "Nose Strip",                           category: "Facial Treatment", price: 299,   icon: "✨", color: _c("Facial Treatment") },
+  // ── Aesthetic Treatment (shared) ──────────────────────────────────────────
+  { id: 601, name: "Whitening Drips (Premium)",            category: "Aesthetic Treatment", price: 24999, icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 602, name: "Microblading",                         category: "Aesthetic Treatment", price: 14999, icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 603, name: "Hydra Facial 14 Steps",                category: "Aesthetic Treatment", price: 12499, icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 604, name: "Whitening Drips",                      category: "Aesthetic Treatment", price: 11999, icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 605, name: "Acne Treatment",                       category: "Aesthetic Treatment", price: 10999, icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 606, name: "PRGF",                                 category: "Aesthetic Treatment", price: 10499, icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 607, name: "Meso Therapy",                         category: "Aesthetic Treatment", price: 9999,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 608, name: "Hand Rejuvenation",                    category: "Aesthetic Treatment", price: 8499,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 609, name: "BB Glow",                              category: "Aesthetic Treatment", price: 7849,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 610, name: "PRP + Micro Needling",                 category: "Aesthetic Treatment", price: 7499,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 611, name: "Hydra Facial 6 Steps",                 category: "Aesthetic Treatment", price: 6899,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 612, name: "BB Glow Basic",                        category: "Aesthetic Treatment", price: 4899,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 613, name: "Mole Removal",                         category: "Aesthetic Treatment", price: 2000,  icon: "💎", color: _c("Aesthetic Treatment") },
+  { id: 614, name: "LED Photo Therapy",                    category: "Aesthetic Treatment", price: 1899,  icon: "💎", color: _c("Aesthetic Treatment") },
+  // ── Hands & Feet (shared) ─────────────────────────────────────────────────
+  { id: 701, name: "Deluxe Hands Repair",                  category: "Hands & Feet", price: 3449, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 702, name: "Deluxe Feet Repair",                   category: "Hands & Feet", price: 3449, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 703, name: "Classic Hands Repair",                 category: "Hands & Feet", price: 2449, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 704, name: "Classic Feet Repair",                  category: "Hands & Feet", price: 2449, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 705, name: "Express Hands Repair",                 category: "Hands & Feet", price: 1449, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 706, name: "Express Feet Repair",                  category: "Hands & Feet", price: 1449, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 707, name: "Paraffin Wax Hands & Feet",            category: "Hands & Feet", price: 2399, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 708, name: "Paraffin Wax Hands/Feet (Each)",       category: "Hands & Feet", price: 1399, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 709, name: "Hands & Feet Whitening Polisher",      category: "Hands & Feet", price: 1399, icon: "🤲", color: _c("Hands & Feet") },
+  { id: 710, name: "Hands Nail Cut, Shape & File",         category: "Hands & Feet", price: 949,  icon: "🤲", color: _c("Hands & Feet") },
+  // ── Waxing (Men) ──────────────────────────────────────────────────────────
+  { id: 801, name: "Full Body Wax",                        category: "Waxing (Men)", price: 12999, icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 802, name: "Full Face Wax",                        category: "Waxing (Men)", price: 949,   icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 803, name: "Full Arms/Legs (Mega Wax)",            category: "Waxing (Men)", price: 949,   icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 804, name: "Half Arms/Legs (Mini Wax)",            category: "Waxing (Men)", price: 649,   icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 805, name: "Nose Wax",                             category: "Waxing (Men)", price: 449,   icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 806, name: "Cheeks/Ears Wax",                      category: "Waxing (Men)", price: 449,   icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 807, name: "Eye Brows/Forehead Wax",               category: "Waxing (Men)", price: 449,   icon: "🕯️", color: _c("Waxing (Men)") },
+  { id: 808, name: "Eye Brows Threading",                  category: "Waxing (Men)", price: 299,   icon: "🕯️", color: _c("Waxing (Men)") },
+  // ── Royal Massage (shared) ────────────────────────────────────────────────
+  { id: 901, name: "Head & Shoulders Oil Massage (30 min)", category: "Royal Massage", price: 1499, icon: "💆", color: _c("Royal Massage") },
+  { id: 902, name: "Feet Massage (30 min)",                 category: "Royal Massage", price: 1499, icon: "💆", color: _c("Royal Massage") },
+  { id: 903, name: "Head & Shoulders Oil Therapy (15 min)", category: "Royal Massage", price: 999,  icon: "💆", color: _c("Royal Massage") },
+  { id: 904, name: "Feet Massage (15 min)",                 category: "Royal Massage", price: 999,  icon: "💆", color: _c("Royal Massage") },
+  { id: 905, name: "Scalp Oiling",                          category: "Royal Massage", price: 699,  icon: "💆", color: _c("Royal Massage") },
+  { id: 906, name: "Vibrating Massage Therapy",             category: "Royal Massage", price: 999,  icon: "💆", color: _c("Royal Massage") },
+  // ── Groom Make Overs ──────────────────────────────────────────────────────
+  { id: 1001, name: "Reception / Shahlima",                category: "Groom Make Overs", price: 19999, icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1002, name: "Barat",                               category: "Groom Make Overs", price: 14999, icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1003, name: "Mehndi Makeover",                     category: "Groom Make Overs", price: 9999,  icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1004, name: "Executive Makeover",                  category: "Groom Make Overs", price: 5999,  icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1005, name: "Groom Makeover",                      category: "Groom Make Overs", price: 4999,  icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1006, name: "Camera Smart Makeover",               category: "Groom Make Overs", price: 2999,  icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1007, name: "Dress Up",                            category: "Groom Make Overs", price: 499,   icon: "🤵", color: _c("Groom Make Overs") },
+  { id: 1008, name: "Hot/Cold Shower",                     category: "Groom Make Overs", price: 1099,  icon: "🤵", color: _c("Groom Make Overs") },
+  // ── Groom Packages ────────────────────────────────────────────────────────
+  { id: 1101, name: "Groom 3 Days Signature Package",      category: "Groom Packages", price: 33999, icon: "📦", color: _c("Groom Packages") },
+  { id: 1102, name: "Groom 3 Days Basic Package",          category: "Groom Packages", price: 21999, icon: "📦", color: _c("Groom Packages") },
+  // ── Executive Deals (Men) ─────────────────────────────────────────────────
+  { id: 1201, name: "Ultimate Relaxation & Grooming",      category: "Executive Deals (Men)", price: 12399, icon: "⭐", color: _c("Executive Deals (Men)") },
+  { id: 1202, name: "Signature Grooming Experience",       category: "Executive Deals (Men)", price: 10999, icon: "⭐", color: _c("Executive Deals (Men)") },
+  { id: 1203, name: "Complete Hair & Skin Care",           category: "Executive Deals (Men)", price: 8899,  icon: "⭐", color: _c("Executive Deals (Men)") },
+  { id: 1204, name: "Luxury Hair & Beard Grooming",        category: "Executive Deals (Men)", price: 7899,  icon: "⭐", color: _c("Executive Deals (Men)") },
+  { id: 1205, name: "Keratin & Grooming Combo",            category: "Executive Deals (Men)", price: 5899,  icon: "⭐", color: _c("Executive Deals (Men)") },
+  { id: 1206, name: "Complete Relaxation & Styling",       category: "Executive Deals (Men)", price: 4499,  icon: "⭐", color: _c("Executive Deals (Men)") },
+  // ── Everyday Deals (Men) ──────────────────────────────────────────────────
+  { id: 1301, name: "Ultimate Grooming Package",           category: "Everyday Deals (Men)", price: 8999, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1302, name: "Complete Grooming & Relaxation",      category: "Everyday Deals (Men)", price: 6499, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1303, name: "Executive Grooming Experience",       category: "Everyday Deals (Men)", price: 4999, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1304, name: "Signature Luxe Grooming",             category: "Everyday Deals (Men)", price: 4799, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1305, name: "Ultimate Grooming Package (Standard)",category: "Everyday Deals (Men)", price: 3999, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1306, name: "Complete Grooming & Relaxation (Std)",category: "Everyday Deals (Men)", price: 3749, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1307, name: "Ultimate Relaxation & Hair Styling",  category: "Everyday Deals (Men)", price: 3399, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  { id: 1308, name: "Keratin Hair Care",                   category: "Everyday Deals (Men)", price: 2999, icon: "🌟", color: _c("Everyday Deals (Men)") },
+  // ── Hair Cut & Styling (Women) ────────────────────────────────────────────
+  { id: 1401, name: "Executive Cut",                       category: "Hair Cut & Styling (Women)", price: 3899, icon: "✂️", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1402, name: "Classic Precision Cut",               category: "Hair Cut & Styling (Women)", price: 1899, icon: "✂️", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1403, name: "Child Cut",                           category: "Hair Cut & Styling (Women)", price: 1349, icon: "✂️", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1404, name: "Exclusive Couture Styling",           category: "Hair Cut & Styling (Women)", price: 3449, icon: "✂️", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1405, name: "Signature Luxe Hair Design",          category: "Hair Cut & Styling (Women)", price: 2799, icon: "✂️", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1406, name: "Elegant Event Styling",               category: "Hair Cut & Styling (Women)", price: 1899, icon: "✂️", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1407, name: "Blow Dry Styling",                    category: "Hair Cut & Styling (Women)", price: 799,  icon: "💨", color: _c("Hair Cut & Styling (Women)") },
+  { id: 1408, name: "Head Wash",                           category: "Hair Cut & Styling (Women)", price: 349,  icon: "🚿", color: _c("Hair Cut & Styling (Women)") },
+  // ── Hair Treatment (Women) ────────────────────────────────────────────────
+  { id: 1501, name: "Xtenso Loreal",                       category: "Hair Treatment (Women)", price: 27999, icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1502, name: "Keratin A (Gk Company)",              category: "Hair Treatment (Women)", price: 27999, icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1503, name: "Keratin B (Brazilian Company)",       category: "Hair Treatment (Women)", price: 19499, icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1504, name: "Hair Perming Treatment",              category: "Hair Treatment (Women)", price: 19499, icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1505, name: "Anti Dandruff Treatment",             category: "Hair Treatment (Women)", price: 4899,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1506, name: "Dry & Damage Treatment",              category: "Hair Treatment (Women)", price: 4899,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1507, name: "Protein Treatment",                   category: "Hair Treatment (Women)", price: 4899,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1508, name: "Pre Light Damage Control Treatment",  category: "Hair Treatment (Women)", price: 4899,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1509, name: "Metal Detox Treatment",               category: "Hair Treatment (Women)", price: 4899,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1510, name: "Keratin Mask (Frequency Treatment)",  category: "Hair Treatment (Women)", price: 4899,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1511, name: "Basic Protein Treatment",             category: "Hair Treatment (Women)", price: 3499,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  { id: 1512, name: "Keratin Mask",                        category: "Hair Treatment (Women)", price: 1599,  icon: "💆", color: _c("Hair Treatment (Women)") },
+  // ── Hair Chemicals (Women) ────────────────────────────────────────────────
+  { id: 1601, name: "Microwave Hair Color",                category: "Hair Chemicals (Women)", price: 43999, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1602, name: "Balayage",                            category: "Hair Chemicals (Women)", price: 34499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1603, name: "Foilayage",                           category: "Hair Chemicals (Women)", price: 34499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1604, name: "Non Bleach (Balayage/Low/High Light)",category: "Hair Chemicals (Women)", price: 29499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1605, name: "Ombre",                               category: "Hair Chemicals (Women)", price: 28999, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1606, name: "Money Piece With Peek A Boo",         category: "Hair Chemicals (Women)", price: 27499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1607, name: "Peek A Boo",                          category: "Hair Chemicals (Women)", price: 24499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1608, name: "Reverse Peek A Boo",                  category: "Hair Chemicals (Women)", price: 24499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1609, name: "Chunky Highlights",                   category: "Hair Chemicals (Women)", price: 24499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1610, name: "Low Lights",                          category: "Hair Chemicals (Women)", price: 24499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1611, name: "High Lights",                         category: "Hair Chemicals (Women)", price: 24499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1612, name: "Dyed Tips",                           category: "Hair Chemicals (Women)", price: 18999, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1613, name: "One Dye",                             category: "Hair Chemicals (Women)", price: 11499, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1614, name: "Money Piece",                         category: "Hair Chemicals (Women)", price: 10999, icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  { id: 1615, name: "Roots Touch Up",                      category: "Hair Chemicals (Women)", price: 5499,  icon: "🎨", color: _c("Hair Chemicals (Women)") },
+  // ── Waxing (Women) ────────────────────────────────────────────────────────
+  { id: 1701, name: "Full Body Wax",                       category: "Waxing (Women)", price: 10999, icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1702, name: "Full Arms/Legs (Mega Wax)",           category: "Waxing (Women)", price: 949,   icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1703, name: "Full Face Wax",                       category: "Waxing (Women)", price: 949,   icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1704, name: "Half Arms/Legs (Mini Wax)",           category: "Waxing (Women)", price: 649,   icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1705, name: "Nose Wax",                            category: "Waxing (Women)", price: 449,   icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1706, name: "Cheeks Wax",                          category: "Waxing (Women)", price: 449,   icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1707, name: "Eye Brows/Upper Lips/Forehead",       category: "Waxing (Women)", price: 449,   icon: "🕯️", color: _c("Waxing (Women)") },
+  { id: 1708, name: "Eye Brows Threading",                 category: "Waxing (Women)", price: 299,   icon: "🕯️", color: _c("Waxing (Women)") },
+  // ── Nail Art & Enhancement ────────────────────────────────────────────────
+  { id: 1801, name: "Acrylic Hands & Feet",                category: "Nail Art & Enhancement", price: 9999, icon: "💅", color: _c("Nail Art & Enhancement") },
+  { id: 1802, name: "Acrylic Full Set",                    category: "Nail Art & Enhancement", price: 6499, icon: "💅", color: _c("Nail Art & Enhancement") },
+  { id: 1803, name: "Gel X",                               category: "Nail Art & Enhancement", price: 5499, icon: "💅", color: _c("Nail Art & Enhancement") },
+  { id: 1804, name: "Poly Gel",                            category: "Nail Art & Enhancement", price: 5499, icon: "💅", color: _c("Nail Art & Enhancement") },
+  { id: 1805, name: "Acrylic Fill",                        category: "Nail Art & Enhancement", price: 2999, icon: "💅", color: _c("Nail Art & Enhancement") },
+  { id: 1806, name: "French Nail",                         category: "Nail Art & Enhancement", price: 1499, icon: "💅", color: _c("Nail Art & Enhancement") },
+  { id: 1807, name: "Nail Art (Per Finger)",               category: "Nail Art & Enhancement", price: 199,  icon: "💅", color: _c("Nail Art & Enhancement") },
+  // ── Eye Lashes ────────────────────────────────────────────────────────────
+  { id: 1901, name: "Mega Lash",                           category: "Eye Lashes", price: 14999, icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1902, name: "Hybrid Lash",                         category: "Eye Lashes", price: 12999, icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1903, name: "Anime Lash",                          category: "Eye Lashes", price: 12999, icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1904, name: "Classic Lash",                        category: "Eye Lashes", price: 10999, icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1905, name: "Mega Lash Refill 4 Weeks",            category: "Eye Lashes", price: 8499,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1906, name: "Hybrid Lash Refill 4 Weeks",          category: "Eye Lashes", price: 7999,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1907, name: "Anime Lash Refill 4 Weeks",           category: "Eye Lashes", price: 7999,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1908, name: "Classic Lash Refill 4 Weeks",         category: "Eye Lashes", price: 7499,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1909, name: "Hybrid Lash Refill 2 Weeks",          category: "Eye Lashes", price: 6499,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1910, name: "Mega Lash Refill 2 Weeks",            category: "Eye Lashes", price: 6499,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1911, name: "Anime Lash Refill 2 Weeks",           category: "Eye Lashes", price: 6499,  icon: "👁️", color: _c("Eye Lashes") },
+  { id: 1912, name: "Classic Lash Refill 2 Weeks",         category: "Eye Lashes", price: 5499,  icon: "👁️", color: _c("Eye Lashes") },
+  // ── Mehndi Artist ─────────────────────────────────────────────────────────
+  { id: 2001, name: "Bridal Mehndi Hands Per Side",        category: "Mehndi Artist", price: 3999, icon: "🌿", color: _c("Mehndi Artist") },
+  { id: 2002, name: "Bridal Feet Mehndi",                  category: "Mehndi Artist", price: 3999, icon: "🌿", color: _c("Mehndi Artist") },
+  { id: 2003, name: "Hands Front Sides",                   category: "Mehndi Artist", price: 1849, icon: "🌿", color: _c("Mehndi Artist") },
+  { id: 2004, name: "Hands Back Sides",                    category: "Mehndi Artist", price: 1849, icon: "🌿", color: _c("Mehndi Artist") },
+  { id: 2005, name: "Feet Mehndi",                         category: "Mehndi Artist", price: 1849, icon: "🌿", color: _c("Mehndi Artist") },
+  // ── Hair Extension ────────────────────────────────────────────────────────
+  { id: 2101, name: "Hair Extension 28 Inches (100Gm)",    category: "Hair Extension", price: 72999, icon: "🌊", color: _c("Hair Extension") },
+  { id: 2102, name: "Hair Extension 24 Inches (100Gm)",    category: "Hair Extension", price: 63999, icon: "🌊", color: _c("Hair Extension") },
+  { id: 2103, name: "Hair Extension 20 Inches (100Gm)",    category: "Hair Extension", price: 52999, icon: "🌊", color: _c("Hair Extension") },
+  // ── Bridal Make Overs ─────────────────────────────────────────────────────
+  { id: 2201, name: "Barat Make Over (Premium Artist)",    category: "Bridal Make Overs", price: 49999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2202, name: "Barat Make Over (Signature Artist)",  category: "Bridal Make Overs", price: 39999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2203, name: "Barat Make Over (Senior Artist)",     category: "Bridal Make Overs", price: 29999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2204, name: "Walima Make Over (Premium Artist)",   category: "Bridal Make Overs", price: 44999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2205, name: "Walima Make Over (Signature Artist)", category: "Bridal Make Overs", price: 34999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2206, name: "Walima Make Over (Senior Artist)",    category: "Bridal Make Overs", price: 24999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2207, name: "Engagement/Nikkah Make Over (Sig.)", category: "Bridal Make Overs", price: 29999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2208, name: "Engagement/Nikkah Make Over (Senior)",category: "Bridal Make Overs", price: 19999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2209, name: "Mehndi Make Over (Signature)",        category: "Bridal Make Overs", price: 18999, icon: "👰", color: _c("Bridal Make Overs") },
+  { id: 2210, name: "Mehndi Make Over (Senior Artist)",    category: "Bridal Make Overs", price: 14999, icon: "👰", color: _c("Bridal Make Overs") },
+  // ── Bridal Packages ───────────────────────────────────────────────────────
+  { id: 2301, name: "3 Days Bridal Package (Premium)",     category: "Bridal Packages", price: 104999, icon: "🎊", color: _c("Bridal Packages") },
+  { id: 2302, name: "3 Days Bridal Package (Signature)",   category: "Bridal Packages", price: 88999,  icon: "🎊", color: _c("Bridal Packages") },
+  { id: 2303, name: "3 Days Bridal Package (Senior)",      category: "Bridal Packages", price: 73999,  icon: "🎊", color: _c("Bridal Packages") },
+  // ── Party Make Ups ────────────────────────────────────────────────────────
+  { id: 2401, name: "Party Make Up (Premium)",             category: "Party Make Ups", price: 11999, icon: "🎉", color: _c("Party Make Ups") },
+  { id: 2402, name: "Party Make Up (Signature)",           category: "Party Make Ups", price: 9999,  icon: "🎉", color: _c("Party Make Ups") },
+  { id: 2403, name: "Party Make Up (Senior)",              category: "Party Make Ups", price: 7999,  icon: "🎉", color: _c("Party Make Ups") },
+  // ── Executive Skin & Wax ──────────────────────────────────────────────────
+  { id: 2501, name: "Hydra Glow & Relaxation",             category: "Executive Skin & Wax", price: 15499, icon: "💫", color: _c("Executive Skin & Wax") },
+  { id: 2502, name: "Guinot Glow & Transformation",        category: "Executive Skin & Wax", price: 13399, icon: "💫", color: _c("Executive Skin & Wax") },
+  { id: 2503, name: "Thalgo Facial Grooming",              category: "Executive Skin & Wax", price: 10999, icon: "💫", color: _c("Executive Skin & Wax") },
+  { id: 2504, name: "Janssen Skin Revitalization",         category: "Executive Skin & Wax", price: 9599,  icon: "💫", color: _c("Executive Skin & Wax") },
+  // ── Executive Skin & Hair ─────────────────────────────────────────────────
+  { id: 2601, name: "Ultimate Spa Experience",             category: "Executive Skin & Hair", price: 14999, icon: "💄", color: _c("Executive Skin & Hair") },
+  { id: 2602, name: "Premium Rejuvenation Package",        category: "Executive Skin & Hair", price: 13199, icon: "💄", color: _c("Executive Skin & Hair") },
+  { id: 2603, name: "Luxury Grooming Retreat",             category: "Executive Skin & Hair", price: 10599, icon: "💄", color: _c("Executive Skin & Hair") },
+  { id: 2604, name: "Classic Beauty Transformation",       category: "Executive Skin & Hair", price: 9499,  icon: "💄", color: _c("Executive Skin & Hair") },
+  // ── Everyday Skin & Wax ───────────────────────────────────────────────────
+  { id: 2701, name: "The Luxe Glow Ritual",                category: "Everyday Skin & Wax", price: 7899, icon: "🌸", color: _c("Everyday Skin & Wax") },
+  { id: 2702, name: "The Polished Glow Ritual",            category: "Everyday Skin & Wax", price: 6699, icon: "🌸", color: _c("Everyday Skin & Wax") },
+  { id: 2703, name: "The Brightening Ritual",              category: "Everyday Skin & Wax", price: 6299, icon: "🌸", color: _c("Everyday Skin & Wax") },
+  { id: 2704, name: "The Essential Glow Ritual",           category: "Everyday Skin & Wax", price: 5999, icon: "🌸", color: _c("Everyday Skin & Wax") },
+  // ── Everyday Skin & Hair ──────────────────────────────────────────────────
+  { id: 2801, name: "Signature Grooming Ritual",           category: "Everyday Skin & Hair", price: 7999, icon: "🌺", color: _c("Everyday Skin & Hair") },
+  { id: 2802, name: "Essential Grooming Ritual",           category: "Everyday Skin & Hair", price: 6899, icon: "🌺", color: _c("Everyday Skin & Hair") },
+  { id: 2803, name: "Radiance Care Ritual",                category: "Everyday Skin & Hair", price: 6399, icon: "🌺", color: _c("Everyday Skin & Hair") },
+  { id: 2804, name: "Classic Renewal Ritual",              category: "Everyday Skin & Hair", price: 5899, icon: "🌺", color: _c("Everyday Skin & Hair") },
+  // ── Everyday Other Deals ──────────────────────────────────────────────────
+  { id: 2901, name: "Hair Perfection & Care",              category: "Everyday Other Deals", price: 6499, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2902, name: "Relax & Revitalize",                  category: "Everyday Other Deals", price: 5399, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2903, name: "Keratin And Care",                    category: "Everyday Other Deals", price: 4499, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2904, name: "Full Body Smooth",                    category: "Everyday Other Deals", price: 3799, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2905, name: "Complete Hand & Facial Care",         category: "Everyday Other Deals", price: 3699, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2906, name: "Head-To-Toe Relaxation",              category: "Everyday Other Deals", price: 3499, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2907, name: "Smooth & Radiant",                    category: "Everyday Other Deals", price: 3499, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2908, name: "Radiant Skin & Hair Care",            category: "Everyday Other Deals", price: 3399, icon: "🎁", color: _c("Everyday Other Deals") },
+  { id: 2909, name: "Quick Hair & Skin Care",              category: "Everyday Other Deals", price: 2799, icon: "🎁", color: _c("Everyday Other Deals") },
+];
+
+const DEFAULT_COURTESY_PERSONS = ["Owner", "Manager", "Ahmed", "Ayesha", "Sara", "Usman", "Fatima", "Ali"];
+
+// ── RBAC Helpers ───────────────────────────────────────────────────────────────
+const ROLE_RANK = { receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
+const hasNavAccess = (role, v) => {
+  if (v === 'pos') return true;
+  if (v === 'settings') return (ROLE_RANK[role] || 0) >= 2;
+  return (ROLE_RANK[role] || 0) >= 3; // dashboard, history require admin+
+};
+const creatableRoles = (role) => {
+  if (role === 'superadmin') return [['receptionist','Receptionist'],['manager','Manager'],['admin','Admin']];
+  if (role === 'admin')      return [['receptionist','Receptionist'],['manager','Manager']];
+  if (role === 'manager')    return [['receptionist','Receptionist']];
+  return [];
+};
+const canDeleteUser = (actorRole, targetRole) => {
+  if (actorRole === 'superadmin') return true;
+  if (actorRole === 'admin') return (ROLE_RANK[targetRole] || 0) < 3;
+  return false;
+};
+const roleBadgeStyle = (role) => {
+  const map = { superadmin: ['#FEE2E2','#991B1B'], admin: ['#D1FAE5','#065F46'], manager: ['#FEF3C7','#92400E'], receptionist: ['#DBEAFE','#1E40AF'] };
+  const [bg, col] = map[role] || map.receptionist;
+  return { background: bg, color: col };
+};
+
+// ── SVG Sparkline ─────────────────────────────────────────────────────────────
+function Spark({ data, color, h = 28, w = 80 }) {
+  if (!data || data.length < 2) return null;
+  const mx = Math.max(...data, 1), mn = Math.min(...data, 0), rng = mx - mn || 1;
+  const pts = data.map((v, i) => [(i / (data.length - 1)) * w, h - ((v - mn) / rng) * (h - 4) - 2]);
+  const line = pts.map(p => p.join(",")).join(" ");
+  const area = `${pts[0][0]},${h} ${line} ${pts[pts.length - 1][0]},${h}`;
+  const id = `sp${color.replace(/\W/g, "")}x`;
+  return (
+    <svg width={w} height={h} style={{ overflow: "visible", display: "block" }}>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+        <stop offset="100%" stopColor={color} stopOpacity="0" />
+      </linearGradient></defs>
+      <polygon points={area} fill={`url(#${id})`} />
+      <polyline points={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+// ── Donut ─────────────────────────────────────────────────────────────────────
+function Donut({ slices, size = 96 }) {
+  const total = slices.reduce((s, d) => s + d.v, 0) || 1;
+  const r = 36, cx = 48, cy = 48; let cum = -Math.PI / 2;
+  const paths = slices.filter(s => s.v > 0).map(s => {
+    const pct = s.v / total, a0 = cum, a1 = cum + pct * 2 * Math.PI; cum = a1;
+    const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0), x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    const lg = pct > 0.5 ? 1 : 0;
+    const d = pct >= 0.999 ? `M ${cx - r},${cy} A ${r},${r},0,1,1,${cx + r - .01},${cy}` : `M ${x0},${y0} A ${r},${r},0,${lg},1,${x1},${y1}`;
+    return { d, color: s.color };
+  });
+  return (
+    <svg width={size} height={size} viewBox="0 0 96 96">
+      <circle cx={48} cy={48} r={36} fill="none" stroke="#EEE8DF" strokeWidth="12" />
+      {paths.map((p, i) => <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth="12" strokeLinecap="butt" />)}
+      <circle cx={48} cy={48} r={24} fill="#FDFAF6" />
+    </svg>
+  );
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function ProgBar({ pct, color = "#B08040", h = 5 }) {
+  return (
+    <div style={{ height: h, borderRadius: h / 2, background: "#EEE8DF", overflow: "hidden" }}>
+      <div style={{ height: "100%", width: `${Math.max(pct, 0)}%`, borderRadius: h / 2, background: color, transition: "width 0.9s cubic-bezier(.22,1,.36,1)" }} />
+    </div>
+  );
+}
+
+// ── Client Flow ───────────────────────────────────────────────────────────────
+function ClientFlow({ data, isMobile }) {
+  const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+  const hourLabels = ["9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm", "7pm", "8pm"];
+  const slots = hours.map((h, i) => ({ h, label: hourLabels[i], count: data.filter(d => d.hour === h).reduce((s, d) => s + d.count, 0) }));
+  const mx = Math.max(...slots.map(s => s.count), 1);
+  const peak = slots.reduce((a, b) => b.count > a.count ? b : a, slots[0]);
+  const quiet = slots.filter(s => s.count > 0).reduce((a, b) => b.count < a.count ? b : a, slots.find(s => s.count > 0) || slots[0]);
+  const busyDays = DAYS.map((day, di) => ({ day, count: data.filter(d => d.day === di).reduce((s, d) => s + d.count, 0) }));
+  const mxDay = Math.max(...busyDays.map(d => d.count), 1);
+  const peakDay = busyDays.reduce((a, b) => b.count > a.count ? b : a, busyDays[0]);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 12 : 20 }}>
+      {/* Insight pills */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+        <div style={{ background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>⚡</span>
+          <div><div style={{ fontSize: 11, color: "#92400E", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Peak Hour</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#78350F" }}>{peak?.label || "—"} <span style={{ fontSize: 11, fontWeight: 500 }}>· {peak?.count || 0} visits</span></div></div>
+        </div>
+        <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🌿</span>
+          <div><div style={{ fontSize: 11, color: "#166534", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Quietest Hour</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#14532D" }}>{quiet?.label || "—"} <span style={{ fontSize: 11, fontWeight: 500 }}>· {quiet?.count || 0} visits</span></div></div>
+        </div>
+        <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>📅</span>
+          <div><div style={{ fontSize: 11, color: "#1E40AF", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Busiest Day</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1E3A8A" }}>{peakDay?.day || "—"} <span style={{ fontSize: 11, fontWeight: 500 }}>· {peakDay?.count || 0} visits</span></div></div>
+        </div>
+      </div>
+
+      {/* Hourly bar chart */}
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#6B5540", marginBottom: 12 }}>Visits by Hour</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
+          {slots.map((s, i) => {
+            const h = Math.max(Math.round((s.count / mx) * 88), s.count > 0 ? 4 : 2);
+            const isPeak = s.h === peak?.h;
+            return (
+              <div key={s.h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                {s.count > 0 && <div style={{ fontSize: 9, fontWeight: 600, color: isPeak ? "#B08040" : "#C4B9AB" }}>{s.count}</div>}
+                <div style={{
+                  width: "100%", height: h, borderRadius: "4px 4px 0 0",
+                  background: isPeak ? "linear-gradient(180deg,#D4A043,#B08040)" : s.count > 0 ? "#D4C4A8" : "#EEE6D8",
+                  transition: "height .8s cubic-bezier(.22,1,.36,1)", position: "relative"
+                }}>
+                  {isPeak && <div style={{ position: "absolute", top: -18, left: "50%", transform: "translateX(-50%)", fontSize: 10 }}>⭐</div>}
+                </div>
+                <div style={{ fontSize: 9, color: isPeak ? "#B08040" : "#B8AFA5", fontWeight: isPeak ? 700 : 400, textAlign: "center", whiteSpace: "nowrap" }}>{s.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Day of week flow — horizontal bars */}
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#6B5540", marginBottom: 12 }}>Visits by Day</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {busyDays.map(({ day, count }) => {
+            const pct = Math.round(count / mxDay * 100) || 0;
+            const isPeak = day === peakDay?.day;
+            return (
+              <div key={day} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 32, fontSize: 12, fontWeight: isPeak ? 700 : 400, color: isPeak ? "#B08040" : "#9A9088" }}>{day}</div>
+                <div style={{ flex: 1, height: 24, borderRadius: 6, background: "#F5F0E8", overflow: "hidden", position: "relative" }}>
+                  <div style={{
+                    height: "100%", width: `${pct}%`, minWidth: pct > 0 ? 8 : 0, borderRadius: 6,
+                    background: isPeak ? "linear-gradient(90deg,#D4A043,#B08040)" : "#D4C4A8",
+                    transition: "width .9s cubic-bezier(.22,1,.36,1)", display: "flex", alignItems: "center", paddingLeft: 8
+                  }}>
+                    {pct > 12 && <span style={{ fontSize: 10, fontWeight: 600, color: isPeak ? "#FFF" : "#8B6914", whiteSpace: "nowrap" }}>{count} visits</span>}
+                  </div>
+                  {pct <= 12 && count > 0 && <span style={{ position: "absolute", left: pct > 0 ? `${pct + 2}%` : "6px", top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 500, color: "#B8AFA5" }}>{count}</span>}
+                </div>
+                {isPeak && <span style={{ fontSize: 10, fontWeight: 700, color: "#B08040", whiteSpace: "nowrap" }}>Peak ⭐</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Searchable Stylist Picker ─────────────────────────────────────────────────
+function StylistPicker({ value, onChange, color, id, stylists = [], highlight = false }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 200 });
+  const ref = React.useRef(null);
+  const triggerRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+  const dropRef = React.useRef(null);
+  const filtered = stylists.filter(s => s.name.toLowerCase().startsWith(query.toLowerCase()));
+
+  // Close on outside click — check both trigger and portal dropdown
+  React.useEffect(() => {
+    const handler = e => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        dropRef.current && !dropRef.current.contains(e.target)
+      ) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleOpen = () => {
+    if (open) return setOpen(false);
+    // Read the trigger's exact viewport position
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom, left: r.left, width: r.width });
+    }
+    setOpen(true);
+    setQuery("");
+    setTimeout(() => inputRef.current?.focus(), 40);
+  };
+
+  const select = (name) => {
+    onChange(name);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const clear = (e) => {
+    e.stopPropagation();
+    onChange("");
+    setOpen(false);
+  };
+
+  // Build the dropdown as a React Portal into document.body
+  const dropdown = open ? ReactDOM.createPortal(
+    <div ref={dropRef} style={{
+      position: "fixed",
+      top: dropPos.top,
+      left: dropPos.left,
+      width: dropPos.width,
+      zIndex: 99999,
+      background: "#FFFFFF",
+      borderRadius: "0 0 12px 12px",
+      boxShadow: "0 8px 32px rgba(44,33,24,.18), 0 2px 8px rgba(44,33,24,.08)",
+      border: `1.5px solid ${highlight ? "#A0303F" : "#EDE6D8"}`,
+      borderTop: "none",
+      overflow: "hidden",
+    }}>
+      {/* Search input */}
+      <div style={{ padding: "9px 10px", borderBottom: "1px solid #F0EAE0", display: "flex", alignItems: "center", gap: 7 }}>
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="#C4B9AB" strokeWidth="1.4" />
+          <path d="M10 10l2.5 2.5" stroke="#C4B9AB" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Type a name…"
+          style={{
+            border: "none", outline: "none", fontSize: 12, color: "#2A2118",
+            background: "transparent", flex: 1, fontFamily: "'Outfit',sans-serif"
+          }}
+        />
+        {query && <button onClick={() => setQuery("")} style={{ color: "#D4C4B0", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>}
+      </div>
+
+      {/* Options */}
+      <div style={{ maxHeight: 200, overflowY: "auto" }}>
+        {filtered.length === 0
+          ? <div style={{ padding: "12px 14px", fontSize: 12, color: "#C4B9AB", textAlign: "center" }}>No match found</div>
+          : filtered.map(sty => {
+            const isSelected = sty.name === value;
+            const styColor = sty.color || "#B08040";
+            return (
+              <div key={sty.name} onClick={() => select(sty.name)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", cursor: "pointer",
+                  background: isSelected ? "#FAF5EC" : "transparent",
+                  transition: "background .12s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = isSelected ? "#FAF5EC" : "#FDFAF6"}
+                onMouseLeave={e => e.currentTarget.style.background = isSelected ? "#FAF5EC" : "transparent"}
+              >
+                <div style={{
+                  width: 28, height: 28, borderRadius: "50%", background: styColor,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 13, fontWeight: 700, color: "#FFF", flexShrink: 0
+                }}>{sty.name[0]}</div>
+                <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? styColor : "#2A2118", flex: 1 }}>{sty.name}</span>
+                {isSelected && <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2.5 7l3.5 3.5 6-6" stroke={styColor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>}
+              </div>
+            );
+          })
+        }
+      </div>
+
+      {/* Clear option if assigned */}
+      {value && (
+        <div style={{ borderTop: "1px solid #F0EAE0" }}>
+          <div onClick={() => select("")} style={{ padding: "8px 12px", fontSize: 11, color: "#B8AFA5", cursor: "pointer", textAlign: "center", transition: "background .12s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#FDFAF6"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            Remove assignment
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <div ref={ref} style={{ position: "relative", flex: 1 }}>
+      {/* Trigger — slim row */}
+      <div ref={triggerRef} id={id} onClick={handleOpen} style={{
+        display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+        padding: "7px 11px",
+        borderRadius: open ? "8px 8px 0 0" : 8,
+        transition: "all .15s",
+        background: open ? "#FFFFFF" : highlight ? "#FEF2F2" : "#F8F4EE",
+        border: `1.5px solid ${highlight ? "#FECACA" : "#EDE6D8"}`,
+        borderBottom: open ? "1px solid #F0EAE0" : `1.5px solid ${highlight ? "#FECACA" : "#EDE6D8"}`,
+        boxShadow: highlight ? "0 0 0 2px rgba(239, 68, 68, 0.1)" : "none"
+      }}>
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: .45 }}>
+          <circle cx="6" cy="5" r="3" stroke={highlight ? "#A0303F" : "#6B5540"} strokeWidth="1.4" />
+          <path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke={highlight ? "#A0303F" : "#6B5540"} strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        {value
+          ? <><div style={{
+            width: 18, height: 18, borderRadius: "50%", background: color,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 9, fontWeight: 700, color: "#FFF", flexShrink: 0
+          }}>{value[0]}</div>
+            <span style={{ fontSize: 12, fontWeight: 600, color, flex: 1 }}>{value}</span>
+            <button onClick={clear} style={{ color: "#C4B9AB", fontSize: 14, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, marginLeft: 4 }}>×</button>
+          </>
+          : <span style={{ fontSize: 12, color: highlight ? "#A0303F" : "#C4B9AB", flex: 1, fontWeight: highlight ? 600 : 400 }}>{highlight ? "Select Stylist Required" : "Assign stylist…"}</span>
+        }
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s", flexShrink: 0 }}>
+          <path d="M1 1l4 4 4-4" stroke={highlight ? "#A0303F" : "#C4B9AB"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      {dropdown}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+export default function NoorKadaPOS({ user, onLogout }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+  React.useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth <= 1024);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+
+  const [transactions, setTransactions] = useState([]);
+  const [view, setView] = useState(() => localStorage.getItem('noorkada_view') || "pos");
+
+  // Force users to allowed view based on their role
+  React.useEffect(() => {
+    if (!hasNavAccess(user.role, view)) {
+      setView("pos");
+    }
+  }, [user.role, view]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const token = localStorage.getItem('noorkada_token');
+  const cartPanelRef = React.useRef(null);
+
+  // Dynamic Services State
+  const [dbServices, setDbServices] = useState(MOCK_SERVICES);
+  const [dbStylists, setDbStylists] = useState([]);
+  const [categories, setCategories] = useState(MOCK_CATEGORIES);
+  const [dbUsers, setDbUsers] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSvc, setNewSvc] = useState({ name: "", category: "", price: "", icon: "✦", color: "#B08040", included_services: [] });
+  const [adminTab, setAdminTab] = useState(() => localStorage.getItem('noorkada_adminTab') || "services"); // services, staff, profile, courtesy
+  const [courtesyPersons, setCourtesyPersons] = useState(() => {
+    try { const s = localStorage.getItem('noorkada_courtesy_persons'); return s ? JSON.parse(s) : DEFAULT_COURTESY_PERSONS; } catch (e) { return DEFAULT_COURTESY_PERSONS; }
+  });
+  const [newCourtesyName, setNewCourtesyName] = useState("");
+  const [staffSubTab, setStaffSubTab] = useState(() => localStorage.getItem('noorkada_staffSubTab') || "stylists"); // users, stylists
+  // Search states for admin tables
+  const [svcSearch, setSvcSearch] = useState("");
+  const [catSearch, setCatSearch] = useState("");
+  const [stylistSearch, setStylistSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [courtesySearch, setCourtesySearch] = useState("");
+  const [editingUser, setEditingUser] = useState(null); // { id, username, role, password }
+  const [profilePw, setProfilePw] = useState("");
+  const [profilePwConfirm, setProfilePwConfirm] = useState("");
+  const [editingSvc, setEditingSvc] = useState(null); // { id, name, category, price }
+  const [editingStylist, setEditingStylist] = useState(null); // { id, name, phone, address, email }
+  const [delSvcConfirmId, setDelSvcConfirmId] = useState(null); // { id }
+  const [delStylistConfirmId, setDelStylistConfirmId] = useState(null);
+  const [delUserConfirmId, setDelUserConfirmId] = useState(null);
+  const [smtpSettings, setSmtpSettings] = useState({
+    smtp_host: 'smtp.gmail.com',
+    smtp_port: '587',
+    smtp_user: '',
+    smtp_pass: '',
+    smtp_from_name: 'Noorkada POS',
+    smtp_from_email: ''
+  });
+
+  const [toast, setToast] = useState(null); // { msg, type: 'success' | 'error' }
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchServices = async () => {
+    try {
+      const r = await fetch('/api/services');
+      const data = await r.json();
+      if (Array.isArray(data) && data.length > 0) setDbServices(data);
+    } catch (e) { /* keep catalogue mock data */ }
+  };
+
+  const fetchStylists = async () => {
+    try {
+      const r = await fetch('/api/stylists');
+      const data = await r.json();
+      setDbStylists(data);
+    } catch (e) { console.error("Fetch stylists error:", e); }
+  };
+
+  const addService = async () => {
+    if (!newSvc.name || !newSvc.price || !newSvc.category) return showToast("Please fill name, category and price", "error");
+    try {
+      const r = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ ...newSvc, price: Number(newSvc.price) })
+      });
+      if (r.ok) {
+        setShowAddModal(false);
+        setNewSvc({ name: "", category: "", price: "", icon: "✦", color: "#B08040", included_services: [] });
+        fetchServices();
+        showToast("Service added successfully!");
+      }
+    } catch (e) { showToast("Error adding service", "error"); }
+  };
+
+  const deleteService = async (id) => {
+    try {
+      const r = await fetch(`/api/services/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (r.ok) {
+        fetchServices();
+        setDelSvcConfirmId(null);
+        showToast("Service deleted successfully!");
+      }
+    } catch (e) { showToast("Error deleting service", "error"); }
+  };
+
+  const addCategory = async (cat) => {
+    try {
+      const r = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(cat)
+      });
+      if (r.ok) {
+        const newC = await r.json();
+        setCategories(prev => [...prev, newC]);
+        showToast("Category added successfully!");
+      }
+    } catch (e) { showToast("Error adding category", "error"); }
+  };
+
+  const deleteCategory = async (id) => {
+    try {
+      const r = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (r.ok) {
+        setCategories(prev => prev.filter(c => c.id !== id));
+        fetchServices(); // Refresh services to ensure local state is consistent
+        showToast("Category deleted successfully!");
+      }
+      setDelCatConfirmId(null);
+    } catch (e) { showToast("Error deleting category", "error"); }
+  };
+
+  const deleteStylist = async (id) => {
+    try {
+      const r = await fetch(`/api/stylists/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (r.ok) {
+        fetchStylists();
+        showToast("Stylist deleted successfully!");
+      }
+      setDelStylistConfirmId(null);
+    } catch (e) { showToast("Error deleting stylist", "error"); }
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      const r = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (r.ok) {
+        setDbUsers(prev => prev.filter(u => u.id !== id));
+        showToast("User deleted successfully!");
+      }
+      setDelUserConfirmId(null);
+    } catch (e) { showToast("Error deleting user", "error"); }
+  };
+
+  // Transform flat services to nested object
+  const SERVICES = useMemo(() => {
+    const obj = {};
+    const activeCatNames = categories.map(c => c.name);
+
+    categories.forEach(c => {
+      obj[c.name] = { icon: c.icon, color: c.color, items: [] };
+    });
+
+    dbServices.forEach(s => {
+      if (activeCatNames.includes(s.category)) {
+        if (!obj[s.category]) obj[s.category] = { icon: s.icon || '🛠️', color: s.color || '#555', items: [] };
+        if (!obj[s.category].items.includes(s.name)) obj[s.category].items.push(s.name);
+      }
+    });
+    return obj;
+  }, [dbServices, categories]);
+
+  const getServiceData = (service, category) => {
+    return dbServices.find(s => s.name === service && s.category === category) || {};
+  };
+
+  const getCatColor = (svcName, category) => {
+    const s = getServiceData(svcName, category);
+    return s ? s.color : "#B08040";
+  };
+
+
+
+  // Fetch transactions, categories, and users on mount if admin
+  React.useEffect(() => {
+    fetchServices();
+    fetchStylists();
+    fetch('/api/categories').then(r => r.json()).then(data => { if (Array.isArray(data) && data.length > 0) setCategories(data); }).catch(() => {});
+
+    if (user.role === 'admin') {
+      fetch('/api/transactions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setTransactions(data);
+        })
+        .catch(err => console.error("Fetch transactions error:", err));
+
+      fetch('/api/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setDbUsers(data);
+        })
+        .catch(err => console.error("Fetch users error:", err));
+
+      fetch('/api/settings/smtp', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) setSmtpSettings(data);
+        })
+        .catch(err => console.error("Fetch SMTP settings error:", err));
+    }
+  }, [user.role, token]);
+  const [dashTab, setDashTab] = useState(() => localStorage.getItem('noorkada_dashTab') || "overview");
+
+  React.useEffect(() => {
+    localStorage.setItem('noorkada_view', view);
+    localStorage.setItem('noorkada_adminTab', adminTab);
+    localStorage.setItem('noorkada_staffSubTab', staffSubTab);
+    localStorage.setItem('noorkada_dashTab', dashTab);
+  }, [view, adminTab, staffSubTab, dashTab]);
+
+  React.useEffect(() => {
+    localStorage.setItem('noorkada_courtesy_persons', JSON.stringify(courtesyPersons));
+  }, [courtesyPersons]);
+
+  const [showCatLabelModal, setShowCatLabelModal] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("✨");
+  const [delCatConfirmId, setDelCatConfirmId] = useState(null);
+  const [stylistWarningOpen, setStylistWarningOpen] = useState(false);
+  const [dashRange, setDashRange] = useState("30d");
+  const [dashCFrom, setDashCFrom] = useState("");
+  const [dashCTo, setDashCTo] = useState("");
+  const [fStylist, setFStylist] = useState("");
+  const [fCat, setFCat] = useState("");
+  const [fPay, setFPay] = useState("");
+  const [checkoutAttempted, setCheckoutAttempted] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  // POS – multi-tab system
+  const newTab = (n = 1) => ({
+    id: Date.now() + n, label: "Client " + n,
+    cart: [], custName: "", custPhone: "", payMode: "CASH",
+    discMode: "none", discPct: 0, discFlat: 0, discItem: "", discItemPct: 0, discItemFlat: 0, discItemMode: "pct", discReason: "", discCourtesyBy: "",
+    note: "", collapsed: false, footerCollapsed: true, cartCollapsed: true, staffSlipPrinted: false,
+    splitCash: 0, splitOtherMode: "ONLINE", splitOtherAmt: 0
+  });
+  const [tabs, setTabs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('noorkada_tabs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) { }
+    return [newTab(1)];
+  });
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('noorkada_activeTab');
+      if (saved) return parseInt(saved, 10);
+    } catch (e) { }
+    return 0;
+  }); // index
+
+  React.useEffect(() => {
+    localStorage.setItem('noorkada_tabs', JSON.stringify(tabs));
+    localStorage.setItem('noorkada_activeTab', activeTab.toString());
+  }, [tabs, activeTab]);
+
+  const [activeCat, setActiveCat] = useState("All");
+  const [doneSlip, setDoneSlip] = useState(null);
+
+  const emptyTab = { cart: [], custName: "", custPhone: "", payMode: "CASH", discMode: "none", discPct: 0, discFlat: 0, itemDiscounts: {}, discReason: "", discCourtesyBy: "", note: "", collapsed: false, footerCollapsed: true, cartCollapsed: true, staffSlipPrinted: false, splitCash: 0, splitOtherMode: "ONLINE", splitOtherAmt: 0 };
+  const tab = tabs[activeTab] || tabs[0] || emptyTab;
+  const updTab = (patch) => setTabs(prev => prev.map((t, i) => i === activeTab ? { ...t, ...patch, staffSlipPrinted: patch.staffSlipPrinted !== undefined ? patch.staffSlipPrinted : (patch.cart || patch.discPct || patch.discFlat || patch.itemDiscounts ? false : t.staffSlipPrinted) } : t));
+  const [undoTab, setUndoTab] = useState(null); // { tab, idx, timer }
+
+  const addTab = () => {
+    const t = newTab(tabs.length + 1);
+    setTabs(prev => [...prev, t]);
+    setActiveTab(tabs.length);
+  };
+  const [confirmClose, setConfirmClose] = useState(null); // { idx }
+  const closeTab = (idx, e) => {
+    e.stopPropagation();
+    const t = tabs[idx];
+    const hasData = t.cart.length > 0 || t.custName;
+    if (hasData) { setConfirmClose({ idx }); return; }
+    doCloseTab(idx);
+  };
+  const doCloseTab = (idx, showUndo = true) => {
+    const t = tabs[idx];
+    if (showUndo) {
+      if (undoTab?.timer) clearTimeout(undoTab.timer);
+      const timer = setTimeout(() => setUndoTab(null), 5000);
+      setUndoTab({ tab: t, idx, timer });
+    } else {
+      setUndoTab(null);
+    }
+    const next = tabs.filter((_, i) => i !== idx);
+    setTabs(next);
+    setActiveTab(Math.min(activeTab, Math.max(next.length - 1, 0)));
+    setConfirmClose(null);
+  };
+  const restoreTab = () => {
+    if (!undoTab) return;
+    clearTimeout(undoTab.timer);
+    setTabs(prev => [...prev.slice(0, undoTab.idx), undoTab.tab, ...prev.slice(undoTab.idx)]);
+    setActiveTab(undoTab.idx);
+    setUndoTab(null);
+  };
+
+  // shortcuts to current tab fields
+  const cart = tab.cart;
+  const custName = tab.custName;
+  const custPhone = tab.custPhone;
+  const payMode = tab.payMode;
+  const discMode = tab.discMode;
+  const discPct = tab.discPct;
+  const discFlat = tab.discFlat;
+  const itemDiscounts = tab.itemDiscounts || {}; // Map of cartItem.id -> discountData (type, value)
+  const discReason = tab.discReason;
+  const discCourtesyBy = tab.discCourtesyBy || "";
+  const note = tab.note;
+  const collapsed = tab.collapsed;
+  const footerCollapsed = tab.footerCollapsed !== false;
+  const cartCollapsed = tab.cartCollapsed !== false;
+
+  const setCart = v => updTab({ cart: v });
+  const setCustName = v => updTab({ custName: v });
+  const setCustPhone = v => updTab({ custPhone: v });
+  const setPayMode = v => updTab({ payMode: v });
+  const setDiscMode = v => updTab({ discMode: v });
+  const setDiscPct = v => updTab({ discPct: v });
+  const setDiscFlat = v => updTab({ discFlat: v });
+  const setItemDiscounts = v => updTab({ itemDiscounts: v });
+  const setDiscItemFlat = v => updTab({ discItemFlat: v });
+  const setDiscItemMode = v => updTab({ discItemMode: v });
+  const setDiscReason = v => updTab({ discReason: v });
+  const setDiscCourtesyBy = v => updTab({ discCourtesyBy: v });
+  const setNote = v => updTab({ note: v });
+  const setCollapsed = v => updTab({ collapsed: v });
+  const setFooterCollapsed = v => updTab({ footerCollapsed: v });
+  const setCartCollapsed = v => updTab({ cartCollapsed: v });
+  const splitCash = tab.splitCash || 0;
+  const splitOtherMode = tab.splitOtherMode || "ONLINE";
+  const splitOtherAmt = tab.splitOtherAmt || 0;
+  const setSplitCash = v => updTab({ splitCash: v });
+  const setSplitOtherMode = v => updTab({ splitOtherMode: v });
+  const setSplitOtherAmt = v => updTab({ splitOtherAmt: v });
+
+  // History
+  const [hQ, setHQ] = useState("");
+  const [hDate, setHDate] = useState("");
+  const [hSty, setHSty] = useState("");
+  const [hCat, setHCat] = useState("");
+  const [hPay, setHPay] = useState("");
+  const [hRange, setHRange] = useState("all");
+  const [hFrom, setHFrom] = useState("");
+  const [hTo, setHTo] = useState("");
+  const [hTab, setHTab] = useState("transactions"); // transactions | clients
+  const [clientQ, setClientQ] = useState("");
+  const [tierFilter, setTierFilter] = useState("");
+
+  const [salonName, setSalonName] = useState(() => {
+    try { return localStorage.getItem('noorkada_salonName') || "Noorkada POS"; } catch (e) { return "Noorkada POS"; }
+  });
+  const [salonAddress, setSalonAddress] = useState(() => {
+    try { return localStorage.getItem('noorkada_salonAddress') || ""; } catch (e) { return ""; }
+  });
+  const [salonLogo, setSalonLogo] = useState(() => {
+    try { return localStorage.getItem('noorkada_salonLogo') || "default"; } catch (e) { return "default"; }
+  });
+  const [showSalonName, setShowSalonName] = useState(() => {
+    try {
+      const raw = localStorage.getItem('noorkada_showSalonName');
+      if (raw === 'false') return false;
+      return true; // default to true if null or anything else
+    } catch (e) { return true; }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('noorkada_showSalonName', showSalonName ? 'true' : 'false');
+    } catch (e) {
+      console.error('Failed to save showSalonName', e);
+    }
+  }, [showSalonName]);
+
+  const [cartWidth, setCartWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('noorkada_cartWidth');
+      if (saved) return parseInt(saved, 10);
+    } catch (e) { }
+    return 318;
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('noorkada_salonName', salonName);
+      localStorage.setItem('noorkada_salonLogo', salonLogo);
+      localStorage.setItem('noorkada_salonAddress', salonAddress);
+    } catch (e) { console.error('Failed to save name/logo', e); }
+
+    try {
+      // Update browser tab title
+      document.title = salonName || "Noorkada POS";
+
+      // Update browser favicon
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      if (salonLogo === 'default') {
+        const initial = (salonName ? salonName[0].toUpperCase() : "N");
+        link.href = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="%232A2118"/><text x="50" y="68" font-size="52" font-family="Outfit, sans-serif" font-weight="bold" fill="%23F5E6C8" text-anchor="middle">${initial}</text></svg>`;
+      } else {
+        link.href = salonLogo;
+      }
+    } catch (e) {
+      console.error('Failed to update favicon', e);
+    }
+  }, [salonName, salonLogo, salonAddress]);
+
+  React.useEffect(() => {
+    localStorage.setItem('noorkada_cartWidth', cartWidth.toString());
+  }, [cartWidth]);
+
+  const ranged = useMemo(() => {
+    let t = transactions;
+    if (dashCFrom || dashCTo) t = t.filter(x => (!dashCFrom || x.date >= dashCFrom) && (!dashCTo || x.date <= dashCTo));
+    else { const days = dashRange === "today" ? 1 : dashRange === "7d" ? 7 : dashRange === "30d" ? 30 : dashRange === "90d" ? 90 : 99999; const cut = new Date(); cut.setDate(cut.getDate() - days); t = t.filter(x => new Date(x.date) >= cut); }
+    if (fStylist) t = t.filter(x => x.stylist === fStylist);
+    if (fPay) t = t.filter(x => x.payMode === fPay);
+    if (fCat) t = t.filter(x => x.cart.some(c => c.category === fCat));
+    return t;
+  }, [transactions, dashRange, dashCFrom, dashCTo, fStylist, fPay, fCat]);
+
+  const S = useMemo(() => {
+    const t = ranged, td = todayStr(), todayT = t.filter(x => x.date === td);
+    const nd = dashRange === "7d" ? 7 : 30;
+    const revD = [], cstD = [];
+    for (let i = nd - 1; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const ds = d.toISOString().split("T")[0]; const dt = t.filter(x => x.date === ds); revD.push(dt.reduce((s, x) => s + x.total, 0)); cstD.push(dt.length); }
+    const cR = {}, cC = {}, sR = {}, sC = {};
+    t.forEach(x => x.cart.forEach(c => { cR[c.category] = (cR[c.category] || 0) + c.price * c.qty; cC[c.category] = (cC[c.category] || 0) + c.qty; sR[c.service] = (sR[c.service] || 0) + c.price * c.qty; sC[c.service] = (sC[c.service] || 0) + c.qty; }));
+    const styM = {};
+    t.forEach(x => {
+      // Per-item stylist tracking (new) with fallback to transaction-level stylist (old seed data)
+      x.cart.forEach(c => {
+        const sty = c.stylist || x.stylist || "Unassigned";
+        if (!styM[sty]) styM[sty] = { rev: 0, cust: 0, svcs: 0, cats: {} };
+        styM[sty].rev += c.price * c.qty;
+        styM[sty].svcs += c.qty;
+        styM[sty].cats[c.category] = (styM[sty].cats[c.category] || 0) + c.qty;
+      });
+      // Count customer per transaction under each unique stylist in it
+      const uniqStys = [...new Set(x.cart.map(c => c.stylist || x.stylist || "Unassigned"))];
+      uniqStys.forEach(sty => { if (!styM[sty]) styM[sty] = { rev: 0, cust: 0, svcs: 0, cats: {} }; styM[sty].cust++; });
+    });
+    const pR = { CASH: 0, ONLINE: 0, SPLIT: 0 }, pC = { CASH: 0, ONLINE: 0, SPLIT: 0 };
+    t.forEach(x => { pR[x.payMode] = (pR[x.payMode] || 0) + x.total; pC[x.payMode] = (pC[x.payMode] || 0) + 1; });
+    const hm = []; t.forEach(x => { const dow = new Date(x.date).getDay(), hr = parseInt(x.time?.split(":")?.[0] || "12"); const ex = hm.find(h => h.day === dow && h.hour === hr); if (ex) ex.count++; else hm.push({ day: dow, hour: hr, count: 1 }); });
+    const dR = Array(7).fill(0), dC = Array(7).fill(0);
+    t.forEach(x => { const dow = new Date(x.date).getDay(); dR[dow] += x.total; dC[dow]++; });
+    const mR = {}; t.forEach(x => { const m = x.date.slice(0, 7); mR[m] = (mR[m] || 0) + x.total; });
+    const totR = t.reduce((s, x) => s + x.total, 0), totC = t.length;
+    return { totR, totC, avg: totC ? Math.round(totR / totC) : 0, todayR: todayT.reduce((s, x) => s + x.total, 0), todayC: todayT.length, totDisc: t.reduce((s, x) => s + (x.discountAmt || 0), 0), revD, cstD, cR, cC, sR, sC, styM, pR, pC, hm, dR, dC, mR };
+  }, [ranged, dashRange]);
+
+  const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const da = discMode === "pct" ? Math.round(sub * (discPct / 100))
+    : discMode === "flat" ? Math.min(discFlat, sub)
+      : discMode === "item" ? cart.reduce((totalDisc, item) => {
+        const d = itemDiscounts[item.id];
+        if (!d) return totalDisc;
+        const itemTotal = item.price * item.qty;
+        const disc = d.mode === "flat" ? Math.min(d.value, itemTotal) : Math.round(itemTotal * (d.value / 100));
+        return totalDisc + disc;
+      }, 0)
+        : 0;
+  const total = sub - da;
+
+  const toggleCart = (service, category) => {
+    const dbSvc = getServiceData(service, category);
+    const newItem = { service, category, price: dbSvc.price || 0, qty: 1, stylist: "", id: Date.now() + Math.random(), included_services: dbSvc.included_services || [] };
+    const newCart = [...cart, newItem];
+    const patch = { cart: newCart };
+    if (cart.length === 0 && custName) patch.collapsed = true;
+    updTab(patch);
+  };
+  const removeOneFromCart = (service, category) => {
+    const matches = cart.filter(i => i.service === service && i.category === category);
+    if (!matches.length) return;
+    const lastId = matches[matches.length - 1].id;
+    updTab({ cart: cart.filter(i => i.id !== lastId) });
+  };
+  const updStylist = (id, s) => updTab({ cart: cart.map(i => i.id === id ? { ...i, stylist: s } : i) });
+  const updQty = (id, d) => updTab({ cart: cart.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + d) } : i) });
+  const remItem = id => updTab({ cart: cart.filter(i => i.id !== id) });
+  const checkout = (overrideStylistCheck = false) => {
+    if (!cart.length) return;
+
+    // Check for missing stylists
+    const missingStylists = cart.some(i => !i.stylist);
+    if (missingStylists && overrideStylistCheck !== true) {
+      setCheckoutAttempted(true);
+      setStylistWarningOpen(true);
+      return;
+    }
+
+    // Reset attempt flag if we pass or override
+    setCheckoutAttempted(false);
+    setCheckoutLoading(true);
+
+    const stylistSummary = [...new Set(cart.map(i => i.stylist || "Unassigned"))].join(", ");
+
+    // For "item" mode, we aggregate the discounts into the cart items saved to DB
+    const processedCart = cart.map(item => {
+      const d = itemDiscounts[item.id];
+      if (discMode === "item" && d && d.value > 0) {
+        return { ...item, discountMode: d.mode, discountValue: d.value };
+      }
+      return item;
+    });
+
+    const txn = {
+      slip: genSlip(),
+      date: todayStr(),
+      time: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }),
+      customerName: custName || "Walk-in",
+      customerPhone: custPhone,
+      stylist: stylistSummary,
+      payMode,
+      cart: processedCart,
+      subtotal: sub,
+      discount: discMode === "pct" ? discPct : 0,
+      discountAmt: da,
+      discMode,
+      discReason,
+      discCourtesyBy,
+      total,
+      note
+    };
+
+    // Post to backend
+    fetch('/api/transactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(txn)
+    })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(err => { throw new Error(err.error || err.message || "Unknown server error"); });
+        }
+        return res.json();
+      })
+      .then(savedTxn => {
+        setTransactions(prev => [savedTxn, ...prev]);
+        setCheckoutLoading(false);
+        setDoneSlip(savedTxn);
+        updTab({ staffSlipPrinted: false });
+        doCloseTab(activeTab, false);
+      })
+      .catch(err => {
+        setCheckoutLoading(false);
+        console.error("Checkout error:", err);
+        showToast(`Save Error: ${err.message}`, "error");
+      });
+  };
+
+  const printStaffSlip = () => {
+    if (!cart.length) return;
+    const win = window.open("", "_blank", "width=380,height=600");
+    const s = {
+      customerName: custName || "Walk-in",
+      date: todayStr(),
+      time: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }),
+      cart: cart,
+      note: note,
+      total: total,
+      slip: tab.id ? `ORDER-${tab.id.toString().slice(-4)}` : "ORDER-NEW"
+    };
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>Staff Slip - ${esc(s.customerName)}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Outfit', sans-serif;padding:24px;color:#2A2118;background:#fff;font-size:13px;line-height:1.4;}
+        .center{text-align:center;}
+        .header-tag{background:#2A2118;color:#FFF;padding:6px;font-size:11px;font-weight:800;letter-spacing:1.5px;margin-bottom:24px;text-align:center;border-radius:6px;text-transform:uppercase;}
+        .logo{font-family:'Playfair Display', serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}
+        .sub{font-size:10px;color:#9A9088;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;font-weight:600;}
+        .divider{border:none;border-top:1.5px solid #E8E0D4;margin:16px 0;}
+        .row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;}
+        .row .lbl{color:#9A9088;font-weight:500;}
+        .row .val{font-weight:600;color:#2A2118;text-align:right;}
+        .svc-list{margin-top:20px;}
+        .svc-item{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1.5px solid #FDFBF7; padding-bottom:10px;}
+        .svc-name{font-size:14px;font-weight:700;color:#2A2118;flex:1;padding-right:12px;}
+        .svc-stylist{font-size:12px;color:#A0303F;font-weight:600;text-align:right;flex-shrink:0;}
+        .svc-stylist.assigned{color:#B08040;}
+        .footer{text-align:center;font-size:11px;color:#9A9088;margin-top:32px;font-style:italic;border-top:1px dashed #E8E0D4;padding-top:16px;}
+        @media print{body{padding:12px;}}
+      </style>
+    </head><body>
+      <div class="header-tag">Staff Service Slip</div>
+      <div class="center">
+        ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
+        ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px; max-width:150px; margin:0 auto 12px; display:block; object-fit:contain;" />` : ''}
+        ${!Boolean(showSalonName) && (!salonLogo || salonLogo === 'default') ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
+        <div class="sub">Salon &amp; Spa</div>
+      </div>
+
+      <div class="row"><span class="lbl">Order #</span><span class="val">${esc(s.slip)}</span></div>
+      <div class="row"><span class="lbl">Customer</span><span class="val">${esc(s.customerName)}</span></div>
+      <div class="row"><span class="lbl">Date & Time</span><span class="val">${esc(s.date)} ${esc(s.time)}</span></div>
+      
+      <div class="divider"></div>
+
+      <div class="svc-list">
+        ${s.cart.map(item => `
+          <div class="svc-item">
+            <div class="svc-name">${esc(item.service)}${item.qty > 1 ? ` (×${item.qty})` : ""}</div>
+            ${item.stylist
+        ? `<div class="svc-stylist assigned">✂ ${esc(item.stylist)}</div>`
+        : `<div class="svc-stylist">⚠️ No Stylist</div>`
+      }
+          </div>`).join("")}
+      </div>
+
+      ${s.note ? `<div style="margin-top:16px;padding:12px;background:#FDFBF7;border-radius:8px;font-size:11px;color:#6B5030;border:1px solid #EDE6D8;"><strong>Customer Note:</strong><br/>${esc(s.note)}</div>` : ""}
+
+      <div class="footer">
+        Please complete transaction at front desk after service.
+      </div>
+    </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+    updTab({ staffSlipPrinted: true });
+  };
+  const clients = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      const key = t.customerName.trim().toLowerCase();
+      if (!map[key]) map[key] = { name: t.customerName, phone: t.customerPhone || "", visits: [], spend: 0, services: {} };
+      if (t.customerPhone && !map[key].phone) map[key].phone = t.customerPhone;
+      map[key].visits.push(t);
+      map[key].spend += t.total;
+      t.cart.forEach(s => { map[key].services[s.service] = (map[key].services[s.service] || 0) + s.qty; });
+    });
+    return Object.values(map)
+      .map(cl => ({
+        ...cl,
+        visits: cl.visits.sort((a, b) => b.date.localeCompare(a.date)),
+        avg: Math.round(cl.spend / cl.visits.length),
+        topSvcs: Object.entries(cl.services).sort((a, b) => b[1] - a[1]).slice(0, 3),
+        lastVisit: cl.visits[0]?.date || "",
+        tier: cl.visits.length >= 20 ? "💎 Diamond" : cl.visits.length >= 10 ? "🥇 Gold" : cl.visits.length >= 5 ? "🥈 Silver" : "🌱 New",
+        tierColor: cl.visits.length >= 20 ? "#0E7490" : cl.visits.length >= 10 ? "#B08040" : cl.visits.length >= 5 ? "#6B7280" : "#1A6B4A",
+      }))
+      .sort((a, b) => b.visits.length - a.visits.length);
+  }, [transactions]);
+
+  const filteredClients = useMemo(() => {
+    if (!clientQ.trim()) return clients;
+    const q = clientQ.trim().toLowerCase();
+    let res = clients.filter(cl => cl.name.toLowerCase().includes(q) || (cl.phone || "").includes(q));
+    if (tierFilter) res = res.filter(cl => cl.tier.includes(tierFilter));
+    return res;
+  }, [clients, clientQ, tierFilter]);
+
+  const [expandedClient, setExpandedClient] = useState(null);
+
+  const histTxns = useMemo(() => {
+    let t = transactions;
+    // Period filter
+    if (hFrom || hTo) t = t.filter(x => (!hFrom || x.date >= hFrom) && (!hTo || x.date <= hTo));
+    else if (hRange && hRange !== "all") { const days = hRange === "today" ? 1 : hRange === "7d" ? 7 : hRange === "30d" ? 30 : 90; const cut = new Date(); cut.setDate(cut.getDate() - days); t = t.filter(x => new Date(x.date) >= cut); }
+    // Other filters
+    const q = hQ.toLowerCase();
+    return t.filter(x =>
+      (!q || x.customerName.toLowerCase().includes(q) || x.slip.toLowerCase().includes(q) || (x.customerPhone || "").includes(q)) &&
+      (!hDate || x.date === hDate) &&
+      (!hSty || x.stylist.includes(hSty)) &&
+      (!hCat || x.cart.some(c => c.category === hCat)) &&
+      (!hPay || x.payMode === hPay)
+    );
+  }, [transactions, hQ, hDate, hSty, hCat, hPay, hRange, hFrom, hTo]);
+  const [fMetric, setFMetric] = useState("revenue");
+  const resetF = () => { setDashRange("30d"); setDashCFrom(""); setDashCTo(""); setFStylist(""); setFCat(""); setFPay(""); setFMetric("revenue"); };
+  const hasF = fStylist || fCat || fPay || dashCFrom || dashCTo;
+
+  const exportCSV = () => {
+    const label = fMetric === "revenue" ? "Revenue (PKR)" : fMetric === "visits" ? "Visits" : fMetric === "avg" ? "Avg Ticket (PKR)" : "Discount (PKR)";
+    const periodStr = dashCFrom ? `${dashCFrom} to ${dashCTo || "today"}` : dashRange;
+    const filename = `Noorkada_${fMetric}_${periodStr}${fStylist ? "_" + fStylist : ""}${fCat ? "_" + fCat : ""}${fPay ? "_" + fPay : ""}.csv`;
+    const rows = [
+      ["Noorkada Analytics Export"],
+      ["Period", periodStr],
+      fStylist ? ["Stylist", fStylist] : ["Stylist", "All"],
+      fCat ? ["Category", fCat] : ["Category", "All"],
+      fPay ? ["Payment", fPay] : ["Payment", "All"],
+      ["Metric", label],
+      ["Generated", new Date().toLocaleString("en-PK")],
+      [],
+      ["Slip", "Date", "Time", "Customer", "Phone", "Stylist", "Payment", "Services", "Subtotal", "Discount", "Total", label]
+    ];
+    ranged.forEach(t => {
+      const metricVal = fMetric === "revenue" ? t.total : fMetric === "visits" ? 1 : fMetric === "avg" ? t.total : fMetric === "discount" ? t.discountAmt || 0 : t.total;
+      rows.push([
+        t.slip, t.date, t.time || "",
+        `"${t.customerName}"`,
+        t.customerPhone || "",
+        `"${t.stylist}"`,
+        t.payMode,
+        `"${t.cart.map(i => i.service + (i.qty > 1 ? ` x${i.qty}` : ``)).join(", ")}"`,
+        t.subtotal, t.discountAmt || 0, t.total, metricVal
+      ]);
+    });
+    // Summary at bottom
+    const totRev = ranged.reduce((s, t) => s + t.total, 0);
+    const totDisc = ranged.reduce((s, t) => s + (t.discountAmt || 0), 0);
+    const avgTicket = ranged.length ? Math.round(totRev / ranged.length) : 0;
+    rows.push([]);
+    rows.push(["SUMMARY"]);
+    rows.push(["Total Transactions", ranged.length]);
+    rows.push(["Total Revenue", totRev]);
+    rows.push(["Total Discounts", totDisc]);
+    rows.push(["Average Ticket", avgTicket]);
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+  };
+  const exportHistCSV = () => {
+    const filename = `Noorkada_History${hSty ? "_" + hSty : ""}${hCat ? "_" + hCat : ""}${hPay ? "_" + hPay : ""}${hRange !== "all" ? "_" + hRange : ""}.csv`;
+    const rows = [
+      ["Noorkada Transaction History Export"],
+      ["Generated", new Date().toLocaleString("en-PK")],
+      ["Total Records", histTxns.length],
+      ["Total Revenue", histTxns.reduce((s, t) => s + t.total, 0)],
+      ["Total Discounts", histTxns.reduce((s, t) => s + (t.discountAmt || 0), 0)],
+      [],
+      ["Slip", "Date", "Time", "Customer", "Phone", "Stylist", "Payment", "Services", "Subtotal", "Discount", "Total"]
+    ];
+    histTxns.forEach(t => {
+      rows.push([
+        t.slip, t.date, t.time || "",
+        `"${t.customerName}"`, t.customerPhone || "",
+        `"${t.stylist}"`, t.payMode,
+        `"${t.cart.map(i => i.service + (i.qty > 1 ? ` x${i.qty}` : ``)).join(", ")}"`,
+        t.subtotal, t.discountAmt || 0, t.total
+      ]);
+    });
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+  };
+
+  // const getCatColor removed (already defined at top of NoorKadaPOS)
+
+  const now = new Date();
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== "Escape") return;
+      if (doneSlip) { setDoneSlip(null); return; }
+      if (showAddModal) { setShowAddModal(false); return; }
+      if (stylistWarningOpen) { setStylistWarningOpen(false); return; }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [doneSlip, showAddModal, stylistWarningOpen]);
+
+  return (
+    <div style={{ fontFamily: "'Outfit','Helvetica Neue',sans-serif", background: "#FDFAF6", minHeight: "100vh", color: "#2A2118" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        ::-webkit-scrollbar{width:4px;height:4px;}
+        ::-webkit-scrollbar-track{background:#F5F0E8;}
+        ::-webkit-scrollbar-thumb{background:#D4C4A8;border-radius:4px;}
+        input,select{outline:none;}
+        input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+        input[type=number]{-moz-appearance:textfield;}
+        .fade{animation:fi .28s ease both;}
+        @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        .inp{font-family:'Outfit',sans-serif;font-size:13px;background:#FFF;border:1.5px solid #E8E0D4;border-radius:8px;color:#2A2118;padding:9px 13px;width:100%;transition:border-color .2s;}
+        .inp:focus{border-color:#B08040;}
+        .inp::placeholder{color:#C4B9AB;}
+        select.inp option{background:#FFF;color:#2A2118;}
+        .card{background:#FFFFFF;border:1px solid #EDE6D8;border-radius:14px;padding:20px;box-shadow:0 1px 6px rgba(44,33,24,.05);}
+        .card-sm{background:#FFFFFF;border:1px solid #EDE6D8;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(44,33,24,.04);}
+        .svc-btn{font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;padding:13px 14px;border-radius:11px;cursor:pointer;border:1.5px solid #EDE6D8;background:#FFFFFF;color:#3D3028;text-align:left;transition:all .18s;position:relative;line-height:1.3;box-shadow:0 1px 4px rgba(44,33,24,.05);}
+        .svc-btn:hover{border-color:#C4A870;box-shadow:0 5px 18px rgba(176,128,64,.18);transform:translateY(-2px);background:#FFFDF9;}
+        .svc-btn.sel{color:#FFF;border-color:transparent;box-shadow:0 6px 24px rgba(0,0,0,.18);transform:translateY(-1px);}
+        .cat-pill{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;padding:7px 15px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;white-space:nowrap;transition:all .18s;letter-spacing:.2px;}
+        .cat-pill:hover{border-color:#C4A870;color:#6B5030;background:#FBF6EE;}
+        .cat-pill.on{font-weight:600;}
+        .nav-tab{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:8px 18px;border-radius:7px;cursor:pointer;border:none;transition:all .2s;}
+        .nav-tab.on{background:#2A2118;color:#FDFAF6;}
+        .nav-tab.off{background:transparent;color:#9A9088;}
+        .nav-tab.off:hover{color:#2A2118;}
+        .rbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;letter-spacing:.3px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;}
+        .rbtn.on{background:#2A2118;color:#FDFAF6;border-color:#2A2118;}
+        .rbtn:hover:not(.on){border-color:#C4A870;color:#6B5030;}
+        .tbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;letter-spacing:.2px;}
+        .tbtn.on{background:#2A2118;color:#FDFAF6;border-color:#2A2118;}
+        .tbtn:hover:not(.on){border-color:#C4A870;color:#6B5030;}
+        .btn-gold{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;background:linear-gradient(135deg,#2A2118,#4A3828);color:#F5E6C8;border:none;border-radius:11px;padding:14px;cursor:pointer;width:100%;transition:all .22s;letter-spacing:.4px;box-shadow:0 4px 14px rgba(42,33,24,.25);}
+        .btn-gold:hover{background:linear-gradient(135deg,#3A3028,#5A4838);box-shadow:0 6px 20px rgba(42,33,24,.32);transform:translateY(-1px);}
+        .btn-ghost{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;background:transparent;color:#9A9088;border:1.5px solid #E8E0D4;border-radius:11px;padding:10px;cursor:pointer;width:100%;transition:all .2s;}
+        .btn-ghost:hover{border-color:#C4A870;color:#6B5030;background:#FFFDF9;}
+        .qty-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid #E8E0D4;background:#FFF;color:#6B5030;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;line-height:1;flex-shrink:0;}
+        .qty-btn:hover{border-color:#B08040;background:#FBF6EE;}
+        .badge{display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:600;padding:2px 9px;border-radius:100px;letter-spacing:.3px;}
+        .hrow{transition:all .18s;cursor:default;}
+        .hrow:hover{border-color:#C4A870!important;box-shadow:0 3px 16px rgba(176,128,64,.12)!important;}
+        .ovl{position:fixed;inset:0;background:rgba(42,33,24,.55);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(10px);animation:fi .2s;}
+        .divhr{height:1px;background:#EDE6D8;margin:12px 0;}
+        .catstrip{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;}
+        .catstrip::-webkit-scrollbar{display:none;}
+        .filter-label{font-family:'Outfit',sans-serif;font-size:11px;color:#9A9088;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+
+        /* Analytics Responsive */
+        @media(max-width:768px){
+          .analytics-container { padding: 16px 14px!important; }
+          .analytics-filter-bar { padding: 12px 14px!important; }
+          .filter-row { display: flex!important; flex-direction: column!important; gap: 8px!important; align-items: stretch!important; margin-bottom: 12px!important; }
+          .filter-label { margin-bottom: 3px!important; font-size: 10px!important; color: #B08040!important; font-weight: 700!important; }
+          .kpi-grid { grid-template-columns: repeat(2, 1fr)!important; gap: 8px!important; }
+          .dash-grid-2-1 { grid-template-columns: 1fr!important; gap: 12px!important; }
+          .dash-grid-2 { grid-template-columns: 1fr!important; gap: 12px!important; }
+          .dash-grid-auto { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr))!important; }
+          .filter-row > div { flex: none!important; width: 100%!important; }
+          .filter-row > div > input.inp, .filter-row > div > select.inp { width: 100%!important; height: 38px!important; }
+        }
+      `}</style>
+
+      {/* ══ TOPBAR ══════════════════════════════════════════════════════════ */}
+      <header style={{ background: "#FFFFFF", borderBottom: "1px solid #EDE6D8", height: 64, display: "flex", alignItems: "center", padding: "0 24px", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 16px rgba(44,33,24,.07)" }}>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: salonLogo === "default" ? 38 : "auto", maxWidth: 120, height: 38, borderRadius: salonLogo === "default" ? "50%" : "8px", background: salonLogo === "default" ? "linear-gradient(145deg,#2A2118,#5A4030)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: salonLogo === "default" ? "0 2px 10px rgba(42,33,24,.25)" : "none", overflow: "hidden", flexShrink: 0 }}>
+            {salonLogo === "default" ? (
+              <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 17, fontWeight: 700, color: "#F5E6C8", lineHeight: 1 }}>{salonName ? salonName[0].toUpperCase() : "N"}</span>
+            ) : (
+              <img src={salonLogo} alt="Logo" style={{ width: "auto", height: "100%", maxWidth: "100%", objectFit: "contain" }} />
+            )}
+          </div>
+          <div style={{ maxWidth: 180, flex: "0 0 180px", overflow: "hidden" }}>
+            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, color: "#2A2118", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{salonName.split(' ')[0] || salonName}</div>
+            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 10, color: "#C4A870", letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{salonName.split(' ').slice(1).join(' ') || "Salon & Spa"}</div>
+          </div>
+        </div>
+
+        {/* Nav (Desktop) */}
+        <div className="nav-tabs-container" style={{ display: "flex", gap: 2, background: "#F5F0E8", padding: "4px", borderRadius: "100px" }}>
+          {[
+            ["pos", "🛒", "POS"],
+            hasNavAccess(user.role, 'dashboard') && ["dashboard", "📊", "Analytics"],
+            hasNavAccess(user.role, 'history')   && ["history", "📋", "History"],
+            hasNavAccess(user.role, 'settings')  && ["settings", "🛡️", "Dashboard"]
+          ].filter(Boolean).map(([v, ic, l]) => (
+            <button key={v} className={`nav-tab ${view === v ? "on" : "off"}`} onClick={() => setView(v)}>
+              <span style={{ marginRight: 6, fontSize: 13 }}>{ic}</span>{l}
+            </button>
+          ))}
+        </div>
+
+        {/* Hamburger Toggle (Mobile) */}
+        <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)} style={{ display: "none" }}>
+          ☰
+        </button>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <>
+            <div className="mobile-nav-dimmer" onClick={() => setMobileMenuOpen(false)} />
+            <div className="mobile-nav-overlay">
+              <div className="mobile-nav-header">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div className="user-avatar-bubble">
+                      {user.username ? user.username[0].toUpperCase() : 'A'}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#2A2118", lineHeight: 1.2 }}>{user.username}</div>
+                      <div style={{ fontSize: 11, color: "#B08040", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>{user.role}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => setMobileMenuOpen(false)} style={{ background: "none", border: "none", fontSize: 24, padding: 4, cursor: "pointer", color: "#9A9088" }}>×</button>
+                </div>
+
+                {/* Stats Section replacing old username/role */}
+                <div style={{ textAlign: "left", marginTop: 4 }}>
+                  <span style={{ fontSize: 11, color: "#C4A870", textTransform: "uppercase", letterSpacing: 1, fontWeight: 800, display: "block", marginBottom: 2 }}>{user.role}</span>
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 600, color: "#2A2118", display: "flex", alignItems: "center", gap: 8 }}>
+                    {now.toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long" })}
+                  </div>
+                  {hasNavAccess(user.role, 'dashboard') && (
+                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 12, color: "#9A9088", marginTop: 2 }}>
+                      <span style={{ color: "#B08040", fontWeight: 600 }}>{S.todayC}</span> guests today
+                      <span style={{ margin: "0 6px", color: "#D4C4A8" }}>·</span>
+                      <span style={{ color: "#B08040", fontWeight: 600 }}>{fmt(S.todayR, true)}</span> revenue
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mobile-nav-list">
+                {[
+                  ["pos", "🛒", "POS"],
+                  hasNavAccess(user.role, 'dashboard') && ["dashboard", "📊", "Analytics"],
+                  hasNavAccess(user.role, 'history')   && ["history", "📋", "History"],
+                  hasNavAccess(user.role, 'settings')  && ["settings", "🛡️", "Dashboard"]
+                ].filter(Boolean).map(([v, ic, l]) => (
+                  <button
+                    key={v}
+                    className={`mobile-nav-item ${view === v ? "active" : ""}`}
+                    onClick={() => { setView(v); setMobileMenuOpen(false); }}
+                  >
+                    <span>{ic}</span>
+                    {l}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mobile-nav-footer">
+                <button
+                  onClick={onLogout}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "12px",
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: "1.5px solid #F5E8E8",
+                    background: "#FFF5F5",
+                    color: "#A0303F",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    fontFamily: "'Outfit', sans-serif",
+                    cursor: "pointer"
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>🚪</span> Logout
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* User stats (Desktop) */}
+        <div className="hide-mobile" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: cartWidth - 24, paddingLeft: 16, boxSizing: "border-box" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left", lineHeight: 1.1 }}>
+            <span style={{ fontSize: 10, color: "#C4A870", textTransform: "uppercase", letterSpacing: 1, fontWeight: 800, marginBottom: 1 }}>{user.role}</span>
+            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 600, color: "#2A2118", display: "flex", alignItems: "center", gap: 8, marginBottom: 1 }}>
+              {now.toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long" })}
+            </div>
+            {user.role === 'admin' && (
+              <div className="header-stats" style={{ fontFamily: "'Outfit',sans-serif", fontSize: 11, color: "#9A9088", whiteSpace: "nowrap" }}>
+                <span style={{ color: "#B08040", fontWeight: 600 }}>{S.todayC}</span> guests today
+                <span style={{ margin: "0 4px", color: "#D4C4A8" }}>·</span>
+                <span style={{ color: "#B08040", fontWeight: 600 }}>{fmt(S.todayR, true)}</span> revenue
+              </div>
+            )}
+          </div>
+          <button onClick={onLogout} style={{
+            background: "transparent", border: "1.5px solid #E8E0D4", borderRadius: "100px", padding: "6px 14px",
+            fontSize: 11, fontWeight: 600, color: "#9A9088", cursor: "pointer", transition: "all .2s", fontFamily: "'Outfit',sans-serif"
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#A0303F"; e.currentTarget.style.color = "#A0303F"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#E8E0D4"; e.currentTarget.style.color = "#9A9088"; }}
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* ══ POS VIEW ════════════════════════════════════════════════════════ */}
+      {view === "pos" && (
+        <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)", overflow: "hidden" }} className="fade">
+
+          {/* ── Client Tab Bar ── */}
+          <div style={{
+            display: "flex", alignItems: "center", background: "#FFFFFF", borderBottom: "1px solid #EDE6D8",
+            padding: "0 14px", gap: 1, height: 48, overflowX: "auto", flexShrink: 0
+          }} className="catstrip">
+            {tabs.map((t, i) => {
+              const active = i === activeTab, hasItems = t.cart.length > 0;
+              return (
+                <div key={t.id} onClick={() => setActiveTab(i)} style={{
+                  display: "flex", alignItems: "center", gap: 7, padding: "0 10px 0 10px", height: "100%",
+                  cursor: "pointer", borderBottom: active ? "2.5px solid #B08040" : "2.5px solid transparent",
+                  color: active ? "#2A2118" : "#9A9088", transition: "all .15s", flexShrink: 0, userSelect: "none"
+                }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                    background: active ? "#2A2118" : hasItems ? "#C4A870" : "#EDE6D8",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 700, color: active ? "#F5E6C8" : hasItems ? "#FFF" : "#B8AFA5"
+                  }}>
+                    {t.custName ? t.custName[0].toUpperCase() : (i + 1)}
+                  </div>
+                  <span style={{
+                    fontSize: 12, fontWeight: active ? 600 : 400, whiteSpace: "nowrap",
+                    maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis"
+                  }}>
+                    {t.custName || t.label}
+                  </span>
+                  {hasItems && <span style={{
+                    background: active ? "#B08040" : "#C4B9AB", color: "#FFF",
+                    borderRadius: "100px", fontSize: 9, fontWeight: 700, padding: "1px 6px"
+                  }}>{t.cart.length}</span>}
+                  <button onClick={e => closeTab(i, e)} style={{
+                    color: "#D4C4B0", fontSize: 14, background: "none", border: "none",
+                    cursor: "pointer", padding: "0 2px", lineHeight: 1, marginLeft: 1
+                  }}>×</button>
+                </div>
+              );
+            })}
+            <button onClick={addTab} style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "0 14px", height: "100%",
+              background: "none", border: "none", cursor: "pointer", color: "#B8AFA5",
+              fontSize: 12, fontFamily: "'Outfit',sans-serif", fontWeight: 500, flexShrink: 0,
+              whiteSpace: "nowrap", borderBottom: "2.5px solid transparent", transition: "color .15s"
+            }}
+              onMouseEnter={e => e.currentTarget.style.color = "#B08040"}
+              onMouseLeave={e => e.currentTarget.style.color = "#B8AFA5"}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>&nbsp;New Client
+            </button>
+          </div>
+
+          {/* ── POS Main ── */}
+          {tabs.length === 0 ? (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, color: "#9A9088" }}>
+              <div style={{ fontSize: 48, opacity: 0.3 }}>🛒</div>
+              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 600 }}>No Active Client</div>
+              <div style={{ fontSize: 13 }}>Click <strong>+ New Client</strong> above to start a billing session</div>
+              <button onClick={addTab} className="btn-gold" style={{ width: "auto", padding: "10px 24px", marginTop: 8, borderRadius: 10 }}>+ New Client</button>
+            </div>
+          ) : (
+            <div className="pos-main" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+
+              {/* Left – service picker */}
+              <div className="svc-picker-container" style={{ flex: isMobile && !cartCollapsed ? "0 0 35%" : 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid #EDE6D8" }}>
+
+                {/* Customer info bar (Collapsible on Mobile) */}
+                <div style={{ background: "#FFFFFF", borderBottom: "1px solid #EDE6D8" }}>
+                  {(isMobile && collapsed) ? (
+                    <div
+                      className="client-summary-row"
+                      onClick={() => isMobile && setCollapsed(false)}
+                      style={{
+                        padding: "8px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        cursor: "pointer",
+                        background: "#FDFAF6"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ opacity: 0.6 }}>👤</span> {custName || "Walk-in"}
+                        </div>
+                        {custPhone && (
+                          <div style={{ fontSize: 12, color: "#9A9088", display: "flex", alignItems: "center", gap: 4 }}>
+                            <span style={{ opacity: 0.6 }}>📞</span> {custPhone}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#B08040", background: "#F5F0E8", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                          {payMode === 'CASH' ? '💵 Cash' : payMode === 'ONLINE' ? '📱 Online' : payMode === 'CARD' ? '💳 Card' : '🔀 Split'}
+                        </div>
+                      </div>
+                      <button
+                        style={{ background: "none", border: "none", color: "#B08040", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "4px 8px" }}
+                        onClick={(e) => { e.stopPropagation(); isMobile && setCollapsed(false); }}
+                      >
+                        Edit ✎
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "10px 14px", display: "flex", gap: 9, flexWrap: "wrap", alignItems: "center", position: "relative" }}>
+                      <input className="inp" placeholder="👤  Name" value={custName}
+                        onChange={e => setCustName(e.target.value)} style={{ flex: "1 1 160px" }} />
+                      <input className="inp" placeholder="📞  Phone" value={custPhone}
+                        onChange={e => setCustPhone(e.target.value)} style={{ flex: "1 1 130px" }} />
+                      <select className="inp" value={payMode} onChange={e => setPayMode(e.target.value)} style={{ flex: "0 0 140px" }}>
+                        <option value="CASH">💵  Cash</option>
+                        <option value="ONLINE">📱  Online</option>
+                        <option value="CARD">💳  Card</option>
+                        <option value="SPLIT">🔀  Split</option>
+                      </select>
+                      {isMobile && cart.length > 0 && (
+                        <button
+                          onClick={() => setCollapsed(true)}
+                          style={{
+                            background: "#F5F0E8", border: "none", borderRadius: "8px", padding: "4px 10px",
+                            display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+                            color: "#B08040", fontSize: 12, fontWeight: 700, fontFamily: "'Outfit', sans-serif"
+                          }}
+                          title="Collapse"
+                        >
+                          Hide ▴
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Search bar */}
+                <div style={{ padding: "10px 14px 0", background: "#FDFAF6" }}>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: 0.35, pointerEvents: "none" }}>🔍</span>
+                    <input
+                      className="inp"
+                      placeholder="Search services..."
+                      value={svcSearch}
+                      onChange={e => setSvcSearch(e.target.value)}
+                      style={{ width: "100%", paddingLeft: 34, boxSizing: "border-box", fontSize: 13, height: 38, borderRadius: 10 }}
+                    />
+                    {svcSearch && (
+                      <button onClick={() => setSvcSearch("")} style={{
+                        position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                        width: 20, height: 20, borderRadius: "50%", background: "#E8E0D4",
+                        border: "none", cursor: "pointer", fontSize: 11, color: "#7A6858", lineHeight: 1,
+                        display: "flex", alignItems: "center", justifyContent: "center"
+                      }}>✕</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category strip */}
+                <div style={{ padding: "8px 14px 10px", background: "#FDFAF6", borderBottom: "1px solid #EDE6D8" }}>
+                  <div className="catstrip">
+                    {[["All", "🌟", "#B08040"], ...Object.entries(SERVICES).map(([cat, { icon, color }]) => [cat, icon, color])].map(([cat, icon, color]) => {
+                      const on = activeCat === cat;
+                      return (
+                        <button key={cat} className={`cat-pill ${on ? "on" : ""}`}
+                          style={on ? { color, borderColor: color, background: `${color}12` } : {}}
+                          onClick={() => setActiveCat(cat)}>
+                          <span style={{ marginRight: 4 }}>{icon}</span>{cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Services */}
+                <div className="svc-grid-scroll" style={{ flex: 1, overflowY: "auto", padding: "16px 14px", background: "#FDFAF6" }}>
+                  {svcSearch.trim()
+                    ? (() => {
+                        const q = svcSearch.trim().toLowerCase();
+                        const results = dbServices.filter(s => s.name.toLowerCase().includes(q));
+                        if (results.length === 0) return (
+                          <div style={{ textAlign: "center", color: "#9A9088", padding: "48px 0", fontSize: 14 }}>
+                            <div style={{ fontSize: 32, marginBottom: 10 }}>🔍</div>
+                            No services found for "<strong>{svcSearch}</strong>"
+                          </div>
+                        );
+                        // Group results by category
+                        const grouped = results.reduce((acc, s) => {
+                          if (!acc[s.category]) acc[s.category] = [];
+                          acc[s.category].push(s);
+                          return acc;
+                        }, {});
+                        return (
+                          <div>
+                            <div style={{ fontSize: 12, color: "#9A9088", marginBottom: 14, fontWeight: 500 }}>
+                              {results.length} result{results.length !== 1 ? "s" : ""} for "<strong style={{ color: "#B08040" }}>{svcSearch}</strong>"
+                            </div>
+                            {Object.entries(grouped).map(([cat, svcs]) => {
+                              const catMeta = MOCK_CATEGORIES.find(c => c.name === cat) || { icon: "✦", color: "#B08040" };
+                              return (
+                                <div key={cat} style={{ marginBottom: 28 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `${catMeta.color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{catMeta.icon}</div>
+                                    <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>{cat}</span>
+                                    <div style={{ flex: 1, height: 1, background: "#EDE6D8" }} />
+                                    <span style={{ fontSize: 11, color: "#C4B9AB", fontWeight: 500, background: "#F5F0E8", padding: "2px 8px", borderRadius: 6 }}>{svcs.length} match{svcs.length !== 1 ? "es" : ""}</span>
+                                  </div>
+                                  <div className="svc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(158px,1fr))", gap: 9 }}>
+                                    {svcs.map(s => {
+                                      const inCartCount = cart.filter(i => i.service === s.name && i.category === s.category).length; const inCart = inCartCount > 0;
+                                      return (
+                                        <div key={s.id} className={`svc-btn ${inCart ? "sel" : ""}`} role="button" tabIndex={0}
+                                          style={inCart ? { background: catMeta.color } : {}} onClick={() => toggleCart(s.name, s.category)} onKeyDown={e => (e.key==='Enter'||e.key===' ') && toggleCart(s.name, s.category)}>
+                                          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 5, wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: "1.25" }}>{s.name}</div>
+                                          <div style={{ fontSize: 12, fontWeight: 600, color: inCart ? "rgba(255,255,255,.88)" : "#B08040" }}>{fmt(s.price)}</div>
+                                          {inCart && (
+                                            <div onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, background: "rgba(255,255,255,.15)", borderRadius: 8, padding: "3px 5px" }}>
+                                              <button onClick={e => { e.stopPropagation(); removeOneFromCart(s.name, s.category); }} style={{ background: "rgba(255,255,255,.22)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#FFF", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 600 }}>−</button>
+                                              <span style={{ fontSize: 13, fontWeight: 700, color: "#FFF", minWidth: 20, textAlign: "center" }}>{inCartCount}</span>
+                                              <button onClick={e => { e.stopPropagation(); toggleCart(s.name, s.category); }} style={{ background: "rgba(255,255,255,.22)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#FFF", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 600 }}>+</button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()
+                    : activeCat === "All"
+                    ? Object.entries(SERVICES).map(([cat, { icon, color, items }]) => (
+                      <div key={cat} style={{ marginBottom: 28 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{icon}</div>
+                          <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>{cat}</span>
+                          <div style={{ flex: 1, height: 1, background: "#EDE6D8" }} />
+                          <span style={{ fontSize: 11, color: "#C4B9AB", fontWeight: 500, background: "#F5F0E8", padding: "2px 8px", borderRadius: 6 }}>{items.length}</span>
+                        </div>
+                        <div className="svc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(158px,1fr))", gap: 9 }}>
+                          {items.map(svc => {
+                            const inCartCount = cart.filter(i => i.service === svc && i.category === cat).length; const inCart = inCartCount > 0;
+                            return (
+                              <div key={svc} className={`svc-btn ${inCart ? "sel" : ""}`} role="button" tabIndex={0}
+                                style={inCart ? { background: color } : {}} onClick={() => toggleCart(svc, cat)} onKeyDown={e => (e.key==='Enter'||e.key===' ') && toggleCart(svc, cat)}>
+                                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 5, wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: "1.25" }}>{svc}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: inCart ? "rgba(255,255,255,.88)" : "#B08040" }}>{fmt(getServiceData(svc, cat).price || 0)}</div>
+                                {inCart && (
+                                  <div onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, background: "rgba(255,255,255,.15)", borderRadius: 8, padding: "3px 5px" }}>
+                                    <button onClick={e => { e.stopPropagation(); removeOneFromCart(svc, cat); }} style={{ background: "rgba(255,255,255,.22)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#FFF", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 600 }}>−</button>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: "#FFF", minWidth: 20, textAlign: "center" }}>{inCartCount}</span>
+                                    <button onClick={e => { e.stopPropagation(); toggleCart(svc, cat); }} style={{ background: "rgba(255,255,255,.22)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#FFF", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 600 }}>+</button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                    : (() => {
+                      const { icon, color, items } = SERVICES[activeCat];
+                      return (
+                        <>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 12px", background: "#FFFFFF", borderRadius: 12, border: "1px solid #EDE6D8", boxShadow: "0 1px 4px rgba(44,33,24,.04)" }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{icon}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>{activeCat}</div>
+                              <div style={{ fontSize: 11, color: "#C4B9AB", marginTop: 1 }}>{items.length} services available</div>
+                            </div>
+                          </div>
+                          <div className="svc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(158px,1fr))", gap: 9 }}>
+                            {items.map(svc => {
+                              const inCartCount = cart.filter(i => i.service === svc && i.category === activeCat).length; const inCart = inCartCount > 0;
+                              return (
+                                <div key={svc} className={`svc-btn ${inCart ? "sel" : ""}`} role="button" tabIndex={0}
+                                  style={inCart ? { background: color } : {}} onClick={() => toggleCart(svc, activeCat)} onKeyDown={e => (e.key==='Enter'||e.key===' ') && toggleCart(svc, activeCat)}>
+                                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 5, wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: "1.25" }}>{svc}</div>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: inCart ? "rgba(255,255,255,.88)" : "#B08040" }}>{fmt(getServiceData(svc, activeCat).price || 0)}</div>
+                                  {inCart && (
+                                    <div onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, background: "rgba(255,255,255,.15)", borderRadius: 8, padding: "3px 5px" }}>
+                                      <button onClick={e => { e.stopPropagation(); removeOneFromCart(svc, activeCat); }} style={{ background: "rgba(255,255,255,.22)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#FFF", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 600 }}>−</button>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: "#FFF", minWidth: 20, textAlign: "center" }}>{inCartCount}</span>
+                                      <button onClick={e => { e.stopPropagation(); toggleCart(svc, activeCat); }} style={{ background: "rgba(255,255,255,.22)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#FFF", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 600 }}>+</button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()
+                  }
+                </div>
+              </div>
+
+              <div
+                className="resizer"
+                title="Drag to resize cart"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  document.body.style.cursor = "col-resize";
+                  const startX = e.clientX;
+                  const startW = cartWidth;
+
+                  const onMouseMove = (moveEvent) => {
+                    const newWidth = Math.max(280, Math.min(startW - (moveEvent.clientX - startX), 600));
+                    if (cartPanelRef.current) {
+                      cartPanelRef.current.style.width = newWidth + "px";
+                    }
+                  };
+
+                  const onMouseUp = (moveEvent) => {
+                    document.body.style.cursor = "default";
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("mouseup", onMouseUp);
+                    const finalWidth = Math.max(280, Math.min(startW - (moveEvent.clientX - startX), 600));
+                    setCartWidth(finalWidth);
+                  };
+
+                  window.addEventListener("mousemove", onMouseMove);
+                  window.addEventListener("mouseup", onMouseUp);
+                }}
+                style={{
+                  width: 6,
+                  background: "transparent",
+                  cursor: "col-resize",
+                  zIndex: 10,
+                  borderLeft: "1px solid #EDE6D8",
+                  transition: "background .2s",
+                  flexShrink: 0
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "#E8E0D4"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              />
+
+              {/* Right – bill panel */}
+              <div
+                ref={cartPanelRef}
+                className="bill-panel"
+                style={{
+                  width: cartWidth,
+                  flex: isMobile ? (!cartCollapsed ? "0 0 65%" : "0 0 auto") : "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  background: "#F8F4EE",
+                  overflow: "hidden",
+                  minHeight: isMobile ? (cartCollapsed ? "44px" : "120px") : "none"
+                }}
+              >
+                {/* Bill header */}
+                <div
+                  onClick={() => {
+                    if (isMobile) {
+                      const newCartState = !cartCollapsed;
+                      setCartCollapsed(newCartState);
+                      if (!newCartState) setFooterCollapsed(true); // Close footer if opening cart
+                    }
+                  }}
+                  style={{
+                    padding: "14px 16px 12px",
+                    background: "#FFFFFF",
+                    borderBottom: "1px solid #EDE6D8",
+                    cursor: isMobile ? "pointer" : "default",
+                    userSelect: "none"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118", letterSpacing: -0.2 }}>Current Bill</div>
+                      {isMobile && (
+                        <div style={{
+                          fontSize: 10, fontWeight: 600, color: "#B08040",
+                          background: "#F5F0E8", padding: "2px 8px", borderRadius: 100,
+                          display: "flex", alignItems: "center", gap: 3
+                        }}>
+                          {cartCollapsed ? "Details ▾" : "Hide ▴"}
+                        </div>
+                      )}
+                    </div>
+                    {cart.length > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ background: "#2A2118", color: "#F5E6C8", borderRadius: "100px", fontSize: 10, fontWeight: 600, padding: "2px 9px", fontFamily: "'Outfit',sans-serif" }}>{cart.reduce((s, i) => s + i.qty, 0)} items</span>
+                      </div>
+                    )}
+                  </div>
+                  {(custName || custPhone) && (!isMobile || !cartCollapsed) && (
+                    <div className="fade" style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      {custName && <span style={{ fontSize: 11, color: "#9A9088" }}>👤 <span style={{ color: "#5A4030", fontWeight: 600 }}>{custName}</span></span>}
+                      {custPhone && <span style={{ fontSize: 11, color: "#9A9088", background: "#F5F0E8", padding: "1px 8px", borderRadius: 100 }}>📞 {custPhone}</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Cart items */}
+                {(!isMobile || !cartCollapsed) && (
+                  <div className="cart-scroll fade" style={{ flex: 1, overflowY: "auto", overflowX: "visible", padding: "12px 10px" }}>
+                    {!cart.length
+                      ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12, padding: "40px 20px" }}>
+                        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(145deg,#EEE6D8,#F5EFE4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, boxShadow: "0 4px 16px rgba(44,33,24,.08)" }}>✨</div>
+                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 600, color: "#A89880", textAlign: "center" }}>No services selected</div>
+                        <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", lineHeight: 1.5 }}>Tap any service from the left<br/>panel to add it here</div>
+                      </div>
+                      : cart.map(item => {
+                        const color = getCatColor(item.service, item.category);
+                        const stObj = item.stylist ? dbStylists.find(s => s.name === item.stylist) : null;
+                        const sColor = stObj ? stObj.color || "#B08040" : "#D4C4B0";
+                        return (
+                          <div key={item.id} style={{
+                            background: "#FFFFFF", borderRadius: 12, marginBottom: 9,
+                            border: `1.5px solid ${item.stylist ? sColor + "40" : "#EDE6D8"}`,
+                            overflow: "visible", transition: "all .2s", position: "relative", zIndex: 1,
+                            boxShadow: "0 1px 4px rgba(44,33,24,.04)"
+                          }}>
+                            {/* Main row */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px" }}>
+                              {/* Category icon */}
+                              <div style={{
+                                width: 38, height: 38, borderRadius: 10, background: `${color}18`,
+                                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0
+                              }}>
+                                {SERVICES[item.category]?.icon || "✦"}
+                              </div>
+
+                              {/* Name + stylist chip */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: 13, fontWeight: 600, color: "#2A2118",
+                                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+                                }}>{item.service}</div>
+                                {item.category === 'Deal' && item.included_services?.length > 0 && (
+                                  <div style={{ fontSize: 10, color: "#9A9088", marginTop: 4, paddingBottom: 4, whiteSpace: "normal", display: "flex", flexDirection: "column", gap: 2 }}>
+                                    {item.included_services.map((inc, i) => (
+                                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                        <span style={{ minWidth: 4, height: 4, borderRadius: '50%', background: '#C4B9AB' }} />
+                                        <span style={{ lineHeight: 1.2 }}>{inc}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <div style={{
+                                  marginTop: item.category === 'Deal' ? 2 : 4, display: "inline-flex", alignItems: "center",
+                                  background: `${color}12`, borderRadius: 100, padding: "2px 9px"
+                                }}>
+                                  <span style={{ fontSize: 10, fontWeight: 600, color }}>{item.category}</span>
+                                </div>
+                              </div>
+
+                              {/* Qty placeholder for spacing */}
+                              <div style={{ width: 14 }} />
+
+                              {/* Price + delete */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "#B08040", fontFamily: "'Outfit',sans-serif" }}>{fmt(item.price * item.qty, true)}</span>
+                                <button onClick={() => remItem(item.id)} style={{
+                                  width: 22, height: 22, borderRadius: "50%", background: "#F5F0E8",
+                                  border: "none", cursor: "pointer", color: "#9A9088", fontSize: 14,
+                                  display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+                                  transition: "all .15s", flexShrink: 0
+                                }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = "#FECACA"; e.currentTarget.style.color = "#991B1B"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = "#F5F0E8"; e.currentTarget.style.color = "#9A9088"; }}
+                                >×</button>
+                              </div>
+                            </div>
+
+                            {/* Stylist picker — hidden but triggered by chip above */}
+                            <div style={{ padding: 0 }}>
+                              <StylistPicker
+                                id={`sp-${item.id}`}
+                                value={item.stylist || ""}
+                                onChange={s => {
+                                  updStylist(item.id, s);
+                                  if (s) setCheckoutAttempted(false); // Clear warning highlight when assigned
+                                }}
+                                color={sColor}
+                                stylists={dbStylists}
+                                highlight={checkoutAttempted && !item.stylist}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                )}
+
+                {/* Bill footer (Collapsible) */}
+                {cart.length > 0 && (
+                  <div className="bill-footer" style={{ background: "#FFFFFF", borderTop: "1px solid #EDE6D8", display: "flex", flexDirection: "column", flex: "0 0 auto" }}>
+
+                    {/* Header Row (Total) - Always Visible, acts as toggle on mobile & desktop */}
+                    <div
+                      onClick={() => {
+                        const newFooterState = !footerCollapsed;
+                        setFooterCollapsed(newFooterState);
+                        if (isMobile && !newFooterState) setCartCollapsed(true); // Close cart if opening footer
+                      }}
+                      style={{
+                        padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                        cursor: "pointer", userSelect: "none"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 800, color: "#2A2118", letterSpacing: -0.5 }}>
+                          Total
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{
+                            fontSize: 10, fontWeight: 600, color: "#B08040",
+                            background: "#F5F0E8", padding: "2px 10px", borderRadius: 100,
+                            display: "flex", alignItems: "center", gap: 4, transition: "all 0.2s"
+                          }}>
+                            {footerCollapsed ? "Details ▾" : "Hide ▴"}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: "#2A2118", fontFamily: "'Outfit',sans-serif" }}>{fmt(total)}</div>
+                    </div>
+
+                    {/* Collapsible Panel: All Billing & Checkout Actions */}
+                    {!footerCollapsed && (
+                      <div className="fade" style={{
+                        background: "#FFFFFF",
+                        overflowY: "auto",
+                        maxHeight: isMobile ? "75vh" : "70vh", // Increased mobile height to fit items
+                        paddingBottom: isMobile ? "env(safe-area-inset-bottom, 20px)" : 0
+                      }}>
+                        <div style={{ padding: "14px 14px 0" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#9A9088", marginBottom: 10 }}>
+                            <span>Subtotal</span>
+                            <span style={{ color: "#2A2118", fontWeight: 500 }}>{fmt(sub)}</span>
+                          </div>
+
+                          {/* Advanced Discount Selection */}
+                          <div style={{ marginBottom: 12, background: "#F8F5F0", borderRadius: 10, overflow: "hidden", border: "1px solid #EDE6D8" }}>
+                            <div style={{ display: "flex", borderBottom: "1px solid #EDE6D8" }}>
+                              {[["none", "No Disc."], ["pct", "% Off"], ["flat", "Fixed"], ["item", "Item"]].map(([m, l]) => (
+                                <button key={m} onClick={() => setDiscMode(m)} style={{
+                                  flex: 1, padding: "7px 4px", fontSize: 11, fontWeight: 600, fontFamily: "'Outfit',sans-serif",
+                                  border: "none", cursor: "pointer", transition: "all .15s", letterSpacing: .2,
+                                  background: discMode === m ? "#2A2118" : "transparent",
+                                  color: discMode === m ? "#FAF7F3" : "#9A9088",
+                                  borderRight: m !== "item" ? "1px solid #EDE6D8" : "none"
+                                }}>{l}</button>
+                              ))}
+                            </div>
+
+                            {discMode !== "none" && (
+                              <div style={{ padding: "10px 11px", display: "flex", flexDirection: "column", gap: 8 }}>
+                                {discMode === "pct" && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                      <span style={{ fontSize: 11, color: "#9A9088", fontWeight: 600 }}>Discount %</span>
+                                      <input type="number" min="0" max="100" className="inp" value={discPct}
+                                        onChange={e => setDiscPct(Math.min(100, Math.max(0, +e.target.value)))}
+                                        style={{ width: 50, padding: "4px 6px", fontSize: 11, textAlign: "center", height: 26 }} />
+                                    </div>
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                                      {[5, 10, 15, 20, 25].map(p => (
+                                        <button key={p} onClick={() => setDiscPct(p)} style={{
+                                          padding: "4px 7px", fontSize: 10, fontWeight: 700, fontFamily: "'Outfit',sans-serif",
+                                          borderRadius: 6, border: "1.5px solid", cursor: "pointer", transition: "all .1s",
+                                          background: discPct === p ? "#2A2118" : "white",
+                                          borderColor: discPct === p ? "#2A2118" : "#E0D8CC",
+                                          color: discPct === p ? "#FAF7F3" : "#6B5030",
+                                          flex: "1 1 auto", minWidth: 40
+                                        }}>{p}%</button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {discMode === "flat" && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                      <span style={{ fontSize: 11, color: "#9A9088", fontWeight: 600 }}>Amount (PKR)</span>
+                                      <input type="number" min="0" className="inp" value={discFlat}
+                                        onChange={e => setDiscFlat(Math.max(0, +e.target.value))}
+                                        style={{ width: 70, padding: "4px 6px", fontSize: 11, textAlign: "center", height: 26 }} />
+                                    </div>
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                                      {[100, 200, 500, 1000].map(a => (
+                                        <button key={a} onClick={() => setDiscFlat(a)} style={{
+                                          padding: "4px 7px", fontSize: 10, fontWeight: 700, fontFamily: "'Outfit',sans-serif",
+                                          borderRadius: 6, border: "1.5px solid", cursor: "pointer", transition: "all .1s",
+                                          background: discFlat === a ? "#2A2118" : "white",
+                                          borderColor: discFlat === a ? "#2A2118" : "#E0D8CC",
+                                          color: discFlat === a ? "#FAF7F3" : "#6B5030",
+                                          flex: "1 1 auto", minWidth: 46
+                                        }}>{a}</button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {discMode === "item" && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                      <span style={{ fontSize: 11, color: "#9A9088", whiteSpace: "nowrap" }}>Select Item</span>
+                                      <select
+                                        className="inp"
+                                        value=""
+                                        onChange={e => {
+                                          if (!e.target.value) return;
+                                          const id = e.target.value;
+                                          if (!itemDiscounts[id]) {
+                                            setItemDiscounts({ ...itemDiscounts, [id]: { mode: "pct", value: 0 } });
+                                          }
+                                        }}
+                                        style={{ flex: 1, padding: "5px 8px", fontSize: 12 }}
+                                      >
+                                        <option value="">Add service to discount...</option>
+                                        {cart.map(i => (
+                                          <option key={i.id} value={i.id} disabled={!!itemDiscounts[i.id]}>
+                                            {i.service} {!!itemDiscounts[i.id] ? '(Added)' : ''}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    {Object.keys(itemDiscounts).length > 0 && (
+                                      <div style={{ maxHeight: 105, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "2px 0", borderTop: "1px dashed #E0D8CC", paddingTop: 8 }}>
+                                        {Object.entries(itemDiscounts).map(([idStr, d]) => {
+                                          const item = cart.find(i => i.id.toString() === idStr);
+                                          if (!item) return null;
+                                          return (
+                                            <div key={idStr} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                              <span style={{ fontSize: 12, color: "#2A2118", fontWeight: 600, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.service}</span>
+                                              <div style={{ display: "flex", background: "#E8E0D4", borderRadius: 7, padding: 2 }}>
+                                                <button onClick={() => setItemDiscounts({ ...itemDiscounts, [idStr]: { ...d, mode: "pct" } })} style={{ padding: "4px 8px", border: "none", borderRadius: 5, fontSize: 10, fontWeight: 700, cursor: "pointer", background: d.mode === "pct" ? "#2A2118" : "transparent", color: d.mode === "pct" ? "#FFF" : "#9A9088" }}>%</button>
+                                                <button onClick={() => setItemDiscounts({ ...itemDiscounts, [idStr]: { ...d, mode: "flat" } })} style={{ padding: "4px 8px", border: "none", borderRadius: 5, fontSize: 10, fontWeight: 700, cursor: "pointer", background: d.mode === "flat" ? "#2A2118" : "transparent", color: d.mode === "flat" ? "#FFF" : "#9A9088" }}>Rs</button>
+                                              </div>
+                                              <input type="number" min="0" className="inp" value={d.value}
+                                                onChange={e => setItemDiscounts({ ...itemDiscounts, [idStr]: { ...d, value: Math.max(0, +e.target.value) } })}
+                                                style={{ width: 50, padding: "5px 7px", fontSize: 12, textAlign: "center" }} />
+                                              <button onClick={() => {
+                                                const next = { ...itemDiscounts };
+                                                delete next[idStr];
+                                                setItemDiscounts(next);
+                                              }} style={{ background: "none", border: "none", color: "#A0303F", fontSize: 16, cursor: "pointer", padding: "0 4px" }}>×</button>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Courtesy By + Reason */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: discMode === "item" ? 4 : 0 }}>
+                                  <select className="inp" value={discCourtesyBy} onChange={e => setDiscCourtesyBy(e.target.value)}
+                                    style={{ fontSize: 12, padding: "7px 10px" }}>
+                                    <option value="">👤 Courtesy by (optional)...</option>
+                                    {courtesyPersons.map(p => <option key={p} value={p}>{p}</option>)}
+                                  </select>
+                                  <input className="inp" placeholder="Reason..." value={discReason} onChange={e => setDiscReason(e.target.value)} style={{ fontSize: 12, padding: "7px 10px" }} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Split Payment Breakdown */}
+                        {payMode === "SPLIT" && (
+                          <div style={{ margin: "0 14px 12px", background: "#F8F4EE", border: "1.5px solid #E8E0D4", borderRadius: 11, overflow: "hidden" }}>
+                            <div style={{ padding: "9px 12px", borderBottom: "1px solid #EDE6D8", fontSize: 11, fontWeight: 700, color: "#B08040", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                              🔀 Split Payment Breakdown
+                            </div>
+                            <div style={{ padding: "12px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+                              {/* Cash row */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 7, background: "#E8F5E9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>💵</div>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#2A2118", flex: 1 }}>Cash</span>
+                                <input
+                                  type="number" min="0" className="inp"
+                                  value={splitCash || ""}
+                                  placeholder="0"
+                                  onChange={e => {
+                                    const val = Math.max(0, +e.target.value);
+                                    setSplitCash(val);
+                                    setSplitOtherAmt(Math.max(0, total - val));
+                                  }}
+                                  style={{ width: 90, padding: "6px 9px", fontSize: 13, fontWeight: 600, textAlign: "right" }}
+                                />
+                              </div>
+                              {/* Other gateway row */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 7, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                                  {splitOtherMode === "CARD" ? "💳" : "📱"}
+                                </div>
+                                <select className="inp" value={splitOtherMode} onChange={e => setSplitOtherMode(e.target.value)} style={{ flex: 1, padding: "6px 8px", fontSize: 12, fontWeight: 600 }}>
+                                  <option value="ONLINE">📱 Online</option>
+                                  <option value="CARD">💳 Card</option>
+                                </select>
+                                <input
+                                  type="number" min="0" className="inp"
+                                  value={splitOtherAmt || ""}
+                                  placeholder="0"
+                                  onChange={e => {
+                                    const val = Math.max(0, +e.target.value);
+                                    setSplitOtherAmt(val);
+                                    setSplitCash(Math.max(0, total - val));
+                                  }}
+                                  style={{ width: 90, padding: "6px 9px", fontSize: 13, fontWeight: 600, textAlign: "right" }}
+                                />
+                              </div>
+                              {/* Balance indicator */}
+                              {(() => {
+                                const sum = (splitCash || 0) + (splitOtherAmt || 0);
+                                const diff = total - sum;
+                                if (sum === 0) return null;
+                                return (
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: Math.abs(diff) < 1 ? "#F0FDF4" : "#FFF7ED", border: `1px solid ${Math.abs(diff) < 1 ? "#BBF7D0" : "#FED7AA"}` }}>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: Math.abs(diff) < 1 ? "#166534" : "#92400E" }}>
+                                      {Math.abs(diff) < 1 ? "✅ Amounts match" : diff > 0 ? `⚠️ PKR ${diff.toLocaleString()} remaining` : `⚠️ PKR ${Math.abs(diff).toLocaleString()} over`}
+                                    </span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: "#2A2118" }}>Total: {fmt(total)}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Buttons (Now inside collapsible) */}
+                        <div style={{ padding: "8px 14px 16px", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+                          <input className="inp" placeholder="📝 Note (optional)" value={note} onChange={e => setNote(e.target.value)} style={{ fontSize: 12 }} />
+
+                          {/* Two print options */}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              onClick={printStaffSlip}
+                              style={{ flex: 1, height: 50, fontSize: 13, fontWeight: 700, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5A4030", color: "#F5E6C8", border: "none", cursor: "pointer" }}
+                            >
+                              <span style={{ fontSize: 17 }}>🖨️</span> Staff Slip
+                            </button>
+                            <button
+                              onClick={checkout}
+                              disabled={checkoutLoading}
+                              className="btn-gold"
+                              style={{ flex: 1, height: 50, fontSize: 13, fontWeight: 700, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: checkoutLoading ? 0.7 : 1 }}
+                            >
+                              {checkoutLoading ? '⏳' : <><span style={{ fontSize: 17 }}>🧾</span> Print Bill</>}
+                            </button>
+                          </div>
+                          {tab.staffSlipPrinted && (
+                            <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              <div style={{ padding: "4px 8px", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, fontSize: 11, color: "#166534", display: "flex", alignItems: "center", gap: 6 }}>
+                                <span>✅</span> Staff slip printed
+                                <button onClick={() => updTab({ staffSlipPrinted: false })} style={{ marginLeft: "auto", background: "none", border: "none", color: "#166534", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>Reprint?</button>
+                              </div>
+                              <button onClick={checkout} disabled={checkoutLoading} className="btn-gold" style={{ width: "100%", height: 46, fontSize: 15, fontWeight: 700, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, opacity: checkoutLoading ? 0.7 : 1 }}>
+                                {checkoutLoading ? '⏳ Processing...' : <><span style={{fontSize:18}}>💳</span> COMPLETE TRANSACTION</>}
+                              </button>
+                            </div>
+                          )}
+                          <button
+                            onClick={() => { if (confirm("Clear entire bill?")) updTab({ cart: [], discMode: "none", discPct: 0, discFlat: 0, itemDiscounts: {}, discReason: "", discCourtesyBy: "", note: "" }); }}
+                            style={{ background: "none", border: "none", color: "#9A9088", fontSize: 11, fontWeight: 600, cursor: "pointer", textDecoration: "underline", marginTop: 4 }}
+                          >
+                            Clear Bill
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+
+      {/* ══ ANALYTICS ═══════════════════════════════════════════════════════ */}
+      {view === "dashboard" && (
+        <div style={{ padding: "20px 24px 80px", overflowY: "auto", height: "calc(100dvh - 62px)", paddingBottom: "env(safe-area-inset-bottom, 80px)" }} className="fade analytics-container">
+
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 700, color: "#2A2118" }}>Analytics</div>
+              <div style={{ fontSize: 11, color: "#9A9088", marginTop: 3 }}>
+                {ranged.length} transactions
+                {fStylist && <span style={{ color: "#B08040" }}> · ✂️ {fStylist}</span>}
+                {fCat && <span style={{ color: "#B08040" }}> · {fCat}</span>}
+                {fPay && <span style={{ color: "#B08040" }}> · {fPay}</span>}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, width: isMobile ? "100%" : "auto", overflowX: "auto", paddingBottom: isMobile ? 4 : 0 }} className="catstrip">
+              {[["overview", "Overview"], ["stylists", "Stylists"], ["services", "Services"], ["time", "Time"], ["discounts", "Discounts"]].map(([t, l]) => (
+                <button key={t} className={`tbtn ${dashTab === t ? "on" : ""}`} onClick={() => setDashTab(t)} style={{ flexShrink: 0 }}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Filter bar */}
+          <div className="analytics-filter-bar" style={{ background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 14, padding: "16px 18px", marginBottom: 18, boxShadow: "0 1px 6px rgba(44,33,24,.04)" }}>
+            {/* Row 1: Period · Custom Range · Stylist · Category */}
+            <div className="filter-row" style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-end", marginBottom: 14 }}>
+              <div>
+                <div className="filter-label">Period</div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[["today", "Today"], ["7d", "7d"], ["30d", "30d"], ["90d", "90d"], ["all", "All"]].map(([r, l]) => (
+                    <button key={r} className={`rbtn ${dashRange === r && !dashCFrom ? "on" : ""}`}
+                      onClick={() => { setDashRange(r); setDashCFrom(""); setDashCTo(""); }}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="filter-label">Custom Range</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input type="date" className="inp" value={dashCFrom} onChange={e => { setDashCFrom(e.target.value); setDashRange(""); }} onClick={e => { try { e.target.showPicker(); } catch (err) { } }} style={{ width: 130, padding: "5px 10px", fontSize: 11, cursor: "pointer" }} />
+                  <span style={{ color: "#C4B9AB", fontSize: 12 }}>→</span>
+                  <input type="date" className="inp" value={dashCTo} onChange={e => { setDashCTo(e.target.value); setDashRange(""); }} onClick={e => { try { e.target.showPicker(); } catch (err) { } }} style={{ width: 130, padding: "5px 10px", fontSize: 11, cursor: "pointer" }} />
+                </div>
+              </div>
+              <div>
+                <div className="filter-label">Stylist</div>
+                <select className="inp" value={fStylist} onChange={e => setFStylist(e.target.value)} style={{ width: 136, padding: "5px 10px", fontSize: 12 }}>
+                  <option value="">All Stylists</option>
+                  {dbStylists.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <div className="filter-label">Category</div>
+                <select className="inp" value={fCat} onChange={e => setFCat(e.target.value)} style={{ width: 148, padding: "5px 10px", fontSize: 12 }}>
+                  <option value="">All Categories</option>
+                  {Object.keys(SERVICES).map(cat => <option key={cat}>{cat}</option>)}
+                </select>
+              </div>
+            </div>
+            {/* Row 2: Payment · Metric · Actions */}
+            <div className="filter-row" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", paddingTop: 12, borderTop: "1px solid #F0EAE0" }}>
+              <div>
+                <div className="filter-label">Payment</div>
+                <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: isMobile ? 4 : 0 }} className="catstrip">
+                  {[["", "All"], ["CASH", "Cash"], ["ONLINE", "Online"], ["CARD", "Card"], ["SPLIT", "Split"]].map(([v, l]) => (
+                    <button key={l} className={`rbtn ${fPay === v ? "on" : ""}`} onClick={() => setFPay(v)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="filter-label">Metric</div>
+                <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: isMobile ? 4 : 0 }} className="catstrip">
+                  {[["revenue", "Revenue"], ["visits", "Visits"], ["avg", "Avg Ticket"], ["discount", "Discounts"]].map(([v, l]) => (
+                    <button key={v} className={`rbtn ${fMetric === v ? "on" : ""}`} onClick={() => setFMetric(v)}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+                {hasF && (
+                  <button onClick={resetF}
+                    style={{
+                      fontFamily: "'Outfit',sans-serif", fontSize: 11, color: "#9A9088", background: "transparent",
+                      border: "1.5px solid #E8E0D4", borderRadius: 7, padding: "7px 13px", cursor: "pointer"
+                    }}>
+                    ↺ Reset filters
+                  </button>
+                )}
+                <button onClick={exportCSV}
+                  style={{
+                    fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600,
+                    color: "#FFFFFF", background: "#2A2118", border: "none", borderRadius: 7,
+                    padding: "7px 15px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#4A3828"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#2A2118"}>
+                  ⬇ Export CSV
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ─ OVERVIEW ─ */}
+          {dashTab === "overview" && (
+            <div className="fade">
+              {/* KPI row */}
+              {(() => {
+                const metricMap = { revenue: "Total Revenue", visits: "Customers", avg: "Avg. Ticket", discount: "Discounts" };
+                const activeLabel = metricMap[fMetric];
+                const kpis = [
+                  { id: "revenue", label: "Total Revenue", v: S.totR, color: "#B08040", fmt: v => fmt(v, true), spark: S.revD },
+                  { id: "visits", label: "Customers", v: S.totC, color: "#5B3A8A", fmt: v => v.toLocaleString(), spark: S.cstD },
+                  { id: "avg", label: "Avg. Ticket", v: S.avg, color: "#1A6B4A", fmt: v => fmt(v, true) },
+                  { id: "discount", label: "Discounts", v: S.totDisc, color: "#A0303F", fmt: v => fmt(v, true) },
+                ];
+                return (
+                  <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+                    {kpis.map(k => {
+                      const isActive = k.id === fMetric;
+                      return (
+                        <div key={k.label} onClick={() => setFMetric(k.id)}
+                          className="card" style={{
+                            borderTop: `3px solid ${k.color}`, cursor: "pointer", transition: "all .2s",
+                            boxShadow: isActive ? `0 0 0 2px ${k.color}40,0 4px 16px rgba(44,33,24,.1)` : "none",
+                            transform: isActive ? "translateY(-2px)" : "none",
+                          }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, color: isActive ? k.color : "#9A9088", textTransform: "uppercase", letterSpacing: 1, fontWeight: isActive ? 700 : 400 }}>{k.label}</div>
+                            {isActive && <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: k.color, padding: "2px 6px", borderRadius: 100, letterSpacing: .5 }}>ACTIVE</span>}
+                          </div>
+                          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 22, fontWeight: 700, color: k.color, lineHeight: 1, marginBottom: k.spark ? 10 : 0 }}>{k.fmt(k.v)}</div>
+                          {k.spark && <Spark data={k.spark} color={k.color} h={28} w={90} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              <div className="dash-grid-2-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 270px", gap: 14, marginBottom: 14 }}>
+                {/* Metric Trend (responds to fMetric) */}
+                <div className="card">
+                  {(() => {
+                    const mCfg = {
+                      revenue: { label: "Revenue Trend", data: S.revD, color: "#B08040", fmt: v => fmt(v, true) },
+                      visits: { label: "Visits Trend", data: S.cstD, color: "#5B3A8A", fmt: v => v },
+                      avg: { label: "Avg Ticket Trend", data: S.revD.map((v, i) => S.cstD[i] ? Math.round(v / S.cstD[i]) : 0), color: "#1A6B4A", fmt: v => fmt(v, true) },
+                      discount: { label: "Discount Trend", data: S.revD.map((_, i) => { const ds = ranged.filter(t => { const d = new Date(t.date); d.setHours(0, 0, 0, 0); const ref = new Date(); ref.setHours(0, 0, 0, 0); ref.setDate(ref.getDate() - (S.revD.length - 1 - i)); return d.getTime() === ref.getTime(); }); return ds.reduce((s, t) => s + (t.discountAmt || 0), 0); }), color: "#A0303F", fmt: v => fmt(v, true) },
+                    };
+                    const cfg = mCfg[fMetric] || mCfg.revenue;
+                    const mx = Math.max(...cfg.data, 1);
+                    return (<>
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>{cfg.label}</div>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 84 }}>
+                        {cfg.data.map((v, i) => {
+                          const h = Math.max(Math.round((v / mx) * 78), v > 0 ? 3 : 1);
+                          const isToday = i === cfg.data.length - 1;
+                          return <div key={i} title={cfg.fmt(v)} style={{ flex: 1, height: h, background: isToday ? cfg.color : v > 0 ? cfg.color + "70" : "#EEE6D8", borderRadius: "2px 2px 0 0", transition: "height .8s", minHeight: 1 }} />;
+                        })}
+                      </div>
+                      <div style={{ height: 1, background: "#EDE6D8", margin: "5px 0 4px" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#B8AFA5" }}><span>Earlier</span><span style={{ color: cfg.color, fontWeight: 600 }}>Today</span></div>
+                    </>);
+                  })()}
+                </div>
+
+                {/* Category donut */}
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 12 }}>By Category</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <Donut size={88} slices={Object.entries(S.cR).map(([cat, v]) => ({ v, color: SERVICES[cat]?.color || "#B08040" }))} />
+                    <div style={{ flex: 1 }}>
+                      {Object.entries(S.cR).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([cat, rev]) => {
+                        const tot = Object.values(S.cR).reduce((s, v) => s + v, 0) || 1;
+                        return (
+                          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                            <div style={{ width: 7, height: 7, borderRadius: 2, background: SERVICES[cat]?.color || "#B08040", flexShrink: 0 }} />
+                            <div style={{ fontSize: 12, color: "#9A9088", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</div>
+                            <div style={{ fontSize: 12, color: "#6B5030", fontWeight: 600 }}>{Math.round(rev / tot * 100)}%</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                {/* Payment split */}
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Payment Methods</div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10 }}>
+                    {[["CASH", "#1A6B4A", "💵"], ["ONLINE", "#2A3A8A", "📱"], ["CARD", "#6B3A8A", "💳"], ["SPLIT", "#7A4A14", "🔀"]].map(([m, color, ic]) => {
+                      const tot = Object.values(S.pR).reduce((s, v) => s + v, 0) || 1;
+                      const pct = Math.round((S.pR[m] || 0) / tot * 100);
+                      return (
+                        <div key={m} style={{ background: "#FDFAF6", borderRadius: 10, padding: "13px 10px", border: "1px solid #EDE6D8", textAlign: "center" }}>
+                          <div style={{ fontSize: 22, marginBottom: 6 }}>{ic}</div>
+                          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 22, fontWeight: 700, color }}>{pct}%</div>
+                          <div style={{ fontSize: 11, color: "#9A9088", marginTop: 2, fontWeight: 500 }}>{m}</div>
+                          <div style={{ fontSize: 11, color: "#6B5030", marginTop: 4, fontWeight: 500 }}>{fmt(S.pR[m] || 0, true)}</div>
+                          <div style={{ fontSize: 11, color: "#B8AFA5" }}>{S.pC[m] || 0} txns</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Best days */}
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Busiest Days</div>
+                  {DAYS.map((day, i) => {
+                    const mx = Math.max(...S.dR, 1), pct = Math.round(S.dR[i] / mx * 100) || 0;
+                    const best = S.dR[i] === Math.max(...S.dR);
+                    return (
+                      <div key={day} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <div style={{ width: 30, fontSize: 11, color: best ? "#B08040" : "#9A9088", fontWeight: best ? 600 : 400 }}>{day}</div>
+                        <div style={{ flex: 1 }}><ProgBar pct={pct} color={best ? "#B08040" : "#D4C4A8"} /></div>
+                        <div style={{ fontSize: 12, color: "#9A9088", minWidth: 50, textAlign: "right" }}>{fmt(S.dR[i], true)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Client Flow */}
+              <div className="card">
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>Client Flow</div>
+                    <div style={{ fontSize: 12, color: "#B8AFA5", marginTop: 2 }}>When your guests visit most</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#C4B9AB" }}>{ranged.length} total visits</div>
+                </div>
+                <ClientFlow data={S.hm} isMobile={isMobile} />
+              </div>
+            </div>
+          )}
+
+          {/* ─ STYLISTS ─ */}
+          {dashTab === "stylists" && (
+            <div className="fade">
+              <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Revenue Leaderboard</div>
+                  {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data], i) => {
+                    const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
+                    const color = dbStylists.find(s => s.name === name)?.color || "#B08040";
+                    const medals = ["🥇", "🥈", "🥉"];
+                    return (
+                      <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11, padding: "10px 12px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
+                        <div style={{ fontSize: 17, width: 24, textAlign: "center" }}>{medals[i] || <span style={{ fontSize: 11, color: "#C4B9AB", fontFamily: "'Outfit',sans-serif" }}>#{i + 1}</span>}</div>
+                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit',sans-serif", fontSize: 15, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118", marginBottom: 4 }}>{name}</div>
+                          <ProgBar pct={Math.round(data.rev / mx * 100)} color={color} h={4} />
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
+                          <div style={{ fontSize: 12, color: "#B8AFA5" }}>{data.cust} clients</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!Object.keys(S.styM).length && <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data yet</div>}
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 500 }}>
+                  {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
+                    const color = dbStylists.find(s => s.name === name)?.color || "#B08040";
+                    const topCat = Object.entries(data.cats).sort((a, b) => b[1] - a[1])[0];
+                    const avg = data.cust ? Math.round(data.rev / data.cust) : 0;
+                    return (
+                      <div key={name} className="card-sm" style={{ borderLeft: `3px solid ${color}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit',sans-serif", fontSize: 19, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, color: "#2A2118", letterSpacing: .2 }}>{name}</div>
+                            <div style={{ fontSize: 11, color: "#B8AFA5" }}>{data.svcs} services</div>
+                          </div>
+                          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
+                          {[["Clients", data.cust], ["Avg Ticket", fmt(avg, true)], ["Specialty", topCat?.[0] || "—"]].map(([l, v]) => (
+                            <div key={l} style={{ background: "#FDFAF6", borderRadius: 8, padding: "8px 9px", border: "1px solid #EDE6D8" }}>
+                              <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 500 }}>{l}</div>
+                              <div style={{ fontSize: 13, color: "#6B5030", fontWeight: 600, marginTop: 4 }}>{v}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="card">
+                <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Performance Comparison</div>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 110 }}>
+                  {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
+                    const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
+                    const h = Math.max(Math.round((data.rev / mx) * 96), 4);
+                    const color = dbStylists.find(s => s.name === name)?.color || "#B08040";
+                    return (
+                      <div key={name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                        <div style={{ fontSize: 11, color, fontWeight: 600 }}>{fmt(data.rev, true)}</div>
+                        <div style={{ width: "100%", height: h, background: color, borderRadius: "5px 5px 0 0", opacity: .8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontSize: 11, color: "#FFF", fontWeight: 600 }}>{data.cust}</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: "#9A9088" }}>{name.slice(0, 6)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─ SERVICES ─ */}
+          {dashTab === "services" && (
+            <div className="fade">
+              <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Top by Revenue</div>
+                  {Object.entries(S.sR).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([svc, rev], i) => {
+                    const mx = Math.max(...Object.values(S.sR), 1);
+                    const color = getCatColor(svc);
+                    return (
+                      <div key={svc} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                          <span style={{ color: "#3D3028" }}>#{i + 1} {svc}</span>
+                          <span style={{ color, fontWeight: 600 }}>{fmt(rev, true)} · {S.sC[svc]}×</span>
+                        </div>
+                        <ProgBar pct={Math.round(rev / mx * 100)} color={color} />
+                      </div>
+                    );
+                  })}
+                  {!Object.keys(S.sR).length && <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data</div>}
+                </div>
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Most Requested</div>
+                  {Object.entries(S.sC).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([svc, cnt], i) => {
+                    const mx = Math.max(...Object.values(S.sC), 1);
+                    const color = getCatColor(svc);
+                    return (
+                      <div key={svc} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                          <span style={{ color: i < 3 ? "#B08040" : "#3D3028", fontWeight: i < 3 ? 600 : 400 }}>#{i + 1} {svc}</span>
+                          <span style={{ color, fontWeight: 600 }}>{cnt}×</span>
+                        </div>
+                        <ProgBar pct={Math.round(cnt / mx * 100)} color={color} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="card">
+                <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Category Overview</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(158px,1fr))", gap: 10 }}>
+                  {Object.entries(S.cR).sort((a, b) => b[1] - a[1]).map(([cat, rev]) => {
+                    const { icon, color } = SERVICES[cat] || { icon: "•", color: "#B08040" };
+                    return (
+                      <div key={cat} style={{ background: "#FDFAF6", borderRadius: 10, padding: 14, border: "1px solid #EDE6D8", borderTop: `3px solid ${color}` }}>
+                        <div style={{ fontSize: 22, marginBottom: 7 }}>{icon}</div>
+                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, color: "#2A2118", marginBottom: 2 }}>{cat}</div>
+                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 700, color }}>{fmt(rev, true)}</div>
+                        <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 5 }}>{S.cC[cat] || 0} services</div>
+                      </div>
+                    );
+                  })}
+                  {!Object.keys(S.cR).length && <div style={{ fontSize: 12, color: "#C4B9AB", padding: 20 }}>No data</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─ TIME ─ */}
+          {dashTab === "time" && (
+            <div className="fade">
+              <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Daily Customers</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80, marginBottom: 6 }}>
+                    {S.cstD.map((v, i) => {
+                      const mx = Math.max(...S.cstD, 1), h = Math.max(Math.round((v / mx) * 72), v > 0 ? 3 : 1);
+                      const isToday = i === S.cstD.length - 1;
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 2 }}>
+                          {v > 0 && <div style={{ fontSize: 7, color: isToday ? "#B08040" : "#D4C4A8" }}>{v}</div>}
+                          <div style={{ width: "100%", height: h, background: isToday ? "#B08040" : v > 0 ? "#C4A870" : "#EEE6D8", borderRadius: "2px 2px 0 0", minHeight: 3 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#B8AFA5" }}><span>Earlier</span><span style={{ color: "#B08040", fontWeight: 600 }}>Today</span></div>
+                </div>
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Monthly Revenue</div>
+                  {Object.entries(S.mR).sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([month, rev]) => {
+                    const mx = Math.max(...Object.values(S.mR), 1);
+                    const [yr, mo] = month.split("-");
+                    return (
+                      <div key={month} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                          <span style={{ color: "#9A9088" }}>{MONTHS[parseInt(mo) - 1]} {yr}</span>
+                          <span style={{ color: "#B08040", fontWeight: 600 }}>{fmt(rev, true)}</span>
+                        </div>
+                        <ProgBar pct={Math.round(rev / mx * 100)} color="#B08040" />
+                      </div>
+                    );
+                  })}
+                  {!Object.keys(S.mR).length && <div style={{ fontSize: 12, color: "#C4B9AB", padding: 20 }}>No data</div>}
+                </div>
+              </div>
+              <div className="card" style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>Client Flow Analysis</div>
+                    <div style={{ fontSize: 12, color: "#B8AFA5", marginTop: 2 }}>Hourly and daily visit patterns</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#C4B9AB" }}>{ranged.length} total visits</div>
+                </div>
+                <ClientFlow data={S.hm} isMobile={isMobile} />
+              </div>
+              <div className="card">
+                <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Day-of-Week Breakdown</div>
+                <div className="catstrip" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: isMobile ? 8 : 0 }}>
+                  {DAYS.map((day, i) => {
+                    const mx = Math.max(...S.dR, 1), pct = Math.round(S.dR[i] / mx * 100) || 0;
+                    const best = S.dR[i] === Math.max(...S.dR);
+                    return (
+                      <div key={day} style={{ background: "#FDFAF6", borderRadius: 10, padding: 12, border: `1.5px solid ${best ? "#C4A870" : "#EDE6D8"}`, textAlign: "center", flexShrink: 0, minWidth: isMobile ? 100 : "auto" }}>
+                        <div style={{ fontSize: 10, color: best ? "#B08040" : "#9A9088", fontWeight: best ? 600 : 400, marginBottom: 8 }}>{day}</div>
+                        <div style={{ height: 48, display: "flex", alignItems: "flex-end", justifyContent: "center", marginBottom: 7 }}>
+                          <div style={{ width: 20, height: `${pct || 2}%`, background: best ? "#B08040" : "#D4C4A8", borderRadius: "3px 3px 0 0", minHeight: 3 }} />
+                        </div>
+                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600, color: best ? "#2A2118" : "#9A9088" }}>{fmt(S.dR[i], true)}</div>
+                        <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 3 }}>{S.dC[i]} visits</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─ DISCOUNTS ─ */}
+          {dashTab === "discounts" && (() => {
+            const today = todayStr();
+            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
+            const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 29);
+            const toDateStr = d => d.toISOString().slice(0, 10);
+            const discTxns = ranged.filter(t => t.discountAmt > 0);
+
+            // Per-person stats
+            const personMap = {};
+            discTxns.forEach(t => {
+              const person = t.discCourtesyBy || "(Not specified)";
+              if (!personMap[person]) personMap[person] = { count: 0, totalAmt: 0, totalPct: 0, pctCount: 0, flatCount: 0, history: [] };
+              const p = personMap[person];
+              p.count++;
+              p.totalAmt += t.discountAmt || 0;
+              if (t.discMode === "pct" && t.discount > 0) { p.totalPct += t.discount; p.pctCount++; }
+              else { p.flatCount++; }
+              p.history.push(t);
+            });
+
+            const sortedPersons = Object.entries(personMap).sort((a, b) => b[1].totalAmt - a[1].totalAmt);
+            const grandTotal = discTxns.reduce((s, t) => s + (t.discountAmt || 0), 0);
+            const grandCount = discTxns.length;
+
+            // Daily breakdown for chart (last 14 days)
+            const dayMap = {};
+            for (let i = 13; i >= 0; i--) {
+              const d = new Date(); d.setDate(d.getDate() - i);
+              dayMap[toDateStr(d)] = 0;
+            }
+            discTxns.forEach(t => { if (dayMap[t.date] !== undefined) dayMap[t.date] += t.discountAmt || 0; });
+            const dayKeys = Object.keys(dayMap);
+            const dayVals = Object.values(dayMap);
+            const maxDay = Math.max(...dayVals, 1);
+
+            return (
+              <div className="fade">
+                {/* Summary row */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
+                  {[
+                    { label: "Total Discounted", val: fmt(grandTotal, true), sub: `${grandCount} transactions`, color: "#A0303F" },
+                    { label: "Avg Discount", val: grandCount ? fmt(Math.round(grandTotal / grandCount), true) : "—", sub: "per transaction", color: "#B08040" },
+                    { label: "Discount Rate", val: ranged.length ? `${Math.round(grandCount / ranged.length * 100)}%` : "—", sub: "of all transactions", color: "#1A3A5C" },
+                    { label: "People Tracking", val: sortedPersons.filter(([k]) => k !== "(Not specified)").length, sub: "courtesy staff", color: "#3C2218" },
+                  ].map(({ label, val, sub, color }) => (
+                    <div key={label} className="card" style={{ padding: "14px 16px" }}>
+                      <div style={{ fontSize: 11, color: "#9A9088", fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 700, color }}>{val}</div>
+                      <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 3 }}>{sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 14-day discount bar chart */}
+                <div className="card" style={{ marginBottom: 14 }}>
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Discount Trend — Last 14 Days</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 70, marginBottom: 8 }}>
+                    {dayVals.map((v, i) => {
+                      const h = Math.max(Math.round(v / maxDay * 62), v > 0 ? 4 : 2);
+                      const isToday = dayKeys[i] === today;
+                      return (
+                        <div key={i} title={`${dayKeys[i]}: ${fmt(v)}`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 2 }}>
+                          {v > 0 && <div style={{ fontSize: 7, color: isToday ? "#A0303F" : "#D4C4A8" }}>{fmt(v, true)}</div>}
+                          <div style={{ width: "100%", height: h, background: isToday ? "#A0303F" : v > 0 ? "#D4708080" : "#EEE6D8", borderRadius: "2px 2px 0 0", minHeight: 2 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#B8AFA5" }}>
+                    <span>{dayKeys[0]}</span><span style={{ color: "#A0303F", fontWeight: 600 }}>Today</span>
+                  </div>
+                </div>
+
+                {/* Per-person table */}
+                <div className="card" style={{ marginBottom: 14 }}>
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Discount by Courtesy Person</div>
+                  {sortedPersons.length === 0 && <div style={{ fontSize: 12, color: "#C4B9AB", padding: 10 }}>No discounts recorded in this period.</div>}
+                  {sortedPersons.map(([person, stats]) => {
+                    const pct = grandTotal ? Math.round(stats.totalAmt / grandTotal * 100) : 0;
+                    const avgAmt = stats.count ? Math.round(stats.totalAmt / stats.count) : 0;
+                    const avgPct = stats.pctCount ? Math.round(stats.totalPct / stats.pctCount) : 0;
+                    return (
+                      <div key={person} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #F0EBE3" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: person === "(Not specified)" ? "#EDE6D8" : "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: person === "(Not specified)" ? "#9A9088" : "#FAF7F3", fontWeight: 700 }}>
+                              {person === "(Not specified)" ? "?" : person.charAt(0)}
+                            </div>
+                            <div>
+                              <div style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 600, fontSize: 14, color: "#2A2118" }}>{person}</div>
+                              <div style={{ fontSize: 11, color: "#9A9088" }}>{stats.count} discount{stats.count !== 1 ? "s" : ""} given</div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, fontSize: 16, color: "#A0303F" }}>{fmt(stats.totalAmt, true)}</div>
+                            <div style={{ fontSize: 11, color: "#9A9088" }}>{pct}% of total</div>
+                          </div>
+                        </div>
+                        <ProgBar pct={pct} color="#A0303F" />
+                        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                          {[
+                            { label: "Avg discount", val: fmt(avgAmt, true) },
+                            { label: "Avg %", val: avgPct > 0 ? `${avgPct}%` : "—" },
+                            { label: "Flat discounts", val: stats.flatCount },
+                            { label: "% discounts", val: stats.pctCount },
+                          ].map(({ label, val }) => (
+                            <div key={label} style={{ background: "#F8F5F0", borderRadius: 8, padding: "6px 10px", flex: "1 1 auto", minWidth: 70 }}>
+                              <div style={{ fontSize: 10, color: "#9A9088", marginBottom: 2 }}>{label}</div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>{val}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Full discount transaction log */}
+                <div className="card">
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Discount Log</div>
+                  {discTxns.length === 0 && <div style={{ fontSize: 12, color: "#C4B9AB" }}>No discounted transactions in this range.</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {discTxns.slice(0, 50).map(t => (
+                      <div key={t.slip} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                            <span style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 600, fontSize: 13, color: "#2A2118" }}>{t.customerName || "Walk-in"}</span>
+                            {t.discCourtesyBy && <span style={{ fontSize: 10, background: "#2A2118", color: "#FAF7F3", borderRadius: 4, padding: "1px 6px" }}>{t.discCourtesyBy}</span>}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#9A9088" }}>{t.date} • {t.time} • #{t.slip}</div>
+                          {t.discReason && <div style={{ fontSize: 11, color: "#B08040", marginTop: 2, fontStyle: "italic" }}>"{t.discReason}"</div>}
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, fontSize: 14, color: "#A0303F" }}>−{fmt(t.discountAmt)}</div>
+                          <div style={{ fontSize: 10, color: "#9A9088" }}>{t.discMode === "pct" ? `${t.discount}% off` : "Fixed"}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )
+      }
+
+      {/* ══ HISTORY ═════════════════════════════════════════════════════════ */}
+      {
+        view === "history" && (
+          <div style={{ padding: "20px 24px 80px", overflowY: "auto", height: "calc(100dvh - 62px)", paddingBottom: "env(safe-area-inset-bottom, 80px)" }} className="fade">
+
+            {/* Header + sub-tabs */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
+              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 700, color: "#2A2118" }}>
+                {hTab === "transactions" ? "Transaction History" : "Client Directory"}
+              </div>
+              <div style={{ display: "flex", background: "#F5F0E8", padding: 4, borderRadius: 10, gap: 2 }}>
+                {[["transactions", "📋 Transactions"], ["clients", "👥 Clients"]].map(([t, l]) => (
+                  <button key={t} className={`nav-tab ${hTab === t ? "on" : "off"}`}
+                    onClick={() => setHTab(t)} style={{ padding: "6px 16px", fontSize: 12 }}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── TRANSACTIONS sub-tab ── */}
+            {hTab === "transactions" && (<div className="fade">
+
+              {/* History filter bar */}
+              <div style={{ background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 14, padding: "16px 18px", marginBottom: 18, boxShadow: "0 1px 6px rgba(44,33,24,.04)" }}>
+                {/* Row 1 */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 18, alignItems: "flex-end", marginBottom: 14 }}>
+                  <div>
+                    <div className="filter-label">Period</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[["all", "All"], ["today", "Today"], ["7d", "7d"], ["30d", "30d"], ["90d", "90d"]].map(([r, l]) => (
+                        <button key={r} className={`rbtn ${hRange === r && !hFrom ? "on" : ""}`}
+                          onClick={() => { setHRange(r); setHFrom(""); setHTo(""); setHDate(""); }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="filter-label">Custom Range</div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <input type="date" className="inp" value={hFrom} onChange={e => { setHFrom(e.target.value); setHRange(""); }} onClick={e => { try { e.target.showPicker(); } catch (err) { } }} style={{ width: 128, padding: "5px 10px", fontSize: 11, cursor: "pointer" }} />
+                      <span style={{ color: "#C4B9AB", fontSize: 12 }}>→</span>
+                      <input type="date" className="inp" value={hTo} onChange={e => { setHTo(e.target.value); setHRange(""); }} onClick={e => { try { e.target.showPicker(); } catch (err) { } }} style={{ width: 128, padding: "5px 10px", fontSize: 11, cursor: "pointer" }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="filter-label">Search</div>
+                    <input className="inp" placeholder="🔍 Name, phone or slip…" value={hQ}
+                      onChange={e => setHQ(e.target.value)} style={{ width: 200, padding: "5px 10px", fontSize: 12 }} />
+                  </div>
+                </div>
+                {/* Row 2 */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 18, alignItems: "flex-end", paddingTop: 12, borderTop: "1px solid #F0EAE0" }}>
+                  <div>
+                    <div className="filter-label">Stylist</div>
+                    <select className="inp" value={hSty} onChange={e => setHSty(e.target.value)} style={{ width: 136, padding: "5px 10px", fontSize: 12 }}>
+                      <option value="">All Stylists</option>
+                      {dbStylists.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div className="filter-label">Category</div>
+                    <select className="inp" value={hCat} onChange={e => setHCat(e.target.value)} style={{ width: 148, padding: "5px 10px", fontSize: 12 }}>
+                      <option value="">All Categories</option>
+                      {Object.keys(SERVICES).map(cat => <option key={cat}>{cat}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div className="filter-label">Payment</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[["", "All"], ["CASH", "Cash"], ["ONLINE", "Online"], ["CARD", "Card"], ["SPLIT", "Split"]].map(([v, l]) => (
+                        <button key={l} className={`rbtn ${hPay === v ? "on" : ""}`} onClick={() => setHPay(v)}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ fontSize: 11, color: "#B8AFA5", whiteSpace: "nowrap", paddingBottom: 1 }}>
+                      {histTxns.length} records · {fmt(histTxns.reduce((s, t) => s + t.total, 0), true)}
+                    </div>
+                    {(hQ || hDate || hSty || hCat || hPay || hFrom || (hRange && hRange !== "all")) && (
+                      <button onClick={() => { setHQ(""); setHDate(""); setHSty(""); setHCat(""); setHPay(""); setHRange("all"); setHFrom(""); setHTo(""); }}
+                        style={{
+                          fontFamily: "'Outfit',sans-serif", fontSize: 11, color: "#9A9088", background: "transparent",
+                          border: "1.5px solid #E8E0D4", borderRadius: 7, padding: "7px 13px", cursor: "pointer", height: 34
+                        }}>
+                        ↺ Reset
+                      </button>
+                    )}
+                    <button onClick={exportHistCSV}
+                      style={{
+                        fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600,
+                        color: "#FFFFFF", background: "#2A2118", border: "none", borderRadius: 7,
+                        padding: "7px 15px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, height: 34
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#4A3828"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#2A2118"}>
+                      ⬇ Export CSV
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {!histTxns.length
+                ? <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                  <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, color: "#C4B9AB" }}>No transactions found</div>
+                </div>
+                : histTxns.map(txn => (
+                  <div key={txn.id} className="hrow card" style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>{txn.customerName}</span>
+                          {txn.customerPhone && <span style={{ fontSize: 11, color: "#B8AFA5", background: "#F5F0E8", padding: "2px 8px", borderRadius: 100 }}>📞 {txn.customerPhone}</span>}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 3 }}>#{txn.slip} · {txn.date} at {txn.time} · ✂️ {txn.stylist}</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span className="badge" style={{ background: txn.payMode === "CASH" ? "#D1FAE5" : txn.payMode === "ONLINE" ? "#DBEAFE" : "#FEF3C7", color: txn.payMode === "CASH" ? "#065F46" : txn.payMode === "ONLINE" ? "#1E40AF" : "#92400E" }}>{txn.payMode}</span>
+                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 600, color: "#2A2118" }}>{fmt(txn.total)}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {txn.cart.map((item, i) => {
+                        const color = getCatColor(item.service);
+                        const sty = item.stylist || txn.stylist || "";
+                        return (
+                          <span key={i} className="badge" style={{ background: `${color}14`, color, border: `1px solid ${color}28`, padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                            {SERVICES[item.category]?.icon} {item.service}{item.qty > 1 ? ` ×${item.qty}` : ""} · {fmt(item.price * item.qty, true)}
+                            {sty && <span style={{ background: `${color}25`, borderRadius: 100, padding: "0 5px", fontSize: 9, fontWeight: 700 }}>✂️ {sty}</span>}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {txn.discount > 0 && <div style={{ fontSize: 10, color: "#A0303F", marginTop: 8 }}>Discount {txn.discount}% applied — saved {fmt(txn.discountAmt)}</div>}
+                  </div>
+                ))
+              }
+            </div>)}{/* end transactions tab */}
+
+            {/* ── CLIENTS sub-tab ── */}
+            {hTab === "clients" && (<div className="fade">
+
+              {/* Search + summary */}
+              <div style={{ display: "flex", gap: 9, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+                <input className="inp" placeholder="🔍  Name or phone number…" value={clientQ}
+                  onChange={e => setClientQ(e.target.value)} style={{ flex: "1 1 200px" }} />
+                <div style={{ fontSize: 11, color: "#C4B9AB", whiteSpace: "nowrap" }}>
+                  {filteredClients.length} clients · {transactions.length} total visits
+                </div>
+              </div>
+
+              {/* Tier summary bar */}
+              {(() => {
+                const counts = { Diamond: 0, Gold: 0, Silver: 0, New: 0 };
+                clients.forEach(cl => { const t = cl.tier.split(" ")[1]; counts[t] = (counts[t] || 0) + 1; });
+                const tiers = [["💎", "Diamond", "#0E7490"], ["🥇", "Gold", "#B08040"], ["🥈", "Silver", "#6B7280"], ["🌱", "New", "#1A6B4A"]];
+                return (
+                  <div className="grid-4-mobile-2" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 18 }}>
+                    {tiers.map(([ic, t, col]) => {
+                      const isActive = tierFilter === t;
+                      return (
+                        <div key={t} onClick={() => setTierFilter(isActive ? "" : t)}
+                          style={{
+                            background: isActive ? col : "#FFFFFF",
+                            border: `1.5px solid ${isActive ? col : "#EDE6D8"}`, borderRadius: 10,
+                            padding: "10px 12px", textAlign: "center", borderTop: `3px solid ${col}`,
+                            cursor: "pointer", transition: "all .18s",
+                            boxShadow: isActive ? `0 4px 14px ${col}40` : "none",
+                            transform: isActive ? "translateY(-2px)" : "none"
+                          }}>
+                          <div style={{ fontSize: 18, marginBottom: 3 }}>{ic}</div>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: isActive ? "#FFF" : "#2A2118" }}>{counts[t] || 0}</div>
+                          <div style={{
+                            fontSize: 10, textTransform: "uppercase", letterSpacing: .8,
+                            color: isActive ? "rgba(255,255,255,.75)" : "#B8AFA5"
+                          }}>{t}</div>
+                          {isActive && <div style={{ fontSize: 9, color: "rgba(255,255,255,.8)", marginTop: 3, fontWeight: 600 }}>✓ Filtered</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Client cards */}
+              {filteredClients.length === 0
+                ? <div style={{ textAlign: "center", padding: "50px 0" }}>
+                  <div style={{ fontSize: 40, marginBottom: 10 }}>👥</div>
+                  <div style={{ fontSize: 14, color: "#C4B9AB" }}>No clients found</div>
+                </div>
+                : filteredClients.map(cl => {
+                  const isOpen = expandedClient === cl.name;
+                  const daysSince = Math.floor((new Date() - new Date(cl.lastVisit)) / (864e5));
+                  return (
+                    <div key={cl.name} style={{
+                      background: "#FFFFFF", border: "1px solid #EDE6D8",
+                      borderRadius: 14, marginBottom: 8, overflow: "hidden",
+                      boxShadow: isOpen ? "0 4px 20px rgba(44,33,24,.08)" : "none", transition: "box-shadow .2s"
+                    }}>
+
+                      {/* Row — always visible */}
+                      <div onClick={() => setExpandedClient(isOpen ? null : cl.name)}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", cursor: "pointer" }}>
+
+                        {/* Avatar */}
+                        <div style={{
+                          width: 42, height: 42, borderRadius: "50%", flexShrink: 0,
+                          background: "linear-gradient(135deg,#2A2118,#5A4030)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 17, fontWeight: 700, color: "#F5E6C8"
+                        }}>
+                          {cl.name[0].toUpperCase()}
+                        </div>
+
+                        {/* Name + tier */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{cl.name}</span>
+                            <span style={{
+                              fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100,
+                              background: `${cl.tierColor}15`, color: cl.tierColor
+                            }}>{cl.tier}</span>
+                            {cl.phone && <span style={{ fontSize: 11, color: "#B8AFA5", background: "#F5F0E8", padding: "2px 8px", borderRadius: 100 }}>📞 {cl.phone}</span>}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 2 }}>
+                            {daysSince === 0 ? "Last seen today" : daysSince === 1 ? "Last seen yesterday" : `Last seen ${daysSince}d ago`}
+                            <span style={{ margin: "0 5px", color: "#DDD" }}>·</span>
+                            {cl.topSvcs[0] && <span style={{ color: "#9A9088" }}>Loves {cl.topSvcs[0][0]}</span>}
+                          </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div style={{ display: "flex", gap: 16, alignItems: "center", flexShrink: 0 }}>
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: "#2A2118" }}>{cl.visits.length}</div>
+                            <div style={{ fontSize: 9, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .5 }}>Visits</div>
+                          </div>
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: "#B08040" }}>{fmt(cl.spend, true)}</div>
+                            <div style={{ fontSize: 9, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .5 }}>Spent</div>
+                          </div>
+                          <div style={{ fontSize: 16, color: "#D4C4B0", transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }}>›</div>
+                        </div>
+                      </div>
+
+                      {/* Expanded detail */}
+                      {isOpen && (
+                        <div style={{ borderTop: "1px solid #F0EAE0", padding: "14px 16px", background: "#FDFAF6" }}>
+
+                          {/* Stats row */}
+                          <div className="grid-3-mobile-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+                            {[
+                              { label: "Total Visits", val: cl.visits.length, icon: "🔁" },
+                              { label: "Avg / Visit", val: fmt(cl.avg, true), icon: "🎯" },
+                              { label: "Total Spend", val: fmt(cl.spend, true), icon: "💰" },
+                            ].map(s => (
+                              <div key={s.label} style={{
+                                background: "#FFFFFF", border: "1px solid #EDE6D8",
+                                borderRadius: 10, padding: "10px", textAlign: "center"
+                              }}>
+                                <div style={{ fontSize: 16, marginBottom: 4 }}>{s.icon}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{s.val}</div>
+                                <div style={{ fontSize: 9, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .6, marginTop: 2 }}>{s.label}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Fav services */}
+                          {cl.topSvcs.length > 0 && (
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{
+                                fontSize: 11, fontWeight: 600, color: "#9A9088",
+                                textTransform: "uppercase", letterSpacing: .8, marginBottom: 8
+                              }}>⭐ Favourite Services</div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                {cl.topSvcs.map(([svc, cnt]) => {
+                                  const cat = Object.entries(SERVICES).find(([, s]) => s.items.includes(svc))?.[0];
+                                  const col = SERVICES[cat]?.color || "#B08040";
+                                  const ico = SERVICES[cat]?.icon || "";
+                                  return (
+                                    <span key={svc} style={{
+                                      background: `${col}12`, color: col,
+                                      border: `1px solid ${col}25`, borderRadius: 100,
+                                      padding: "4px 11px", fontSize: 12, fontWeight: 600,
+                                      display: "inline-flex", alignItems: "center", gap: 5
+                                    }}>
+                                      {ico} {svc} <span style={{ opacity: .55 }}>×{cnt}</span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recent visits */}
+                          <div style={{
+                            fontSize: 11, fontWeight: 600, color: "#9A9088",
+                            textTransform: "uppercase", letterSpacing: .8, marginBottom: 8
+                          }}>📋 Recent Visits</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 220, overflowY: "auto" }}>
+                            {cl.visits.slice(0, 8).map(t => {
+                              const d = new Date(t.date);
+                              const mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+                              return (
+                                <div key={t.id} style={{
+                                  display: "flex", alignItems: "center", gap: 10,
+                                  background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 8, padding: "8px 12px"
+                                }}>
+                                  <div style={{ textAlign: "center", flexShrink: 0, minWidth: 28 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>{d.getDate()}</div>
+                                    <div style={{ fontSize: 9, color: "#B8AFA5", textTransform: "uppercase" }}>{mo}</div>
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                      fontSize: 12, color: "#3D3028", fontWeight: 500,
+                                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+                                    }}>
+                                      {t.cart.map(i => i.service).join(", ")}
+                                    </div>
+                                    <div style={{ fontSize: 10, color: "#B8AFA5", marginTop: 1 }}>✂️ {t.stylist}</div>
+                                  </div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#B08040", flexShrink: 0 }}>{fmt(t.total, true)}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Jump to transactions */}
+                          <button onClick={() => { setHTab("transactions"); setHQ(cl.name); }}
+                            style={{
+                              marginTop: 12, width: "100%", fontFamily: "'Outfit',sans-serif",
+                              fontSize: 12, fontWeight: 600, color: "#B08040", background: "#FBF6EE",
+                              border: "1.5px solid #EDE6D8", borderRadius: 8, padding: "8px", cursor: "pointer"
+                            }}>
+                            View all {cl.visits.length} transactions →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              }
+            </div>)}{/* end clients tab */}
+
+          </div>
+        )
+      }
+
+      {/* ══ ADMINISTRATIVE HUB (DASHBOARD) ════════════════════════════════════════ */}
+      {
+        view === "settings" && hasNavAccess(user.role, 'settings') && (
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", height: "calc(100dvh - 62px)", background: "#FDFAF6" }} className="fade">
+
+            {/* Sidebar / Tabs */}
+            <div style={{
+              width: isMobile ? "100%" : 240, background: "#FFFFFF", borderRight: isMobile ? "none" : "1px solid #EDE6D8",
+              borderBottom: isMobile ? "1px solid #EDE6D8" : "none",
+              display: "flex", flexDirection: isMobile ? "row" : "column", padding: isMobile ? "0" : "24px 0",
+              overflowX: isMobile ? "auto" : "visible",
+              flexShrink: 0
+            }} className="catstrip">
+              {!isMobile && (
+                <div style={{ padding: "0 24px 20px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: 1.2 }}>Management</div>
+                </div>
+              )}
+
+              {[
+                { id: "services", label: "Services Portfolio", icon: "✂️" },
+                { id: "staff", label: "Staff Registry", icon: "👥" },
+                { id: "courtesy", label: "Courtesy Staff", icon: "🎁" },
+                { id: "profile", label: "Account Settings", icon: "👤" },
+              ].map(item => (
+                <div
+                  key={item.id}
+                  onClick={() => setAdminTab(item.id)}
+                  style={{
+                    padding: isMobile ? "14px 20px" : "12px 24px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
+                    background: adminTab === item.id ? "#FBF6EE" : "transparent",
+                    borderRight: (!isMobile && adminTab === item.id) ? "3px solid #B08040" : "none",
+                    borderBottom: (isMobile && adminTab === item.id) ? "3px solid #B08040" : "none",
+                    transition: "all .2s",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  <span style={{ fontSize: 18, opacity: adminTab === item.id ? 1 : 0.6 }}>{item.icon}</span>
+                  <span style={{
+                    fontSize: 14, fontWeight: adminTab === item.id ? 700 : 500,
+                    color: adminTab === item.id ? "#2A2118" : "#9A9088"
+                  }}>{item.label}</span>
+                </div>
+              ))}
+
+
+              {!isMobile && (
+                <div style={{ marginTop: "auto", padding: "20px 24px" }}>
+                  <div style={{
+                    background: "#fdfaf6", borderRadius: 12, padding: 12, border: "1px solid #EDE6D8",
+                    display: "flex", alignItems: "center", gap: 10
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: "50%", background: "#2A2118",
+                      color: "#F5E6C8", display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, fontWeight: 700
+                    }}>{user.username[0].toUpperCase()}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.username}</div>
+                      <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase" }}>{user.role}</div>
+                    </div>
+                    <button onClick={onLogout} title="Logout" style={{
+                      background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer",
+                      fontSize: 10, fontWeight: 700, color: "#991B1B", padding: "6px 10px", transition: "all .2s"
+                    }}>LOGOUT</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Content Area */}
+            <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "20px 14px 100px" : "32px 40px", height: "100%", paddingBottom: isMobile ? "env(safe-area-inset-bottom, 100px)" : 0 }}>
+
+              {/* 1. Services Tab */}
+              {adminTab === "services" && (
+                <div className="fade">
+                  <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 26, fontWeight: 800, color: "#2A2118" }}>Services & Pricing</h1>
+                      <p style={{ fontSize: 14, color: "#9A9088", marginTop: 4 }}>Manage salon offerings and price lists.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowAddModal(true)}
+                      className="btn-gold"
+                      style={{ padding: "8px 16px", fontSize: 12, borderRadius: 8, width: "auto" }}
+                    >+ Add Service</button>
+                  </div>
+
+                  <div className="stack-mobile" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.8fr", gap: 24, marginBottom: 32 }}>
+
+                    {/* Left Column: Services Registry */}
+                    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#5A4030", whiteSpace: "nowrap" }}>Services Registry</span>
+                        <input
+                          className="inp"
+                          placeholder="🔍 Search services..."
+                          value={svcSearch}
+                          onChange={e => setSvcSearch(e.target.value)}
+                          style={{ fontSize: 12, padding: "6px 12px", maxWidth: 200 }}
+                        />
+                      </div>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead style={{ background: "#f8f5f0", borderBottom: "1px solid #EDE6D8" }}>
+                            <tr>
+                              <th style={{ textAlign: "left", padding: "12px 20px", fontSize: 10, color: "#9A9088", textTransform: "uppercase" }}>Service</th>
+                              <th style={{ textAlign: "left", padding: "12px 20px", fontSize: 10, color: "#9A9088", textTransform: "uppercase" }}>Price</th>
+                              <th style={{ textAlign: "right", padding: "12px 20px", fontSize: 10, color: "#9A9088", textTransform: "uppercase" }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dbServices.filter(s => !svcSearch || s.name.toLowerCase().includes(svcSearch.toLowerCase()) || s.category.toLowerCase().includes(svcSearch.toLowerCase())).map(s => (
+                              <React.Fragment key={s.id}>
+                                <tr style={{ borderBottom: "1px solid #f0eae0", background: editingSvc?.id === s.id ? "#FBF6EE" : "transparent" }}>
+                                  <td style={{ padding: "12px 20px" }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#2A2118" }}>{s.name}</div>
+                                    <div style={{ fontSize: 10, color: categories.some(c => c.name === s.category) || s.category === 'Deal' ? s.color : "#A0303F", fontWeight: 700 }}>
+                                      {categories.some(c => c.name === s.category) || s.category === 'Deal' ? s.category : "⚠️ DELETED CATEGORY"}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: "12px 20px", fontSize: 13, fontWeight: 800, color: "#B08040" }}>{fmt(s.price)}</td>
+                                  <td style={{ padding: "12px 20px", textAlign: "right" }}>
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                                      <button onClick={() => {
+                                        const isCatActive = categories.some(c => c.name === s.category) || s.category === 'Deal';
+                                        setEditingSvc({ id: s.id, name: s.name, category: isCatActive ? s.category : '', price: s.price, included_services: s.included_services || [] });
+                                      }} style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>Edit</button>
+                                      <button onClick={() => setDelSvcConfirmId(s.id)} style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>Delete</button>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {editingSvc?.id === s.id && (
+                                  <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
+                                    <td colSpan={3} style={{ padding: 16 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingSvc.name}</div>
+                                      <div className="grid-3-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Name</label>
+                                          <input className="inp" value={editingSvc.name} onChange={e => setEditingSvc(prev => ({ ...prev, name: e.target.value }))} />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Category</label>
+                                          <select className="inp" value={editingSvc.category} onChange={e => setEditingSvc(prev => ({ ...prev, category: e.target.value }))}>
+                                            <option value="" disabled>Select Category</option>
+                                            <option value="Deal">Deal</option>
+                                            {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Price (PKR)</label>
+                                          <input className="inp" type="number" value={editingSvc.price} onChange={e => setEditingSvc(prev => ({ ...prev, price: Number(e.target.value) }))} />
+                                        </div>
+                                        {editingSvc.category === 'Deal' && (
+                                          <div style={{ gridColumn: "1 / -1", marginTop: 6 }}>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Included Services</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, maxHeight: 160, overflowY: 'auto', border: '1px solid #E8E0D4', borderRadius: 8, padding: 8, background: '#FDFAF6' }}>
+                                              {dbServices.filter(svc => svc.category !== 'Deal').map(svc => {
+                                                const isSelected = editingSvc.included_services?.includes(svc.name);
+                                                return (
+                                                  <div key={svc.id} onClick={() => {
+                                                    const next = isSelected ? (editingSvc.included_services || []).filter(n => n !== svc.name) : [...(editingSvc.included_services || []), svc.name];
+                                                    setEditingSvc(prev => ({ ...prev, included_services: next }));
+                                                  }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: isSelected ? '#F5F0E8' : '#FFF', border: `1px solid ${isSelected ? '#C4A870' : '#E8E0D4'}`, borderRadius: 6, cursor: 'pointer', transition: 'all .1s' }}>
+                                                    <div style={{ width: 14, height: 14, borderRadius: 3, border: `1px solid ${isSelected ? '#2A2118' : '#C4B9AB'}`, background: isSelected ? '#2A2118' : '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                      {isSelected && <svg width="8" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                      <span style={{ fontSize: 11, fontWeight: 600, color: '#2A2118', lineHeight: 1.2 }}>{svc.name}</span>
+                                                      <span style={{ fontSize: 10, color: '#9A9088' }}>{fmt(svc.price)}</span>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                                        <button
+                                          onClick={async () => {
+                                            if (!editingSvc.category) return showToast('Please select a valid category', 'error');
+                                            await fetch(`/api/services/${editingSvc.id}`, {
+                                              method: 'PUT',
+                                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                              body: JSON.stringify(editingSvc)
+                                            });
+                                            fetchServices();
+                                            setEditingSvc(null);
+                                          }}
+                                          className="btn-gold" style={{ width: "auto", padding: "8px 20px", borderRadius: 8, fontSize: 12 }}
+                                        >Save Changes</button>
+                                        <button onClick={() => setEditingSvc(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Categories */}
+                    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#5A4030", whiteSpace: "nowrap" }}>Categories</span>
+                        <input
+                          className="inp"
+                          placeholder="🔍 Filter..."
+                          value={catSearch}
+                          onChange={e => setCatSearch(e.target.value)}
+                          style={{ fontSize: 12, padding: "6px 12px", flex: 1, maxWidth: 140 }}
+                        />
+                        <button onClick={() => setShowCatLabelModal(true)} style={{ background: "#2A2118", color: "#FFF", border: "none", borderRadius: 6, fontSize: 10, padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap" }}>+ New</button>
+                      </div>
+                      <div style={{ padding: "8px 0" }}>
+                        {categories.filter(c => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase())).map(c => (
+                          <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid #f0eae0" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <span style={{ fontSize: 18 }}>{c.icon}</span>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "#2A2118" }}>{c.name}</span>
+                            </div>
+                            <button onClick={() => setDelCatConfirmId(c.id)} style={{ background: "none", border: "none", color: "#A0303F", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Staff Tab */}
+              {adminTab === "staff" && (
+                <div className="fade">
+                  <div style={{ marginBottom: isMobile ? 16 : 24, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 8 }}>Staff Registry</h1>
+                      <div style={{ display: "flex", background: "#F5F0E8", padding: 4, borderRadius: 10, gap: 2, width: "fit-content", marginBottom: 12 }}>
+                        {[["stylists", "✂️ Stylists"], ["users", "💻 System Access"]].map(([t, l]) => (
+                          <button key={t} className={`nav-tab ${staffSubTab === t ? "on" : "off"}`}
+                            onClick={() => { setStaffSubTab(t); setEditingUser(null); setEditingStylist(null); }} style={{ padding: "6px 14px", fontSize: 13, height: 32, whiteSpace: "nowrap" }}>{l}</button>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: 13, color: "#9A9088", marginTop: 4 }}>Manage salon members and POS access roles.</p>
+                    </div>
+                    {(staffSubTab === 'stylists' || creatableRoles(user.role).length > 0) && (
+                      <button
+                        onClick={() => staffSubTab === 'stylists' ? setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '' }) : setEditingUser({ id: 'new', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
+                        className="btn-gold"
+                        style={{ padding: "8px 16px", fontSize: 12, borderRadius: 8, width: "auto" }}
+                      >{staffSubTab === 'stylists' ? '+ Add Stylist' : '+ Add Member'}</button>
+                    )}
+                  </div>
+
+                  {/* Add User Form */}
+                  {editingUser && editingUser.id === 'new' && (
+                    <div className="card" style={{ marginBottom: 20, padding: 20 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>
+                        ➕ Add New Member
+                      </div>
+                      {/* hidden inputs to trick browser autofill */}
+                      <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
+                      <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+
+                      <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username</label>
+                          <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username (no spaces)" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
+                          <input className="inp" type="email" autoComplete="off" value={editingUser.email || ''} onChange={e => setEditingUser(prev => ({ ...prev, email: e.target.value }))} placeholder="Enter email" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role</label>
+                          <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
+                            {creatableRoles(user.role).map(([val, label]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password</label>
+                          <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Enter password" />
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                        <button
+                          onClick={async () => {
+                            try {
+                              if (!editingUser.username || !editingUser.password) return showToast('Username and password are required', 'error');
+                              const res = await fetch('/api/users', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ username: editingUser.username, password: editingUser.password, role: editingUser.role, email: editingUser.email })
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.message || 'Error creating user');
+                              setDbUsers(prev => [...prev, data]);
+                              setEditingUser(null);
+                            } catch (err) {
+                              showToast(err.message, 'error');
+                            }
+                          }}
+                          className="btn-gold" style={{ width: "auto", padding: "10px 24px", borderRadius: 8 }}
+                        >Create User</button>
+                        <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px" }}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub Tab: Stylists */}
+                  {staffSubTab === "stylists" && (
+                    <div className="fade">
+                      {/* Add Stylist Form (Top) */}
+                      {editingStylist && editingStylist.id === 'new' && (
+                        <div className="card" style={{ marginBottom: 20, padding: 20 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>
+                            ➕ Add New Stylist
+                          </div>
+                          <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
+                              <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} placeholder="e.g. Sana" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Phone Number</label>
+                              <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
+                              <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} placeholder="sana@example.com" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Address</label>
+                              <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} placeholder="Full residential address" />
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                            <button
+                              onClick={async () => {
+                                if (!editingStylist.name) return showToast('Name is required', 'error');
+                                const res = await fetch('/api/stylists', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                  body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email })
+                                });
+                                if (res.ok) fetchStylists();
+                                setEditingStylist(null);
+                              }}
+                              className="btn-gold" style={{ width: "auto", padding: "10px 24px", borderRadius: 8 }}
+                            >Add Stylist</button>
+                            <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px" }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="card" style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                        <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
+                          <input
+                            className="inp"
+                            placeholder="🔍 Search stylists..."
+                            value={stylistSearch}
+                            onChange={e => setStylistSearch(e.target.value)}
+                            style={{ fontSize: 12, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}
+                          />
+                        </div>
+                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 600 : "auto" }}>
+                          <thead style={{ background: "#f8f5f0", borderBottom: "1px solid #EDE6D8" }}>
+                            <tr>
+                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Stylist</th>
+                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Contact</th>
+                              <th style={{ textAlign: "right", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Joined</th>
+                              <th style={{ textAlign: "right", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dbStylists.filter(s => !stylistSearch || s.name.toLowerCase().includes(stylistSearch.toLowerCase()) || (s.phone || '').includes(stylistSearch) || (s.email || '').toLowerCase().includes(stylistSearch.toLowerCase())).map(s => (
+                              <React.Fragment key={s.id}>
+                                <tr style={{ borderBottom: "1px solid #f0eae0", background: editingStylist?.id === s.id ? "#FBF6EE" : "transparent" }}>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                      <div style={{
+                                        width: 36, height: 36, borderRadius: "50%", background: s.color || "#F5F0E8", color: s.color ? "#FFF" : "#2A2118",
+                                        display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18
+                                      }}>{s.name[0]}</div>
+                                      <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 14 }}>{s.name}</div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
+                                    <div style={{ fontSize: 12, color: "#2A2118", marginBottom: 2 }}>{s.phone || 'No phone added'}</div>
+                                    <div style={{ fontSize: 11, color: "#9A9088", marginBottom: 2 }}>{s.email || 'No email added'}</div>
+                                    <div style={{ fontSize: 11, color: "#9A9088" }}>{s.address || '—'}</div>
+                                  </td>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", textAlign: "right", fontSize: 11, color: "#9A9088" }}>
+                                    {s.joined_date}
+                                  </td>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", textAlign: "right" }}>
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10 }}>
+                                      <button
+                                        onClick={() => setEditingStylist({ id: s.id, name: s.name, phone: s.phone, address: s.address, email: s.email || '' })}
+                                        style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                      >Edit</button>
+                                      <button
+                                        onClick={() => setDelStylistConfirmId(s.id)}
+                                        style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                      >Remove</button>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {editingStylist?.id === s.id && (
+                                  <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
+                                    <td colSpan={4} style={{ padding: 16 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingStylist.name}</div>
+                                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? 6 : 10 }}>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
+                                          <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Phone Number</label>
+                                          <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Email</label>
+                                          <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Address</label>
+                                          <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} />
+                                        </div>
+                                      </div>
+                                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                                        <button
+                                          onClick={async () => {
+                                            if (!editingStylist.name) return showToast('Name is required', 'error');
+                                            await fetch(`/api/stylists/${editingStylist.id}`, {
+                                              method: 'PUT',
+                                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                              body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email })
+                                            });
+                                            fetchStylists();
+                                            setEditingStylist(null);
+                                          }}
+                                          className="btn-gold" style={{ width: "auto", padding: "8px 20px", borderRadius: 8, fontSize: 12 }}
+                                        >Save Changes</button>
+                                        <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                            {dbStylists.length === 0 && (
+                              <tr>
+                                <td colSpan={4} style={{ padding: 40, textAlign: "center", color: "#9A9088", fontSize: 13 }}>No stylists added yet.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub Tab: System Access (Users) */}
+                  {staffSubTab === "users" && (
+                    <div className="fade">
+                      <div className="card" style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                        <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
+                          <input
+                            className="inp"
+                            placeholder="🔍 Search users..."
+                            value={userSearch}
+                            onChange={e => setUserSearch(e.target.value)}
+                            style={{ fontSize: 12, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}
+                          />
+                        </div>
+                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 550 : "auto" }}>
+                          <thead style={{ background: "#f8f5f0", borderBottom: "1px solid #EDE6D8" }}>
+                            <tr>
+                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>User</th>
+                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Email</th>
+                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Role</th>
+                              <th style={{ textAlign: "right", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dbUsers.filter(u => !userSearch || u.username.toLowerCase().includes(userSearch.toLowerCase()) || (u.email || '').toLowerCase().includes(userSearch.toLowerCase()) || u.role.includes(userSearch.toLowerCase())).map(u => (
+                              <React.Fragment key={u.id}>
+                                <tr style={{ borderBottom: "1px solid #f0eae0", background: editingUser?.id === u.id ? "#FBF6EE" : "transparent" }}>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                      <div style={{
+                                        width: 36, height: 36, borderRadius: "50%", background: "#F5F0E8",
+                                        display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700
+                                      }}>{u.username[0].toUpperCase()}</div>
+                                      <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 14 }}>{u.username}</div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", fontSize: isMobile ? 11 : 12, color: "#9A9088" }}>{u.email || '—'}</td>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
+                                    <span style={{
+                                      padding: "4px 12px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase",
+                                      ...roleBadgeStyle(u.role)
+                                    }}>{u.role}</span>
+                                  </td>
+                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", textAlign: "right" }}>
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10 }}>
+                                      {(user.role === 'superadmin' || (ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0)) && (
+                                        <button
+                                          onClick={() => setEditingUser({ id: u.id, username: u.username, role: u.role, password: '' })}
+                                          style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                        >Edit</button>
+                                      )}
+                                      {user.username !== u.username && canDeleteUser(user.role, u.role) && (
+                                        <button
+                                          onClick={() => setDelUserConfirmId(u.id)}
+                                          style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                        >Remove</button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                                {editingUser?.id === u.id && (
+                                  <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
+                                    <td colSpan={4} style={{ padding: 16 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingUser.username}</div>
+                                      <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
+                                      <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+                                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? 6 : 10 }}>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Role</label>
+                                          <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
+                                            {creatableRoles(user.role).map(([val, label]) => (
+                                              <option key={val} value={val}>{label}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>New Password (optional)</label>
+                                          <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Leave empty to keep" />
+                                        </div>
+                                      </div>
+                                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                                        <button
+                                          onClick={async () => {
+                                            try {
+                                              const body = { role: editingUser.role };
+                                              if (editingUser.password) body.password = editingUser.password;
+                                              const res = await fetch(`/api/users/${editingUser.id}`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                body: JSON.stringify(body)
+                                              });
+                                              const data = await res.json();
+                                              if (!res.ok) throw new Error(data.message || 'Error updating user');
+                                              setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, role: editingUser.role } : x));
+                                              setEditingUser(null);
+                                            } catch (err) {
+                                              showToast(err.message, 'error');
+                                            }
+                                          }}
+                                          className="btn-gold" style={{ width: "auto", padding: "8px 20px", borderRadius: 8, fontSize: 12 }}
+                                        >Save Changes</button>
+                                        <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Profile Tab */}
+              {adminTab === "courtesy" && (
+                <div className="fade" style={{ maxWidth: 600, width: "100%" }}>
+                  <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 6 }}>Courtesy Staff</h1>
+                  <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24 }}>These names appear in the discount "Courtesy by" dropdown when giving discounts. Add or remove people to keep the list accurate.</p>
+
+                  {/* Add new person */}
+                  <div className="card" style={{ marginBottom: 20 }}>
+                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 14 }}>Add Person</div>
+                    <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+                      <input
+                        className="inp"
+                        placeholder="Enter name..."
+                        value={newCourtesyName}
+                        onChange={e => setNewCourtesyName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && newCourtesyName.trim() && !courtesyPersons.includes(newCourtesyName.trim())) {
+                            setCourtesyPersons([...courtesyPersons, newCourtesyName.trim()]);
+                            setNewCourtesyName("");
+                          }
+                        }}
+                        style={{ flex: 1, minWidth: 0, fontSize: 14, width: "auto", boxSizing: "border-box" }}
+                      />
+                      <button
+                        className="btn-gold"
+                        style={{ padding: "12px 24px", fontSize: 13, width: "auto", flexShrink: 0, whiteSpace: "nowrap", opacity: (!newCourtesyName.trim() || courtesyPersons.includes(newCourtesyName.trim())) ? 0.5 : 1 }}
+                        disabled={!newCourtesyName.trim() || courtesyPersons.includes(newCourtesyName.trim())}
+                        onClick={() => {
+                          const n = newCourtesyName.trim();
+                          if (n && !courtesyPersons.includes(n)) {
+                            setCourtesyPersons([...courtesyPersons, n]);
+                            setNewCourtesyName("");
+                          }
+                        }}
+                      >+ Add</button>
+                    </div>
+                    {newCourtesyName.trim() && courtesyPersons.includes(newCourtesyName.trim()) && (
+                      <div style={{ fontSize: 11, color: "#A0303F", marginTop: 6 }}>⚠ This name already exists in the list.</div>
+                    )}
+                  </div>
+
+                  {/* Current list */}
+                  <div className="card">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Current List</div>
+                      <div style={{ fontSize: 12, color: "#9A9088" }}>{courtesyPersons.length} {courtesyPersons.length === 1 ? "person" : "people"}</div>
+                    </div>
+                    <input
+                      className="inp"
+                      placeholder="🔍 Search list..."
+                      value={courtesySearch}
+                      onChange={e => setCourtesySearch(e.target.value)}
+                      style={{ fontSize: 12, padding: "7px 12px", width: "100%", boxSizing: "border-box", marginBottom: 12 }}
+                    />
+                    {courtesyPersons.length === 0 && (
+                      <div style={{ fontSize: 13, color: "#C4B9AB", padding: "16px 0", textAlign: "center" }}>No courtesy staff added yet.</div>
+                    )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {courtesyPersons.filter(p => !courtesySearch || p.toLowerCase().includes(courtesySearch.toLowerCase())).map((person, idx) => (
+                        <div key={person} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
+                          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#FAF7F3", fontWeight: 700, flexShrink: 0 }}>
+                            {person.charAt(0)}
+                          </div>
+                          <div style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontWeight: 600, fontSize: 14, color: "#2A2118" }}>{person}</div>
+                          <button
+                            onClick={() => setCourtesyPersons(courtesyPersons.filter((_, i) => i !== idx))}
+                            style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#A0303F", cursor: "pointer", flexShrink: 0 }}
+                          >Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                    {courtesyPersons.length > 0 && (
+                      <button
+                        onClick={() => { if (confirm("Reset to default list?")) { setCourtesyPersons(DEFAULT_COURTESY_PERSONS); } }}
+                        style={{ marginTop: 16, background: "none", border: "1.5px solid #EDE6D8", borderRadius: 8, padding: "8px 16px", fontSize: 12, color: "#9A9088", cursor: "pointer", width: "100%" }}
+                      >↺ Reset to defaults</button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {adminTab === "profile" && (
+                <div className="fade" style={{ maxWidth: 1200 }}>
+                  <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 24 }}>Account Settings</h1>
+
+                  <div className="grid-3-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 24, alignItems: "flex-start" }}>
+
+                    {/* ── Left Column: Password Reset ── */}
+                    <div className="card">
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>Password Reset</div>
+                      <div style={{ marginBottom: 20 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>Username</label>
+                        <input className="inp" value={user.username} disabled />
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>Role</label>
+                        <input className="inp" value={user.role} disabled style={{ textTransform: "capitalize" }} />
+                      </div>
+                      <div className="divhr" />
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>New Password</label>
+                        <input className="inp" type="password" autoComplete="new-password" value={profilePw} onChange={e => setProfilePw(e.target.value)} placeholder="Enter new password" />
+                      </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>Confirm Password</label>
+                        <input className="inp" type="password" autoComplete="new-password" value={profilePwConfirm} onChange={e => setProfilePwConfirm(e.target.value)} placeholder="Re-enter password" />
+                        {profilePwConfirm && profilePw !== profilePwConfirm && (
+                          <div style={{ fontSize: 11, color: "#A0303F", marginTop: 6 }}>⚠ Passwords do not match</div>
+                        )}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!profilePw) return showToast('Please enter a new password', 'error');
+                          if (profilePw !== profilePwConfirm) return showToast('Passwords do not match', 'error');
+
+                          try {
+                            const res = await fetch('/api/users/profile', {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ password: profilePw })
+                            });
+
+                            const data = await res.json();
+
+                            if (!res.ok) {
+                              if (res.status === 404) {
+                                throw new Error("User session might be stale. Please Logout and Login again to refresh your account.");
+                              }
+                              throw new Error(data.message || data.error || `Error ${res.status}: Failed to update password`);
+                            }
+
+                            showToast('Password updated successfully!');
+                            setProfilePw('');
+                            setProfilePwConfirm('');
+                          } catch (err) {
+                            showToast(err.message, 'error');
+                          }
+                        }}
+                        className="btn-gold"
+                        style={{
+                          width: "100%",
+                          padding: 12,
+                          marginBottom: 16,
+                          opacity: (!profilePw || profilePw !== profilePwConfirm) ? 0.7 : 1
+                        }}
+                      >Update Password</button>
+                    </div>
+
+                    {/* ── Middle Column: Branding Settings ── */}
+                    <div className="card">
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>Branding</div>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>Salon Name</label>
+                        <input
+                          className="inp"
+                          value={salonName}
+                          onChange={e => setSalonName(e.target.value)}
+                          placeholder="e.g. Noorkada POS"
+                        />
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>Salon Address</label>
+                        <input className="inp" value={salonAddress} onChange={e => setSalonAddress(e.target.value)} placeholder="e.g. 14-A Pir Khursheed Colony Rd, Multan" />
+                      </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 8 }}>Logo Style</label>
+                        <select
+                          className="inp"
+                          value={salonLogo === 'default' ? 'default' : 'custom'}
+                          onChange={e => {
+                            if (e.target.value === 'default') {
+                              setSalonLogo('default');
+                            } else {
+                              // If they pick custom but it was default, we set a temporary empty string or 'custom' placeholder 
+                              // so the upload inputs show up.
+                              if (salonLogo === 'default') setSalonLogo('');
+                            }
+                          }}
+                        >
+                          <option value="default">Default Letter Icon</option>
+                          <option value="custom">Custom Image</option>
+                        </select>
+                      </div>
+
+                      {salonLogo !== 'default' && (
+                        <div className="fade" style={{ marginBottom: 16 }}>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Upload Logo</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ fontSize: 11, marginBottom: 10 }}
+                            onChange={e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setSalonLogo(reader.result);
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <div style={{ fontSize: 10, color: "#9A9088", marginBottom: 4 }}>OR Paste Image URL</div>
+                          <input
+                            className="inp"
+                            style={{ fontSize: 12 }}
+                            value={salonLogo.startsWith('data:') ? '' : salonLogo}
+                            onChange={e => setSalonLogo(e.target.value)}
+                            placeholder="https://example.com/logo.png"
+                          />
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: 16, marginBottom: 16, display: "flex", alignItems: "center", gap: 10, background: "#f8f5f0", padding: "12px", borderRadius: 8 }}>
+                        <input type="checkbox" id="show-salon-name-prof" checked={showSalonName} onChange={e => setShowSalonName(e.target.checked)} style={{ width: 16, height: 16, accentColor: "#B08040", cursor: "pointer", flexShrink: 0 }} />
+                        <div>
+                          <label htmlFor="show-salon-name-prof" style={{ fontSize: 12, color: "#3D3028", cursor: "pointer", fontWeight: 600, display: "block" }}>
+                            Show Brand Name on Slips & Receipts
+                          </label>
+                          <div style={{ fontSize: 10, color: "#9A9088", marginTop: 2 }}>
+                            Prints the salon name above the logo.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "#fdfaf6", borderRadius: 8, border: "1px solid #EDE6D8" }}>
+                        <div style={{ width: salonLogo === "default" ? 32 : "auto", maxWidth: 100, height: 32, borderRadius: salonLogo === "default" ? "50%" : "6px", background: "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                          {salonLogo === 'default' ? (
+                            <span style={{ color: "#F5E6C8", fontSize: 16, fontWeight: 800 }}>{(salonName || "N")[0]}</span>
+                          ) : (
+                            <img src={salonLogo} style={{ width: "auto", height: "100%", maxWidth: "100%", objectFit: "contain" }} alt="Logo" />
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118" }}>Preview</div>
+                      </div>
+                    </div>
+
+                    {/* ── Right Column: Email SMTP Setup ── */}
+                    <div className="card">
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>Email Setup (SMTP)</div>
+                      <div style={{ display: "grid", gap: 12 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>SMTP Host</label>
+                          <input className="inp" style={{ fontSize: 12 }} value={smtpSettings.smtp_host} onChange={e => setSmtpSettings(prev => ({ ...prev, smtp_host: e.target.value }))} placeholder="smtp.gmail.com" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>SMTP Port</label>
+                          <input className="inp" style={{ fontSize: 12 }} value={smtpSettings.smtp_port} onChange={e => setSmtpSettings(prev => ({ ...prev, smtp_port: e.target.value }))} placeholder="587" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>User / Email</label>
+                          <input className="inp" style={{ fontSize: 12 }} value={smtpSettings.smtp_user} onChange={e => setSmtpSettings(prev => ({ ...prev, smtp_user: e.target.value }))} placeholder="your-email@gmail.com" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password / App Pass</label>
+                          <input className="inp" type="password" style={{ fontSize: 12 }} value={smtpSettings.smtp_pass} onChange={e => setSmtpSettings(prev => ({ ...prev, smtp_pass: e.target.value }))} placeholder="••••••••••••" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Sender Name</label>
+                          <input className="inp" style={{ fontSize: 12 }} value={smtpSettings.smtp_from_name} onChange={e => setSmtpSettings(prev => ({ ...prev, smtp_from_name: e.target.value }))} placeholder="Noorkada POS" />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Sender Email</label>
+                          <input className="inp" style={{ fontSize: 12 }} value={smtpSettings.smtp_from_email} onChange={e => setSmtpSettings(prev => ({ ...prev, smtp_from_email: e.target.value }))} placeholder="noreply@example.com" />
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/settings/smtp', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                              body: JSON.stringify(smtpSettings)
+                            });
+                            const data = await res.json();
+                            if (res.ok) showToast('SMTP Settings saved successfully!');
+                            else throw new Error(data.error || 'Failed to save settings');
+                          } catch (err) { showToast(err.message, 'error'); }
+                        }}
+                        className="btn-gold" style={{ width: "100%", padding: 12, marginTop: 16 }}
+                      >Save Email Settings</button>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        )
+      }
+
+      {/* Modals placed outside main layouts */}
+      {
+        showCatLabelModal && (
+          <div className="ovl" onClick={() => setShowCatLabelModal(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 360, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>New Category</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 20 }}>Enter details for the new category.</p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Name</label>
+                  <input
+                    autoFocus
+                    className="inp"
+                    placeholder="e.g. Massages"
+                    value={newCatLabel}
+                    onChange={e => setNewCatLabel(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Icon</label>
+                  <input
+                    className="inp"
+                    placeholder="e.g. ✨"
+                    value={newCatIcon}
+                    onChange={e => setNewCatIcon(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button className="btn-ghost" style={{ flex: 1, padding: "10px 0" }} onClick={() => setShowCatLabelModal(false)}>Cancel</button>
+                <button className="btn-gold" style={{ flex: 1, padding: "10px 0" }} onClick={() => {
+                  if (newCatLabel.trim()) {
+                    addCategory({ name: newCatLabel.trim(), icon: newCatIcon.trim() || "✨", color: "#B08040" });
+                    setNewCatLabel("");
+                    setNewCatIcon("✨");
+                    setShowCatLabelModal(false);
+                  }
+                }}>Add</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        delCatConfirmId && (
+          <div className="ovl" onClick={() => setDelCatConfirmId(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 380, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FEF2F2", color: "#991B1B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>⚠</div>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Delete Category?</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24, lineHeight: 1.5 }}>Are you sure you want to delete this category? Services currently in this category will become un-categorized.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => setDelCatConfirmId(null)}>Cancel</button>
+                <button className="btn-gold" style={{ flex: 1, padding: "8px 0", background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }} onClick={() => deleteCategory(delCatConfirmId)}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        delSvcConfirmId && (
+          <div className="ovl" onClick={() => setDelSvcConfirmId(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 380, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FEF2F2", color: "#991B1B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>⚠</div>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Delete Service?</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24, lineHeight: 1.5 }}>Are you sure you want to delete this service? This action cannot be undone.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => setDelSvcConfirmId(null)}>Cancel</button>
+                <button className="btn-gold" style={{ flex: 1, padding: "8px 0", background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }} onClick={() => deleteService(delSvcConfirmId)}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        delStylistConfirmId && (
+          <div className="ovl" onClick={() => setDelStylistConfirmId(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 380, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FEF2F2", color: "#991B1B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>⚠</div>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Remove Stylist?</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24, lineHeight: 1.5 }}>Are you sure you want to remove this stylist? This action cannot be undone.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => setDelStylistConfirmId(null)}>Cancel</button>
+                <button className="btn-gold" style={{ flex: 1, padding: "8px 0", background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }} onClick={() => deleteStylist(delStylistConfirmId)}>Remove</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        delUserConfirmId && (
+          <div className="ovl" onClick={() => setDelUserConfirmId(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 380, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FEF2F2", color: "#991B1B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>⚠</div>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Delete User?</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24, lineHeight: 1.5 }}>Are you sure you want to delete this system user? Access will be revoked immediately.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => setDelUserConfirmId(null)}>Cancel</button>
+                <button className="btn-gold" style={{ flex: 1, padding: "8px 0", background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }} onClick={() => deleteUser(delUserConfirmId)}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        stylistWarningOpen && (
+          <div className="ovl" onClick={() => setStylistWarningOpen(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 380, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FFFBEB", color: "#D97706", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>✂️</div>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Missing Stylist</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24, lineHeight: 1.5 }}>Some services are missing a stylist (see red highlights in the bill).<br /><br />Would you like to assign them now or continue without stylists?</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => setStylistWarningOpen(false)}>Assign Stylist</button>
+                <button className="btn-gold" style={{ flex: 1, padding: "8px 0" }} onClick={() => {
+                  setStylistWarningOpen(false);
+                  checkout(true); // pass override flag to skip the warning
+                }}>Continue</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* ══ ADD SERVICE MODAL ════════════════════════════════════════════════ */}
+      {
+        showAddModal && (
+          <div className="ovl" onClick={() => setShowAddModal(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 20, padding: 32, width: "90%", maxWidth: 460, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+              <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Add New Service</h2>
+              <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24 }}>Enter service details to add it to the menu.</p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Service Name</label>
+                  <input className="inp" placeholder="e.g. Deluxe Hydra Facial" value={newSvc.name} onChange={e => setNewSvc({ ...newSvc, name: e.target.value })} />
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Category</label>
+                    <select className="inp" value={newSvc.category} onChange={e => setNewSvc({ ...newSvc, category: e.target.value })}>
+                      <option value="" disabled>Select Category</option>
+                      <option value="Deal">Deal</option>
+                      {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Price (PKR)</label>
+                    <input type="number" className="inp" placeholder="2500" value={newSvc.price} onChange={e => setNewSvc({ ...newSvc, price: e.target.value })} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Icon</label>
+                    <input className="inp" placeholder="✨" value={newSvc.icon} onChange={e => setNewSvc({ ...newSvc, icon: e.target.value })} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Theme Color</label>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input type="color" value={newSvc.color} onChange={e => setNewSvc({ ...newSvc, color: e.target.value })} style={{ width: 42, height: 38, border: "none", padding: 0, background: "none", cursor: "pointer" }} />
+                      <span style={{ fontSize: 12, color: "#5A4030", fontWeight: 500 }}>{newSvc.color}</span>
+                    </div>
+                  </div>
+                </div>
+                {newSvc.category === 'Deal' && (
+                  <div style={{ marginTop: 6 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Included Services</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, maxHeight: 160, overflowY: 'auto', border: '1px solid #E8E0D4', borderRadius: 8, padding: 8, background: '#FDFAF6' }}>
+                      {dbServices.filter(s => s.category !== 'Deal').map(s => {
+                        const isSelected = newSvc.included_services?.includes(s.name);
+                        return (
+                          <div key={s.id} onClick={() => {
+                            const next = isSelected ? (newSvc.included_services || []).filter(n => n !== s.name) : [...(newSvc.included_services || []), s.name];
+                            setNewSvc({ ...newSvc, included_services: next });
+                          }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: isSelected ? '#F5F0E8' : '#FFF', border: `1px solid ${isSelected ? '#C4A870' : '#E8E0D4'}`, borderRadius: 6, cursor: 'pointer', transition: 'all .1s' }}>
+                            <div style={{ width: 14, height: 14, borderRadius: 3, border: `1px solid ${isSelected ? '#2A2118' : '#C4B9AB'}`, background: isSelected ? '#2A2118' : '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {isSelected && <svg width="8" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#2A2118', lineHeight: 1.2 }}>{s.name}</span>
+                              <span style={{ fontSize: 10, color: '#9A9088' }}>{fmt(s.price)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {newSvc.included_services?.length > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: "#B08040", fontWeight: 700 }}>
+                        Real Value: {fmt(newSvc.included_services.reduce((sum, name) => {
+                          const svc = dbServices.find(s => s.name === name);
+                          return sum + (svc ? svc.price : 0);
+                        }, 0))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+                <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button className="btn-gold" style={{ flex: 2 }} onClick={addService}>Save Service</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+      {
+        doneSlip && (
+          <div className="ovl" onClick={() => setDoneSlip(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FDFBF7", borderRadius: 16, padding: "40px 32px 32px", maxWidth: 420, width: "92%", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(42,33,24,.22)", position: "relative" }}>
+
+              {/* Top right close */}
+              <button
+                onClick={() => setDoneSlip(null)}
+                style={{ position: "absolute", top: 16, right: 16, background: "#FFF", border: "1px solid #E8E0D4", borderRadius: 8, padding: "6px 12px", fontSize: 13, color: "#B08040", fontWeight: 500, cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
+              >
+                Close
+              </button>
+
+              <div style={{ textAlign: "center", marginBottom: 24, color: "#2A2118" }}>
+                {showSalonName && (
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, letterSpacing: 0.5, marginBottom: (salonLogo && salonLogo !== 'default') ? 12 : 16 }}>
+                    {salonName || 'Noorkada'}
+                  </div>
+                )}
+
+                {salonLogo && salonLogo !== 'default' ? (
+                  <img src={salonLogo} style={{ maxHeight: 70, maxWidth: 160, margin: "0 auto 12px", display: "block", objectFit: "contain" }} alt="Salon Logo" />
+                ) : !showSalonName ? (
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, letterSpacing: 0.5, marginBottom: 16 }}>
+                    {salonName || 'Noorkada'}
+                  </div>
+                ) : (
+                  <div style={{ color: "#C4A870", fontSize: 40, marginBottom: 12, lineHeight: 1 }}>✂️</div>
+                )}
+
+                <div style={{ fontSize: 13, color: "#2A2118", marginBottom: 2, fontWeight: 500 }}>Receipt #: {doneSlip.slip}</div>
+                <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500, marginBottom: 2 }}>Date: {doneSlip.date} | Time: {doneSlip.time}</div>
+                <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500 }}>Customer Name: <span style={{ fontWeight: 700 }}>{doneSlip.customerName || 'Walk-in'}</span></div>
+              </div>
+
+              <div style={{ borderTop: "1.5px solid #E8E0D4", borderBottom: "1.5px solid #E8E0D4", padding: "16px 0", marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>Service / Stylist</div>
+                  <div style={{ width: 40, textAlign: "center" }}>Qty</div>
+                  <div style={{ width: 80, textAlign: "right" }}>Amount</div>
+                </div>
+
+                {doneSlip.cart.map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#2A2118", marginBottom: 12, alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, paddingRight: 8 }}>
+                      <div style={{ fontWeight: 500 }}>{item.service}</div>
+                      <div style={{ fontSize: 12, color: "#2A2118", marginTop: 2 }}>Stylist: {item.stylist || "Unassigned"}</div>
+                      {item.category === 'Deal' && item.included_services?.length > 0 && (
+                        <div style={{ fontSize: 11, color: "#9A9088", marginTop: 2 }}>
+                          {item.included_services.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ width: 40, textAlign: "center", fontWeight: 500, paddingTop: 1 }}>{item.qty}</div>
+                    <div style={{ width: 80, textAlign: "right", fontWeight: 500, paddingTop: 1 }}>
+                      {fmt(item.price * item.qty)}
+                      {item.discountValue > 0 && (
+                        <div style={{ fontSize: 11, color: "#A0303F", fontWeight: 600, marginTop: 2 }}>
+                          −{item.discountMode === 'pct' ? `${item.discountValue}%` : fmt(item.discountValue)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ padding: "0 4px", marginBottom: 24, fontSize: 13, color: "#2A2118" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span>Subtotal</span>
+                  <span style={{ fontWeight: 500 }}>{fmt(doneSlip.subtotal)}</span>
+                </div>
+                {doneSlip.discountAmt > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <span>Discount {doneSlip.discReason ? `(${doneSlip.discReason})` : doneSlip.discMode === 'pct' ? `(${doneSlip.discount}%)` : ''}</span>
+                    <span style={{ fontWeight: 500 }}>−{fmt(doneSlip.discountAmt)}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 700, marginTop: 12, paddingTop: 12, borderTop: "1.5px solid #E8E0D4", alignItems: "center" }}>
+                  <span>Total Amount</span>
+                  <span style={{ color: "#B08040", fontSize: 18 }}>{fmt(doneSlip.total)}</span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 12 }}>
+                <button className="btn-gold" style={{ flex: 2, padding: "14px", fontSize: 14 }} onClick={() => { setDoneSlip(null); if (tabs.length === 0) addTab(); }}>New Transaction →</button>
+                <button className="btn-ghost" onClick={() => {
+                  const s = doneSlip;
+                  const win = window.open("", "_blank", "width=420,height=600");
+                  win.document.write(`<!DOCTYPE html><html><head>
+                  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                  <style>
+                    *{margin:0;padding:0;box-sizing:border-box;}
+                    body{font-family:'Outfit', sans-serif;padding:32px;color:#2A2118;background:#FDFBF7;font-size:13px;line-height:1.4;}
+                    .center{text-align:center;}
+                    .logo{font-family:'Playfair Display', serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}
+                    .header-info{font-size:13px; color:#2A2118; margin-bottom:24px; text-align:center;}
+                    .header-line{margin-bottom:2px; font-weight:500;}
+                    .cust-name{font-weight:700; text-transform:uppercase; letter-spacing:0.5px;}
+                    .divider-box{border-top:1.5px solid #E8E0D4; border-bottom:1.5px solid #E8E0D4; padding:16px 0; margin-bottom:16px;}
+                    .tbl-head{display:flex; justify-content:space-between; font-weight:700; margin-bottom:12px; font-size:13px;}
+                    .svc-row{display:flex; justify-content:space-between; margin-bottom:12px; align-items:flex-start; font-size:13px;}
+                    .svc-info{flex:1; padding-right:8px;}
+                    .svc-name{font-weight:500;}
+                    .svc-stylist{font-size:11px; color:#B08040; margin-top:2px; font-weight:600;}
+                    .svc-qty{width:40px; text-align:center; font-weight:500;}
+                    .svc-amt{width:80px; text-align:right; font-weight:500;}
+                    .disc-line{font-size:11px; color:#A0303F; font-weight:600; margin-top:2px;}
+                    .summary{padding:0 4px; margin-bottom:24px;}
+                    .sum-row{display:flex; justify-content:space-between; margin-bottom:8px;}
+                    .total-row{display:flex; justify-content:space-between; font-size:16px; font-weight:700; margin-top:12px; paddingTop:12px; border-top:1.5px solid #E8E0D4; align-items:center;}
+                    .total-val{color:#B08040; font-size:18px;}
+                    .footer{text-align:center; font-size:11px; color:#B8AFA5; margin-top:32px; font-style:italic;}
+                    @media print{body{padding:20px; -webkit-print-color-adjust: exact;}}
+                  </style>
+                </head><body>
+                  <div class="center">
+                    ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
+                    ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:70px; max-width:160px; margin:0 auto 12px; display:block; object-fit:contain;" />` :
+                      (!Boolean(showSalonName) ? `<div style="color:#C4A870; font-size:40px; margin-bottom:12px; line-height:1;">✂️</div>` : '')}
+                    <div class="header-info">
+                      <div class="header-line">Receipt #: ${esc(s.slip)}</div>
+                      <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
+                      <div class="header-line">Customer Name: <span class="cust-name">${esc(s.customerName || 'Walk-in')}</span></div>
+                    </div>
+                  </div>
+                  
+                  <div class="divider-box">
+                    <div class="tbl-head">
+                      <div style="flex:1;">Service / Stylist</div>
+                      <div style="width:40px; text-align:center;">Qty</div>
+                      <div style="width:80px; text-align:right;">Amount</div>
+                    </div>
+                    ${s.cart.map(item => `
+                      <div class="svc-row">
+                        <div class="svc-info">
+                          <div class="svc-name">${esc(item.service)}</div>
+                          <div class="svc-stylist">Stylist: ${esc(item.stylist || "Unassigned")}</div>
+                          ${item.category === 'Deal' && item.included_services?.length > 0 ? `<div style="font-size:10px;color:#9A9088;margin-top:2px;">${item.included_services.join(', ')}</div>` : ""}
+                        </div>
+                        <div class="svc-qty">${item.qty}</div>
+                        <div class="svc-amt">
+                          PKR ${(item.price * item.qty).toLocaleString("en-PK")}
+                          ${item.discountValue > 0 ? `<div class="disc-line">−${item.discountMode === 'pct' ? `${item.discountValue}%` : `PKR ${item.discountValue}`}</div>` : ""}
+                        </div>
+                      </div>`).join("")}
+                  </div>
+                  
+                  <div class="summary">
+                    <div class="sum-row"><span>Subtotal</span><span style="font-weight:500;">PKR ${s.subtotal.toLocaleString("en-PK")}</span></div>
+                    ${s.discountAmt > 0 ? `<div class="sum-row" style="color:#A0303F;"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span style="font-weight:500;">−PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>` : ""}
+                    <div class="total-row">
+                      <span>Total Amount</span>
+                      <span class="total-val">PKR ${s.total.toLocaleString("en-PK")}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="footer">
+                    Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/>
+                    We look forward to seeing you again.<br/>
+                    <span style="font-size:12px; color:#B08040;">★ ★ ★ ★ ★</span>
+                  </div>
+                </body></html>`);
+                  win.document.close();
+                  win.focus();
+                  setTimeout(() => { win.print(); }, 400);
+                }} style={{
+                  flex: 1, padding: "14px", fontSize: 14, background: "#FFF", display: "flex",
+                  alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0
+                }}>
+                  🖨️ Print
+                </button>
+              </div>
+              <div style={{ textAlign: "center", fontSize: 11, color: "#C4B9AB", fontFamily: "'Outfit',sans-serif" }}>{esc(salonName) || 'Noorkada'}{salonAddress ? ` · ${esc(salonAddress)}` : ''}</div>
+            </div >
+          </div >
+        )
+      }
+
+      {/* Undo Toast */}
+      {
+        undoTab && (
+          <div style={{
+            position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
+            background: "#2A2118", color: "#FDFAF6", padding: "12px 20px", borderRadius: 12,
+            display: "flex", alignItems: "center", gap: 16, fontFamily: "'Outfit',sans-serif",
+            boxShadow: "0 8px 32px rgba(42,33,24,.35)", animation: "fi .25s"
+          }}>
+            <span style={{ fontSize: 13 }}>🗑️ <strong>{undoTab.tab.custName || undoTab.tab.label}</strong> removed</span>
+            <button onClick={restoreTab} style={{
+              background: "#B08040", color: "#FFF", border: "none", borderRadius: 6,
+              padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer"
+            }}>Undo</button>
+            <button onClick={() => { clearTimeout(undoTab.timer); setUndoTab(null); }} style={{
+              background: "none", border: "none", color: "#9A9088", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1
+            }}>×</button>
+          </div>
+        )
+      }
+
+      {/* Confirm Close Modal */}
+      {
+        confirmClose && tabs[confirmClose.idx] && (
+          <div className="modal-overlay" style={{
+            position: "fixed", inset: 0, zIndex: 10000,
+            background: "rgba(42,33,24,.45)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            animation: "fi .2s"
+          }} onClick={() => setConfirmClose(null)}>
+            <div onClick={e => e.stopPropagation()} className="modal-content" style={{
+              background: "#FDFAF6", borderRadius: 16, padding: "28px 32px", width: 380,
+              boxShadow: "0 16px 48px rgba(42,33,24,.25)", fontFamily: "'Outfit',sans-serif"
+            }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#2A2118", marginBottom: 8 }}>⚠️ Close Client?</div>
+              <p style={{ fontSize: 13, color: "#7A7068", lineHeight: 1.6, margin: "0 0 20px" }}>
+                <strong>{tabs[confirmClose.idx].custName || tabs[confirmClose.idx].label}</strong> ka bill pending hai
+                ({tabs[confirmClose.idx].cart.length} item{tabs[confirmClose.idx].cart.length !== 1 ? 's' : ''}).
+                Kya aap sure hain ke close karna chahte hain?
+              </p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button onClick={() => setConfirmClose(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px", fontSize: 13, borderRadius: 10 }}>Cancel</button>
+                <button onClick={() => doCloseTab(confirmClose.idx)} style={{
+                  background: "#A0303F", color: "#FFF", border: "none", borderRadius: 10,
+                  padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "'Outfit',sans-serif"
+                }}>Close Tab</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Toast Notification */}
+      {
+        toast && (
+          <div style={{
+            position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 10001,
+            background: toast.type === 'error' ? '#A0303F' : '#2A2118',
+            color: "#FDFAF6", padding: "12px 24px", borderRadius: 12,
+            display: "flex", alignItems: "center", gap: 12, fontFamily: "'Outfit',sans-serif",
+            boxShadow: "0 12px 40px rgba(42,33,24,.3)", animation: "fi .3s cubic-bezier(0.18, 0.89, 0.32, 1.28)"
+          }}>
+            <span style={{ fontSize: 18 }}>{toast.type === 'error' ? '❌' : '✅'}</span>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{toast.msg}</span>
+          </div>
+        )
+      }
+
+    </div >
+  );
+}
