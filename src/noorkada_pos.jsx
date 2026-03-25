@@ -3773,8 +3773,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
             <div style={{
               width: isMobile ? "100%" : 240, background: "#FFFFFF", borderRight: isMobile ? "none" : "1px solid #EDE6D8",
               borderBottom: isMobile ? "1px solid #EDE6D8" : "none",
-              display: "flex", flexDirection: isMobile ? "row" : "column", padding: isMobile ? "0" : "24px 0",
-              overflowX: isMobile ? "auto" : "visible",
+              display: "flex", flexDirection: "column", padding: isMobile ? "0" : "24px 0",
               flexShrink: 0
             }} className="catstrip">
               {!isMobile && (
@@ -3783,6 +3782,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 </div>
               )}
 
+              {/* Tab buttons — horizontal scroll on mobile, vertical list on desktop */}
+              <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", overflowX: isMobile ? "auto" : "visible", flex: isMobile ? "0 0 auto" : 1 }}>
               {[
                 { id: "services", label: "Services Portfolio", icon: "✂️" },
                 { id: "staff", label: "Staff Registry", icon: "👥" },
@@ -3810,30 +3811,28 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   }}>{item.label}</span>
                 </div>
               ))}
+              </div>{/* end tab buttons row */}
 
-
-              {!isMobile && (
-                <div style={{ marginTop: "auto", padding: "20px 24px" }}>
+              <div style={{ marginTop: "auto", padding: isMobile ? "10px 12px" : "20px 24px", borderTop: "1px solid #EDE6D8" }}>
+                <div style={{
+                  background: "#fdfaf6", borderRadius: 12, padding: isMobile ? "8px 10px" : 12, border: "1px solid #EDE6D8",
+                  display: "flex", alignItems: "center", gap: 10
+                }}>
                   <div style={{
-                    background: "#fdfaf6", borderRadius: 12, padding: 12, border: "1px solid #EDE6D8",
-                    display: "flex", alignItems: "center", gap: 10
-                  }}>
-                    <div style={{
-                      width: 32, height: 32, borderRadius: "50%", background: "#2A2118",
-                      color: "#F5E6C8", display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 14, fontWeight: 700
-                    }}>{user.username[0].toUpperCase()}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.username}</div>
-                      <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase" }}>{user.role}</div>
-                    </div>
-                    <button onClick={onLogout} title="Logout" style={{
-                      background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer",
-                      fontSize: 10, fontWeight: 700, color: "#991B1B", padding: "6px 10px", transition: "all .2s"
-                    }}>LOGOUT</button>
+                    width: isMobile ? 28 : 32, height: isMobile ? 28 : 32, borderRadius: "50%", background: "#2A2118",
+                    color: "#F5E6C8", display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: isMobile ? 12 : 14, fontWeight: 700, flexShrink: 0
+                  }}>{user.username[0].toUpperCase()}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#2A2118", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.full_name || user.username}</div>
+                    <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase" }}>{user.role}</div>
                   </div>
+                  <button onClick={onLogout} title="Logout" style={{
+                    background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer",
+                    fontSize: 10, fontWeight: 700, color: "#991B1B", padding: isMobile ? "5px 8px" : "6px 10px", transition: "all .2s", flexShrink: 0
+                  }}>LOGOUT</button>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Content Area */}
