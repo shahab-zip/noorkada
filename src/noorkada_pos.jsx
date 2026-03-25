@@ -743,7 +743,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [editSaving, setEditSaving] = useState(false);
   const [editSavedTxn, setEditSavedTxn] = useState(null); // set after successful save
   const [editShowOriginal, setEditShowOriginal] = useState(false);
-  const [editAddCat, setEditAddCat] = useState("");
   const [editSvcSearch, setEditSvcSearch] = useState("");
   const [editShowAmendments, setEditShowAmendments] = useState(false);
 
@@ -766,7 +765,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
     setEditSaving(false);
     setEditSavedTxn(null);
     setEditShowOriginal(false);
-    setEditAddCat("");
     setEditSvcSearch("");
     setEditShowAmendments(false);
   };
@@ -4961,82 +4959,58 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   );
                 })}
 
-                {/* Add service picker */}
-                <div style={{ marginTop: 10, background: "#F9F6F0", border: "1.5px dashed #D4C4A8", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#8B7355", marginBottom: 10, textTransform: "uppercase", letterSpacing: .6 }}>+ Add Service</div>
-
-                  {/* Category row with clear button */}
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: editAddCat ? 10 : 0 }}>
-                    <select value={editAddCat} onChange={e => { setEditAddCat(e.target.value); setEditSvcSearch(""); }}
-                      style={{ fontSize: 12, border: "1px solid #EDE6D8", borderRadius: 8, padding: "6px 10px", color: "#2A2118", background: "#FFF", flex: 1 }}>
-                      <option value="">Select category…</option>
-                      {Object.keys(SERVICES).map(cat => <option key={cat} value={cat}>{SERVICES[cat].icon} {cat}</option>)}
-                    </select>
-                    {editAddCat && (
-                      <button onClick={() => { setEditAddCat(""); setEditSvcSearch(""); }}
-                        title="Clear category"
-                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #EDE6D8", background: "#FFF", color: "#A0303F", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        ×
-                      </button>
+                {/* Add service — unified search */}
+                <div style={{ marginTop: 10, background: "#F9F6F0", border: "1.5px dashed #D4C4A8", borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#C4B9AB", pointerEvents: "none" }}>🔍</span>
+                    <input
+                      value={editSvcSearch}
+                      onChange={e => setEditSvcSearch(e.target.value)}
+                      placeholder="Search any service to add…"
+                      style={{ width: "100%", boxSizing: "border-box", fontSize: 12, border: "1px solid #EDE6D8", borderRadius: 8, padding: "9px 32px 9px 30px", background: "#FFF", color: "#2A2118", outline: "none", fontFamily: "'Outfit',sans-serif" }}
+                    />
+                    {editSvcSearch && (
+                      <button onClick={() => setEditSvcSearch("")}
+                        style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#C4B9AB", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
                     )}
                   </div>
-
-                  {/* Service search + list */}
-                  {editAddCat && (() => {
-                    const allSvcs = (SERVICES[editAddCat]?.items || []).map(svc => {
-                      const d = dbServices.find(s => s.name === svc && s.category === editAddCat);
-                      return { name: svc, price: d?.price || 0 };
-                    });
-                    const filtered = editSvcSearch.trim()
-                      ? allSvcs.filter(s => s.name.toLowerCase().includes(editSvcSearch.toLowerCase()))
-                      : allSvcs;
+                  {editSvcSearch.trim().length >= 1 && (() => {
+                    const q = editSvcSearch.trim().toLowerCase();
+                    const results = dbServices.filter(s => s.name.toLowerCase().includes(q)).slice(0, 20);
                     return (
-                      <div>
-                        {/* Search input */}
-                        <div style={{ position: "relative", marginBottom: 8 }}>
-                          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#C4B9AB", pointerEvents: "none" }}>🔍</span>
-                          <input
-                            value={editSvcSearch}
-                            onChange={e => setEditSvcSearch(e.target.value)}
-                            placeholder={`Search in ${editAddCat}…`}
-                            style={{ width: "100%", boxSizing: "border-box", fontSize: 12, border: "1px solid #EDE6D8", borderRadius: 8, padding: "7px 10px 7px 30px", background: "#FFF", color: "#2A2118", outline: "none", fontFamily: "'Outfit',sans-serif" }}
-                          />
-                          {editSvcSearch && (
-                            <button onClick={() => setEditSvcSearch("")}
-                              style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#C4B9AB", fontSize: 15, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
-                          )}
-                        </div>
-                        {/* Service list */}
-                        <div style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-                          {filtered.length === 0
-                            ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: "12px 0" }}>No services match "{editSvcSearch}"</div>
-                            : filtered.map(svc => (
-                              <button key={svc.name} onClick={() => {
-                                const svcData = dbServices.find(s => s.name === svc.name && s.category === editAddCat);
-                                if (!svcData) return;
-                                setEditCart(prev => [...prev, {
-                                  _eid: Date.now(),
-                                  service: svcData.name,
-                                  category: svcData.category,
-                                  price: svcData.price || 0,
-                                  qty: 1,
-                                  stylist: editStaff || "",
-                                  icon: svcData.icon || "",
-                                }]);
-                                setEditSvcSearch("");
-                              }}
-                                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#FFF", border: "1px solid #EDE6D8", borderRadius: 8, cursor: "pointer", fontSize: 12, color: "#2A2118", textAlign: "left", transition: "background .12s" }}
-                                onMouseEnter={e => e.currentTarget.style.background = "#F5F0E8"}
-                                onMouseLeave={e => e.currentTarget.style.background = "#FFF"}>
-                                <span style={{ fontWeight: 500 }}>{svc.name}</span>
-                                <span style={{ color: "#B08040", fontWeight: 600, fontSize: 11, flexShrink: 0, marginLeft: 8 }}>{fmt(svc.price, true)}</span>
-                              </button>
-                            ))
-                          }
-                        </div>
+                      <div style={{ marginTop: 8, maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+                        {results.length === 0
+                          ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: "14px 0" }}>No services match "{editSvcSearch}"</div>
+                          : results.map(svc => (
+                            <button key={`${svc.id}-${svc.name}`} onClick={() => {
+                              setEditCart(prev => [...prev, {
+                                _eid: Date.now(),
+                                service: svc.name,
+                                category: svc.category,
+                                price: svc.price || 0,
+                                qty: 1,
+                                stylist: editStaff || "",
+                                icon: svc.icon || "",
+                              }]);
+                              setEditSvcSearch("");
+                            }}
+                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "#FFF", border: "1px solid #EDE6D8", borderRadius: 8, cursor: "pointer", textAlign: "left", transition: "background .12s" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F5F0E8"}
+                              onMouseLeave={e => e.currentTarget.style.background = "#FFF"}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118" }}>{svc.name}</div>
+                                <div style={{ fontSize: 10, color: "#B8AFA5", marginTop: 1 }}>{svc.category}</div>
+                              </div>
+                              <span style={{ color: "#B08040", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{fmt(svc.price, true)}</span>
+                            </button>
+                          ))
+                        }
                       </div>
                     );
                   })()}
+                  {!editSvcSearch && (
+                    <div style={{ fontSize: 11, color: "#C4B9AB", textAlign: "center", marginTop: 8 }}>Type to search across all services</div>
+                  )}
                 </div>
               </div>
 
