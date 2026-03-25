@@ -5667,13 +5667,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
             <div style={{ textAlign: "center", marginBottom: 24 }}>
               {salonLogo && salonLogo !== 'default'
                 ? <img src={salonLogo} style={{ maxHeight: 60, maxWidth: 140, margin: "0 auto 10px", display: "block", objectFit: "contain" }} />
-                : <div style={{ color: "#C4A870", fontSize: 40, marginBottom: 12, lineHeight: 1 }}>✂️</div>
+                : <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: "#2A2118", marginBottom: 6 }}>{salonName || "Noorkada"}</div>
               }
-              {Boolean(showSalonName) && <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#2A2118", marginBottom: 10 }}>{salonName || "Noorkada POS"}</div>}
+              <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 10 }}>Salon &amp; Spa</div>
               <div style={{ display: "inline-block", background: "#2A2118", color: "#FFF", padding: "4px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>Staff Service Slip</div>
-              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500, marginBottom: 2 }}>Order #: {staffSlipPreview.slip}</div>
-              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500, marginBottom: 2 }}>Date: {staffSlipPreview.date} | Time: {staffSlipPreview.time}</div>
-              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500 }}>Customer: <span style={{ fontWeight: 700 }}>{staffSlipPreview.customerName}</span></div>
+              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Order #: {staffSlipPreview.slip}</div>
+              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Date: {staffSlipPreview.date} | Time: {staffSlipPreview.time}</div>
+              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700 }}>Customer: <span style={{ fontWeight: 800 }}>{staffSlipPreview.customerName}</span></div>
             </div>
 
             {/* Services */}
@@ -5683,8 +5683,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div>
                     <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{item.service}{item.qty > 1 ? ` (×${item.qty})` : ""}</div>
                     {item.stylist
-                      ? <div style={{ fontSize: 12, color: "#B08040", fontWeight: 600, marginTop: 3 }}>✂ {item.stylist}</div>
-                      : <div style={{ fontSize: 12, color: "#D97706", fontWeight: 600, marginTop: 3 }}>⚠️ No Staff Assigned</div>
+                      ? <div style={{ fontSize: 12, color: "#2A2118", fontWeight: 700, marginTop: 3 }}>Stylist: {item.stylist}</div>
+                      : <div style={{ fontSize: 12, color: "#2A2118", fontWeight: 700, marginTop: 3 }}>No Staff Assigned</div>
                     }
                   </div>
                 </div>
