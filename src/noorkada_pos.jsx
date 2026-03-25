@@ -741,6 +741,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [editNote, setEditNote] = useState("");
   const [editNoteReason, setEditNoteReason] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [editSavedTxn, setEditSavedTxn] = useState(null); // set after successful save
+  const [editShowOriginal, setEditShowOriginal] = useState(false);
   const [editAddCat, setEditAddCat] = useState("");
   const [editSvcSearch, setEditSvcSearch] = useState("");
   const [editShowAmendments, setEditShowAmendments] = useState(false);
@@ -762,6 +764,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
     setEditNote(txn.note || "");
     setEditNoteReason("");
     setEditSaving(false);
+    setEditSavedTxn(null);
+    setEditShowOriginal(false);
     setEditAddCat("");
     setEditSvcSearch("");
     setEditShowAmendments(false);
@@ -809,8 +813,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
       }
       const updated = normalizeTxn(await r.json());
       setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
-      closeEditBill();
-      showToast("Bill updated successfully!");
+      const subtotal = (updated.cart || []).reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
+      setEditSavedTxn({ ...updated, subtotal });
     } catch (e) {
       showToast(`Error: ${e.message}`, "error");
     }
@@ -4764,6 +4768,118 @@ export default function NoorKadaPOS({ user, onLogout }) {
               <button onClick={closeEditBill} style={{ background: "#F5F0E8", border: "none", borderRadius: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, color: "#6B5540", fontWeight: 600 }}>✕ Close</button>
             </div>
 
+            {/* ── Post-save success screen ── */}
+            {editSavedTxn ? (
+              <div style={{ padding: "32px 26px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>✅</div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 700, color: "#2A2118", marginBottom: 6 }}>Bill Updated!</div>
+                  <div style={{ fontSize: 13, color: "#8B7355" }}>#{editSavedTxn.slip} · {editSavedTxn.customerName}</div>
+                </div>
+
+                {/* Summary comparison */}
+                <div style={{ width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ background: "#F5F0E8", borderRadius: 12, padding: "14px 16px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#8B7355", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8 }}>Original Bill</div>
+                    {(editingBill.cart || []).map((item, i) => (
+                      <div key={i} style={{ fontSize: 12, color: "#5A4D41", marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+                        <span>{item.service}{item.qty > 1 ? ` ×${item.qty}` : ""}</span>
+                        <span style={{ color: "#8B7355" }}>{fmt(item.price * (item.qty || 1), true)}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: "1px solid #D4C4A8", marginTop: 8, paddingTop: 8, fontWeight: 700, fontSize: 13, color: "#2A2118", display: "flex", justifyContent: "space-between" }}>
+                      <span>Total</span><span>{fmt(editingBill.total, true)}</span>
+                    </div>
+                  </div>
+                  <div style={{ background: "#D1FAE5", borderRadius: 12, padding: "14px 16px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#065F46", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8 }}>Updated Bill</div>
+                    {(editSavedTxn.cart || []).map((item, i) => (
+                      <div key={i} style={{ fontSize: 12, color: "#065F46", marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+                        <span>{item.service}{item.qty > 1 ? ` ×${item.qty}` : ""}</span>
+                        <span>{fmt(item.price * (item.qty || 1), true)}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: "1px solid #6EE7B7", marginTop: 8, paddingTop: 8, fontWeight: 700, fontSize: 13, color: "#065F46", display: "flex", justifyContent: "space-between" }}>
+                      <span>Total</span><span>{fmt(editSavedTxn.total, true)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {editSavedTxn.total !== editingBill.total && (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: editSavedTxn.total > editingBill.total ? "#065F46" : "#A0303F" }}>
+                    {editSavedTxn.total > editingBill.total ? "▲" : "▼"} {fmt(Math.abs(editSavedTxn.total - editingBill.total), true)} difference
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: "flex", gap: 12, width: "100%" }}>
+                  <button onClick={closeEditBill}
+                    style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, background: "#F5F0E8", color: "#6B5540", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
+                    ✕ Close
+                  </button>
+                  <button onClick={() => {
+                    const s = editSavedTxn;
+                    const subtotal = s.subtotal || (s.cart || []).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
+                    const win = window.open("", "_blank", "width=420,height=600");
+                    win.document.write(`<!DOCTYPE html><html><head>
+                    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                    <style>
+                      *{margin:0;padding:0;box-sizing:border-box;}
+                      body{font-family:'Outfit',sans-serif;padding:32px;color:#2A2118;background:#FDFBF7;font-size:13px;line-height:1.4;}
+                      .center{text-align:center;}
+                      .logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}
+                      .header-info{font-size:13px;color:#2A2118;margin-bottom:24px;text-align:center;}
+                      .header-line{margin-bottom:2px;font-weight:500;}
+                      .cust-name{font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+                      .amended{font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:2px 7px;display:inline-block;margin-top:6px;}
+                      .divider-box{border-top:1.5px solid #E8E0D4;border-bottom:1.5px solid #E8E0D4;padding:16px 0;margin-bottom:16px;}
+                      .tbl-head{display:flex;justify-content:space-between;font-weight:700;margin-bottom:12px;font-size:13px;}
+                      .svc-row{display:flex;justify-content:space-between;margin-bottom:12px;align-items:flex-start;font-size:13px;}
+                      .svc-info{flex:1;padding-right:8px;}
+                      .svc-name{font-weight:500;}
+                      .svc-stylist{font-size:11px;color:#B08040;margin-top:2px;font-weight:600;}
+                      .svc-qty{width:40px;text-align:center;font-weight:500;}
+                      .svc-amt{width:80px;text-align:right;font-weight:500;}
+                      .summary{padding:0 4px;margin-bottom:24px;}
+                      .sum-row{display:flex;justify-content:space-between;margin-bottom:8px;}
+                      .total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1.5px solid #E8E0D4;align-items:center;}
+                      .total-val{color:#B08040;font-size:18px;}
+                      .footer{text-align:center;font-size:11px;color:#B8AFA5;margin-top:32px;font-style:italic;}
+                      @media print{body{padding:20px;-webkit-print-color-adjust:exact;}}
+                    </style></head><body>
+                    <div class="center">
+                      ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
+                      ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:70px;max-width:160px;margin:0 auto 12px;display:block;object-fit:contain;" />` : (!Boolean(showSalonName) ? `<div style="color:#C4A870;font-size:40px;margin-bottom:12px;line-height:1;">✂️</div>` : '')}
+                      <div class="header-info">
+                        <div class="header-line">Receipt #: ${esc(s.slip)}</div>
+                        <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
+                        <div class="header-line">Customer: <span class="cust-name">${esc(s.customerName || 'Walk-in')}</span></div>
+                        <div class="amended">✏️ Amended Bill</div>
+                      </div>
+                    </div>
+                    <div class="divider-box">
+                      <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:40px;text-align:center;">Qty</div><div style="width:80px;text-align:right;">Amount</div></div>
+                      ${(s.cart || []).map(item => `<div class="svc-row"><div class="svc-info"><div class="svc-name">${esc(item.service)}</div><div class="svc-stylist">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div class="svc-qty">${item.qty || 1}</div><div class="svc-amt">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}
+                    </div>
+                    <div class="summary">
+                      <div class="sum-row"><span>Subtotal</span><span style="font-weight:500;">PKR ${subtotal.toLocaleString('en-PK')}</span></div>
+                      ${(s.discountAmt || 0) > 0 ? `<div class="sum-row" style="color:#A0303F;"><span>Discount${s.discReason ? ` (${s.discReason})` : ''}</span><span style="font-weight:500;">−PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}
+                      <div class="total-row"><span>Total Amount</span><span class="total-val">PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div>
+                    </div>
+                    <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">This is an amended receipt. Original total: PKR ${(editingBill.total || 0).toLocaleString('en-PK')}</div>
+                    <div class="footer">Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div>
+                    </body></html>`);
+                    win.document.close();
+                    win.focus();
+                    setTimeout(() => win.print(), 400);
+                  }}
+                    style={{ flex: 2, fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
+                    🖨️ Print Updated Slip
+                  </button>
+                </div>
+              </div>
+            ) : (
+
             <div style={{ padding: "20px 26px 26px", flex: 1 }}>
 
               {/* Customer row */}
@@ -4780,10 +4896,38 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
               {/* Cart editor */}
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", marginBottom: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   🛒 Services
                   <span style={{ fontSize: 11, fontWeight: 400, color: "#B8AFA5" }}>{editCart.length} item{editCart.length !== 1 ? "s" : ""}</span>
+                  <button onClick={() => setEditShowOriginal(v => !v)}
+                    style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: editShowOriginal ? "#065F46" : "#B08040", background: editShowOriginal ? "#D1FAE5" : "#FEF9EE", border: `1.5px solid ${editShowOriginal ? "#6EE7B7" : "#F0D98A"}`, borderRadius: 7, padding: "4px 10px", cursor: "pointer" }}>
+                    {editShowOriginal ? "✕ Hide Original" : "📋 Compare Original"}
+                  </button>
                 </div>
+
+                {/* Original bill snapshot */}
+                {editShowOriginal && (
+                  <div style={{ background: "#F5F0E8", border: "1px solid #D4C4A8", borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#8B7355", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8 }}>Original Bill — {fmt(editingBill.total, true)}</div>
+                    {(editingBill.cart || []).map((item, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: i < (editingBill.cart.length - 1) ? "1px solid #EDE6D8" : "none" }}>
+                        <div>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: "#2A2118" }}>{item.service}</span>
+                          {item.qty > 1 && <span style={{ fontSize: 11, color: "#B8AFA5" }}> ×{item.qty}</span>}
+                          {item.stylist && <div style={{ fontSize: 10, color: "#B08040" }}>✂️ {item.stylist}</div>}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#5A4D41" }}>{fmt((item.price || 0) * (item.qty || 1), true)}</span>
+                      </div>
+                    ))}
+                    {editingBill.discMode && editingBill.discMode !== "none" && (
+                      <div style={{ fontSize: 11, color: "#A0303F", marginTop: 6 }}>
+                        Discount: {editingBill.discMode === "pct" ? `${editingBill.discPct}%` : `PKR ${editingBill.discFlat}`}
+                        {editingBill.discReason ? ` — ${editingBill.discReason}` : ""}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {editCart.length === 0 && (
                   <div style={{ textAlign: "center", padding: "24px 0", color: "#C4B9AB", fontSize: 13 }}>No items — add a service below</div>
                 )}
@@ -5033,6 +5177,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </div>
 
             </div>
+            )}
           </div>
         </div>
       )}
