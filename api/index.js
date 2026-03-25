@@ -298,7 +298,16 @@ app.put('/api/transactions/:id', requireRole('manager'), async (req, res) => {
     amendments: [...prevAmendments, amendment],
   };
 
-  const { data, error } = await supabase.from('transactions').update(updates).eq('id', req.params.id).select().single();
+  let { data, error } = await supabase.from('transactions').update(updates).eq('id', req.params.id).select().single();
+
+  // If amendments column doesn't exist yet, retry without it
+  if (error && (error.message?.includes('amendments') || error.code === '42703')) {
+    const { amendments: _omit, ...updatesWithoutAmendments } = updates;
+    const result = await supabase.from('transactions').update(updatesWithoutAmendments).eq('id', req.params.id).select().single();
+    data = result.data;
+    error = result.error;
+  }
+
   if (error) return res.status(500).json({ message: error.message });
 
   log(req.user, 'EDIT_TRANSACTION', 'transaction', req.params.id, {
