@@ -1615,59 +1615,50 @@ export default function NoorKadaPOS({ user, onLogout }) {
     };
     printHTML(`<!DOCTYPE html><html><head>
       <title>Staff Slip - ${esc(s.customerName)}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
       <style>
         *{margin:0;padding:0;box-sizing:border-box;}
-        body{font-family:'Outfit', sans-serif;padding:24px;color:#2A2118;background:#fff;font-size:13px;line-height:1.4;}
+        body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
         .center{text-align:center;}
-        .header-tag{background:#2A2118;color:#FFF;padding:6px;font-size:11px;font-weight:800;letter-spacing:1.5px;margin-bottom:24px;text-align:center;border-radius:6px;text-transform:uppercase;}
-        .logo{font-family:'Playfair Display', serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}
-        .sub{font-size:10px;color:#9A9088;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;font-weight:600;}
-        .divider{border:none;border-top:1.5px solid #E8E0D4;margin:16px 0;}
-        .row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;}
-        .row .lbl{color:#9A9088;font-weight:500;}
-        .row .val{font-weight:600;color:#2A2118;text-align:right;}
-        .svc-list{margin-top:20px;}
-        .svc-item{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1.5px solid #FDFBF7; padding-bottom:10px;}
-        .svc-name{font-size:14px;font-weight:700;color:#2A2118;flex:1;padding-right:12px;}
-        .svc-stylist{font-size:12px;color:#A0303F;font-weight:600;text-align:right;flex-shrink:0;}
-        .svc-stylist.assigned{color:#B08040;}
-        .footer{text-align:center;font-size:11px;color:#9A9088;margin-top:32px;font-style:italic;border-top:1px dashed #E8E0D4;padding-top:16px;}
+        .header-tag{border:2px solid #000;padding:5px;font-size:11px;font-weight:800;letter-spacing:1.5px;margin-bottom:14px;text-align:center;text-transform:uppercase;color:#000;}
+        .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+        .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;font-weight:700;color:#000;}
+        .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
+        .row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;}
+        .row .lbl{font-weight:700;color:#000;}
+        .row .val{font-weight:700;color:#000;text-align:right;}
+        .svc-list{margin-top:12px;}
+        .svc-item{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;border-bottom:1px dashed #000;padding-bottom:8px;}
+        .svc-name{font-size:13px;font-weight:800;color:#000;flex:1;padding-right:10px;}
+        .svc-stylist{font-size:12px;color:#000;font-weight:700;text-align:right;flex-shrink:0;}
+        .footer{text-align:center;font-size:11px;color:#000;margin-top:20px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}
+        .stars{font-size:14px;letter-spacing:4px;}
         @page{size:79mm auto;margin:2mm;}
-        @media print{body{padding:6px;width:75mm;}}
+        @media print{body{padding:4px;width:75mm;}}
       </style>
     </head><body>
       <div class="header-tag">Staff Service Slip</div>
       <div class="center">
-        ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
-        ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px; max-width:150px; margin:0 auto 12px; display:block; object-fit:contain;" />` : ''}
-        ${!Boolean(showSalonName) && (!salonLogo || salonLogo === 'default') ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
+        ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:55px;max-width:140px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
         <div class="sub">Salon &amp; Spa</div>
       </div>
-
+      <div class="divider"></div>
       <div class="row"><span class="lbl">Order #</span><span class="val">${esc(s.slip)}</span></div>
       <div class="row"><span class="lbl">Customer</span><span class="val">${esc(s.customerName)}</span></div>
-      <div class="row"><span class="lbl">Date & Time</span><span class="val">${esc(s.date)} ${esc(s.time)}</span></div>
-      
+      <div class="row"><span class="lbl">Date &amp; Time</span><span class="val">${esc(s.date)} ${esc(s.time)}</span></div>
       <div class="divider"></div>
-
       <div class="svc-list">
         ${s.cart.map(item => `
           <div class="svc-item">
-            <div class="svc-name">${esc(item.service)}${item.qty > 1 ? ` (×${item.qty})` : ""}</div>
-            ${item.stylist
-        ? `<div class="svc-stylist assigned">✂ ${esc(item.stylist)}</div>`
-        : `<div class="svc-stylist">⚠️ No Staff</div>`
-      }
+            <div class="svc-name">${esc(item.service)}${item.qty > 1 ? ` (x${item.qty})` : ""}</div>
+            <div class="svc-stylist">${item.stylist ? `Stylist: ${esc(item.stylist)}` : "No Staff"}</div>
           </div>`).join("")}
       </div>
-
-      ${s.note ? `<div style="margin-top:16px;padding:12px;background:#FDFBF7;border-radius:8px;font-size:11px;color:#6B5030;border:1px solid #EDE6D8;"><strong>Customer Note:</strong><br/>${esc(s.note)}</div>` : ""}
-
+      ${s.note ? `<div style="margin-top:12px;padding:8px;border:1px solid #000;font-size:11px;font-weight:700;color:#000;"><strong>Customer Note:</strong><br/>${esc(s.note)}</div>` : ""}
       <div class="footer">
         Thank you for choosing Noorkada!<br/>
         We look forward to seeing you again.<br/>
-        <span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span>
+        <span class="stars">★ ★ ★ ★ ★</span>
       </div>
     </body></html>`);
     updTab({ staffSlipPrinted: true });
@@ -5232,19 +5223,22 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   const s = txn;
                   const subtotal = (s.cart || []).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
                   printHTML(`<!DOCTYPE html><html><head>
-                  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:32px;color:#2A2118;background:#FDFBF7;font-size:13px;line-height:1.4;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}.amended{font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:2px 8px;display:inline-block;margin-top:6px;}.divider-box{border-top:1.5px solid #E8E0D4;border-bottom:1.5px solid #E8E0D4;padding:16px 0;margin-bottom:16px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;}.total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1.5px solid #E8E0D4;}.total-val{color:#B08040;font-size:18px;}.footer{text-align:center;font-size:11px;color:#B8AFA5;margin-top:32px;font-style:italic;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:6px;width:75mm;-webkit-print-color-adjust:exact;}}</style></head><body>
-                  <div class="center">${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:70px;max-width:160px;margin:0 auto 12px;display:block;" />` : ''}
-                  <div style="font-size:13px;color:#2A2118;margin-bottom:24px;">
-                    <div style="font-weight:500;">Receipt #: ${esc(s.slip)}</div>
-                    <div style="font-weight:500;">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
-                    <div style="font-weight:700;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
-                    <div class="amended">✏️ Amended Bill — ${txn.amendments.length} edit${txn.amendments.length > 1 ? 's' : ''}</div>
+                  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:800;color:#000;}.svc-staff{font-size:11px;font-weight:700;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
+                  <div class="center">${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}<div class="sub">Salon &amp; Spa</div>
+                  <div style="font-size:12px;color:#000;margin-bottom:14px;font-weight:700;">
+                    <div>Receipt #: ${esc(s.slip)}</div>
+                    <div>Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
+                    <div style="font-weight:800;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
+                    <div style="font-size:11px;font-weight:800;border:1.5px solid #000;display:inline-block;padding:2px 8px;margin-top:6px;">** AMENDED BILL — ${txn.amendments.length} EDIT${txn.amendments.length > 1 ? 'S' : ''} **</div>
                   </div></div>
-                  <div class="divider-box">${(s.cart || []).map(item => `<div class="svc-row"><div><div style="font-weight:500;">${esc(item.service)}</div><div style="font-size:11px;color:#B08040;">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div style="font-weight:500;">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}</div>
-                  <div style="padding:0 4px;margin-bottom:24px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>${(s.discountAmt || 0) > 0 ? `<div style="display:flex;justify-content:space-between;color:#A0303F;margin-bottom:8px;"><span>Discount</span><span>−PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}<div class="total-row"><span>Total</span><span class="total-val">PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div></div>
-                  <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">Amended receipt · Original: PKR ${(originalSnapshot?.total || 0).toLocaleString('en-PK')}</div>
-                  <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div></body></html>`);
+                  <div class="divider"></div>
+                  <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:75px;text-align:right;">Amount</div></div>
+                  ${(s.cart || []).map(item => `<div class="svc-row"><div class="svc-info"><div class="svc-name">${esc(item.service)}</div><div class="svc-staff">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div class="svc-amt">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}
+                  <div class="divider"></div>
+                  <div style="padding:0 2px;margin-bottom:14px;"><div class="sum-row"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>${(s.discountAmt || 0) > 0 ? `<div class="sum-row"><span>Discount</span><span>-PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}<div class="total-row"><span>Total Amount</span><span>PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div></div>
+                  <div style="text-align:center;font-size:11px;font-weight:700;border:1px solid #000;padding:6px;margin-bottom:14px;">Amended Receipt · Original: PKR ${(originalSnapshot?.total || 0).toLocaleString('en-PK')}</div>
+                  <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span class="stars">★ ★ ★ ★ ★</span></div></body></html>`);
                 }} style={{ width: "100%", fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "13px", cursor: "pointer", marginTop: 4 }}>
                   🖨️ Print Updated Slip
                 </button>
@@ -5329,50 +5323,51 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
                       *{margin:0;padding:0;box-sizing:border-box;}
-                      body{font-family:'Outfit',sans-serif;padding:32px;color:#2A2118;background:#FDFBF7;font-size:13px;line-height:1.4;}
+                      body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
                       .center{text-align:center;}
-                      .logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}
-                      .header-info{font-size:13px;color:#2A2118;margin-bottom:24px;text-align:center;}
-                      .header-line{margin-bottom:2px;font-weight:500;}
-                      .cust-name{font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
-                      .amended{font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:2px 7px;display:inline-block;margin-top:6px;}
-                      .divider-box{border-top:1.5px solid #E8E0D4;border-bottom:1.5px solid #E8E0D4;padding:16px 0;margin-bottom:16px;}
-                      .tbl-head{display:flex;justify-content:space-between;font-weight:700;margin-bottom:12px;font-size:13px;}
-                      .svc-row{display:flex;justify-content:space-between;margin-bottom:12px;align-items:flex-start;font-size:13px;}
+                      .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+                      .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;color:#000;}
+                      .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
+                      .header-line{margin-bottom:3px;font-weight:700;color:#000;}
+                      .cust-name{font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
+                      .amended{font-size:11px;font-weight:800;border:1.5px solid #000;padding:2px 7px;display:inline-block;margin-top:6px;}
+                      .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
+                      .tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+                      .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
                       .svc-info{flex:1;padding-right:8px;}
-                      .svc-name{font-weight:500;}
-                      .svc-stylist{font-size:11px;color:#B08040;margin-top:2px;font-weight:600;}
-                      .svc-qty{width:40px;text-align:center;font-weight:500;}
-                      .svc-amt{width:80px;text-align:right;font-weight:500;}
-                      .summary{padding:0 4px;margin-bottom:24px;}
-                      .sum-row{display:flex;justify-content:space-between;margin-bottom:8px;}
-                      .total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1.5px solid #E8E0D4;align-items:center;}
-                      .total-val{color:#B08040;font-size:18px;}
-                      .footer{text-align:center;font-size:11px;color:#B8AFA5;margin-top:32px;font-style:italic;}
+                      .svc-name{font-weight:800;color:#000;}
+                      .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:700;}
+                      .svc-qty{width:30px;text-align:center;font-weight:700;color:#000;}
+                      .svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}
+                      .summary{padding:0 2px;margin-bottom:16px;}
+                      .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}
+                      .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+                      .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}
+                      .stars{font-size:14px;letter-spacing:4px;}
                       @page{size:79mm auto;margin:2mm;}
-                      @media print{body{padding:6px;width:75mm;-webkit-print-color-adjust:exact;}}
+                      @media print{body{padding:4px;width:75mm;}}
                     </style></head><body>
                     <div class="center">
-                      ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
-                      ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:70px;max-width:160px;margin:0 auto 12px;display:block;object-fit:contain;" />` : (!Boolean(showSalonName) ? `<div style="color:#C4A870;font-size:40px;margin-bottom:12px;line-height:1;">✂️</div>` : '')}
+                      ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
+                      <div class="sub">Salon &amp; Spa</div>
                       <div class="header-info">
                         <div class="header-line">Receipt #: ${esc(s.slip)}</div>
                         <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
                         <div class="header-line">Customer: <span class="cust-name">${esc(s.customerName || 'Walk-in')}</span></div>
-                        <div class="amended">✏️ Amended Bill</div>
+                        <div class="amended">** AMENDED BILL **</div>
                       </div>
                     </div>
-                    <div class="divider-box">
-                      <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:40px;text-align:center;">Qty</div><div style="width:80px;text-align:right;">Amount</div></div>
-                      ${(s.cart || []).map(item => `<div class="svc-row"><div class="svc-info"><div class="svc-name">${esc(item.service)}</div><div class="svc-stylist">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div class="svc-qty">${item.qty || 1}</div><div class="svc-amt">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}
-                    </div>
+                    <div class="divider"></div>
+                    <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:30px;text-align:center;">Qty</div><div style="width:75px;text-align:right;">Amount</div></div>
+                    ${(s.cart || []).map(item => `<div class="svc-row"><div class="svc-info"><div class="svc-name">${esc(item.service)}</div><div class="svc-stylist">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div class="svc-qty">${item.qty || 1}</div><div class="svc-amt">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}
+                    <div class="divider"></div>
                     <div class="summary">
-                      <div class="sum-row"><span>Subtotal</span><span style="font-weight:500;">PKR ${subtotal.toLocaleString('en-PK')}</span></div>
-                      ${(s.discountAmt || 0) > 0 ? `<div class="sum-row" style="color:#A0303F;"><span>Discount${s.discReason ? ` (${s.discReason})` : ''}</span><span style="font-weight:500;">−PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}
-                      <div class="total-row"><span>Total Amount</span><span class="total-val">PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div>
+                      <div class="sum-row"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>
+                      ${(s.discountAmt || 0) > 0 ? `<div class="sum-row"><span>Discount${s.discReason ? ` (${s.discReason})` : ''}</span><span>-PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}
+                      <div class="total-row"><span>Total Amount</span><span>PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div>
                     </div>
-                    <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">This is an amended receipt. Original total: PKR ${(editingBill.total || 0).toLocaleString('en-PK')}</div>
-                    <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div>
+                    <div style="text-align:center;font-size:11px;font-weight:700;border:1px solid #000;padding:6px;margin-bottom:14px;color:#000;">Amended Receipt · Original: PKR ${(editingBill.total || 0).toLocaleString('en-PK')}</div>
+                    <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span class="stars">★ ★ ★ ★ ★</span></div>
                     </body></html>`);
                   }}
                     style={{ flex: 2, fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
@@ -5814,75 +5809,72 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                   <style>
                     *{margin:0;padding:0;box-sizing:border-box;}
-                    body{font-family:'Outfit', sans-serif;padding:32px;color:#2A2118;background:#FDFBF7;font-size:13px;line-height:1.4;}
+                    body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
                     .center{text-align:center;}
-                    .logo{font-family:'Playfair Display', serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}
-                    .header-info{font-size:13px; color:#2A2118; margin-bottom:24px; text-align:center;}
-                    .header-line{margin-bottom:2px; font-weight:500;}
-                    .cust-name{font-weight:700; text-transform:uppercase; letter-spacing:0.5px;}
-                    .divider-box{border-top:1.5px solid #E8E0D4; border-bottom:1.5px solid #E8E0D4; padding:16px 0; margin-bottom:16px;}
-                    .tbl-head{display:flex; justify-content:space-between; font-weight:700; margin-bottom:12px; font-size:13px;}
-                    .svc-row{display:flex; justify-content:space-between; margin-bottom:12px; align-items:flex-start; font-size:13px;}
-                    .svc-info{flex:1; padding-right:8px;}
-                    .svc-name{font-weight:500;}
-                    .svc-stylist{font-size:11px; color:#B08040; margin-top:2px; font-weight:600;}
-                    .svc-qty{width:40px; text-align:center; font-weight:500;}
-                    .svc-amt{width:80px; text-align:right; font-weight:500;}
-                    .disc-line{font-size:11px; color:#A0303F; font-weight:600; margin-top:2px;}
-                    .summary{padding:0 4px; margin-bottom:24px;}
-                    .sum-row{display:flex; justify-content:space-between; margin-bottom:8px;}
-                    .total-row{display:flex; justify-content:space-between; font-size:16px; font-weight:700; margin-top:12px; paddingTop:12px; border-top:1.5px solid #E8E0D4; align-items:center;}
-                    .total-val{color:#B08040; font-size:18px;}
-                    .footer{text-align:center; font-size:11px; color:#B8AFA5; margin-top:32px; font-style:italic;}
+                    .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+                    .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;color:#000;}
+                    .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
+                    .header-line{margin-bottom:3px;font-weight:700;color:#000;}
+                    .cust-name{font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:#000;}
+                    .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
+                    .tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+                    .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
+                    .svc-info{flex:1;padding-right:8px;}
+                    .svc-name{font-weight:800;color:#000;}
+                    .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:700;}
+                    .svc-qty{width:30px;text-align:center;font-weight:700;color:#000;}
+                    .svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}
+                    .disc-line{font-size:11px;color:#000;font-weight:700;margin-top:2px;}
+                    .summary{padding:0 2px;margin-bottom:16px;}
+                    .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}
+                    .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+                    .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}
+                    .stars{font-size:14px;letter-spacing:4px;}
                     @page{size:79mm auto;margin:2mm;}
-                    @media print{body{padding:6px;width:75mm;-webkit-print-color-adjust:exact;}}
+                    @media print{body{padding:4px;width:75mm;}}
                   </style>
                 </head><body>
                   <div class="center">
-                    ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
-                    ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:70px; max-width:160px; margin:0 auto 12px; display:block; object-fit:contain;" />` :
-                      (!Boolean(showSalonName) ? `<div style="color:#C4A870; font-size:40px; margin-bottom:12px; line-height:1;">✂️</div>` : '')}
+                    ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
+                    <div class="sub">Salon &amp; Spa</div>
                     <div class="header-info">
                       <div class="header-line">Receipt #: ${esc(s.slip)}</div>
                       <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
                       <div class="header-line">Customer Name: <span class="cust-name">${esc(s.customerName || 'Walk-in')}</span></div>
                     </div>
                   </div>
-                  
-                  <div class="divider-box">
-                    <div class="tbl-head">
-                      <div style="flex:1;">Service / Stylist</div>
-                      <div style="width:40px; text-align:center;">Qty</div>
-                      <div style="width:80px; text-align:right;">Amount</div>
-                    </div>
-                    ${s.cart.map(item => `
-                      <div class="svc-row">
-                        <div class="svc-info">
-                          <div class="svc-name">${esc(item.service)}</div>
-                          <div class="svc-stylist">Stylist: ${esc(item.stylist || "Unassigned")}</div>
-                          ${item.category === 'Deal' && item.included_services?.length > 0 ? `<div style="font-size:10px;color:#9A9088;margin-top:2px;">${item.included_services.join(', ')}</div>` : ""}
-                        </div>
-                        <div class="svc-qty">${item.qty}</div>
-                        <div class="svc-amt">
-                          PKR ${(item.price * item.qty).toLocaleString("en-PK")}
-                          ${item.discountValue > 0 ? `<div class="disc-line">−${item.discountMode === 'pct' ? `${item.discountValue}%` : `PKR ${item.discountValue}`}</div>` : ""}
-                        </div>
-                      </div>`).join("")}
+                  <div class="divider"></div>
+                  <div class="tbl-head">
+                    <div style="flex:1;">Service / Stylist</div>
+                    <div style="width:30px;text-align:center;">Qty</div>
+                    <div style="width:75px;text-align:right;">Amount</div>
                   </div>
-                  
+                  ${s.cart.map(item => `
+                    <div class="svc-row">
+                      <div class="svc-info">
+                        <div class="svc-name">${esc(item.service)}</div>
+                        <div class="svc-stylist">Stylist: ${esc(item.stylist || "Unassigned")}</div>
+                        ${item.category === 'Deal' && item.included_services?.length > 0 ? `<div style="font-size:10px;color:#000;font-weight:600;margin-top:2px;">${item.included_services.join(', ')}</div>` : ""}
+                      </div>
+                      <div class="svc-qty">${item.qty}</div>
+                      <div class="svc-amt">
+                        PKR ${(item.price * item.qty).toLocaleString("en-PK")}
+                        ${item.discountValue > 0 ? `<div class="disc-line">-${item.discountMode === 'pct' ? `${item.discountValue}%` : `PKR ${item.discountValue}`}</div>` : ""}
+                      </div>
+                    </div>`).join("")}
+                  <div class="divider"></div>
                   <div class="summary">
-                    <div class="sum-row"><span>Subtotal</span><span style="font-weight:500;">PKR ${(s.subtotal || (s.cart||[]).reduce((a,i)=>a+(i.price||0)*(i.qty||1),0)).toLocaleString("en-PK")}</span></div>
-                    ${s.discountAmt > 0 ? `<div class="sum-row" style="color:#A0303F;"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span style="font-weight:500;">−PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>` : ""}
+                    <div class="sum-row"><span>Subtotal</span><span>PKR ${(s.subtotal || (s.cart||[]).reduce((a,i)=>a+(i.price||0)*(i.qty||1),0)).toLocaleString("en-PK")}</span></div>
+                    ${s.discountAmt > 0 ? `<div class="sum-row"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span>-PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>` : ""}
                     <div class="total-row">
                       <span>Total Amount</span>
-                      <span class="total-val">PKR ${s.total.toLocaleString("en-PK")}</span>
+                      <span>PKR ${s.total.toLocaleString("en-PK")}</span>
                     </div>
                   </div>
-                  
                   <div class="footer">
                     Thank you for choosing Noorkada!<br/>
                     We look forward to seeing you again.<br/>
-                    <span style="font-size:12px; color:#B08040;">★ ★ ★ ★ ★</span>
+                    <span class="stars">★ ★ ★ ★ ★</span>
                   </div>
                 </body></html>`);
                 }} style={{
