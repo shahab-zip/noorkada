@@ -191,9 +191,9 @@ const Login = ({ onLogin }) => {
                         background: '#FDFAF6', padding: 30, borderRadius: 16, width: 340,
                         boxShadow: '0 16px 48px rgba(42,33,24,.25)'
                     }}>
-                        <h3 style={{ margin: '0 0 10px', color: '#2A2118', fontSize: 20 }}>Reset Password</h3>
+                                        <h3 style={{ margin: '0 0 10px', color: '#2A2118', fontSize: 20 }}>Forgot Password?</h3>
                         <p style={{ margin: '0 0 20px', color: '#7A7068', fontSize: 13, lineHeight: 1.5 }}>
-                            Enter your username or email address. If an account is found, a temporary password will be sent to your registered email.
+                            Please contact your administrator to reset your password.
                         </p>
 
                         <form onSubmit={handleForgotSubmit}>

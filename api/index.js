@@ -29,6 +29,15 @@ app.use((_req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'none'",
+    "script-src 'self'",
+    "connect-src 'self' https://*.supabase.co",
+    "img-src 'self' data: blob:",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
+    "frame-ancestors 'none'",
+  ].join('; '));
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   }
@@ -169,9 +178,10 @@ app.post('/api/login', loginRateLimit, async (req, res) => {
   res.json({ token, username: user.username, full_name: user.full_name || '', role: user.role });
 });
 
-app.post('/api/forgot-password', async (_req, res) => {
-  // Always return same message to prevent user enumeration
-  res.json({ message: 'If an account exists, a reset link was sent.' });
+// forgot-password is not implemented (no SMTP configured)
+// Endpoint kept for forward compatibility but clearly returns not-implemented
+app.post('/api/forgot-password', (_req, res) => {
+  res.status(501).json({ message: 'Password reset is not available. Please contact your administrator.' });
 });
 
 // ── Activity Logs (admin+ only) ────────────────────────────────────────────────
