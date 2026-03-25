@@ -5731,29 +5731,22 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </button>
 
               <div style={{ textAlign: "center", marginBottom: 24, color: "#2A2118" }}>
-                {showSalonName && (
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, letterSpacing: 0.5, marginBottom: (salonLogo && salonLogo !== 'default') ? 12 : 16 }}>
-                    {salonName || 'Noorkada'}
-                  </div>
-                )}
-
                 {salonLogo && salonLogo !== 'default' ? (
                   <img src={salonLogo} style={{ maxHeight: 70, maxWidth: 160, margin: "0 auto 12px", display: "block", objectFit: "contain" }} alt="Salon Logo" />
-                ) : !showSalonName ? (
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, letterSpacing: 0.5, marginBottom: 16 }}>
+                ) : (
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8, color: "#2A2118" }}>
                     {salonName || 'Noorkada'}
                   </div>
-                ) : (
-                  <div style={{ color: "#C4A870", fontSize: 40, marginBottom: 12, lineHeight: 1 }}>✂️</div>
                 )}
+                <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 16 }}>Salon &amp; Spa</div>
 
-                <div style={{ fontSize: 13, color: "#2A2118", marginBottom: 2, fontWeight: 500 }}>Receipt #: {doneSlip.slip}</div>
-                <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500, marginBottom: 2 }}>Date: {doneSlip.date} | Time: {doneSlip.time}</div>
-                <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500 }}>Customer Name: <span style={{ fontWeight: 700 }}>{doneSlip.customerName || 'Walk-in'}</span></div>
+                <div style={{ fontSize: 13, color: "#2A2118", marginBottom: 2, fontWeight: 700 }}>Receipt #: {doneSlip.slip}</div>
+                <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Date: {doneSlip.date} | Time: {doneSlip.time}</div>
+                <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700 }}>Customer Name: <span style={{ fontWeight: 800, textTransform: "uppercase" }}>{doneSlip.customerName || 'Walk-in'}</span></div>
               </div>
 
-              <div style={{ borderTop: "1.5px solid #E8E0D4", borderBottom: "1.5px solid #E8E0D4", padding: "16px 0", marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>
+              <div style={{ borderTop: "1.5px solid #2A2118", borderBottom: "1.5px solid #2A2118", padding: "16px 0", marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, color: "#2A2118", marginBottom: 12, borderBottom: "1px solid #D4C4A8", paddingBottom: 8 }}>
                   <div style={{ flex: 1 }}>Service / Stylist</div>
                   <div style={{ width: 40, textAlign: "center" }}>Qty</div>
                   <div style={{ width: 80, textAlign: "right" }}>Amount</div>
@@ -5762,19 +5755,19 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 {doneSlip.cart.map((item, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#2A2118", marginBottom: 12, alignItems: "flex-start" }}>
                     <div style={{ flex: 1, paddingRight: 8 }}>
-                      <div style={{ fontWeight: 500 }}>{item.service}</div>
-                      <div style={{ fontSize: 12, color: "#2A2118", marginTop: 2 }}>Stylist: {item.stylist || "Unassigned"}</div>
+                      <div style={{ fontWeight: 800, color: "#2A2118" }}>{item.service}</div>
+                      <div style={{ fontSize: 12, color: "#2A2118", marginTop: 2, fontWeight: 700 }}>Stylist: {item.stylist || "Unassigned"}</div>
                       {item.category === 'Deal' && item.included_services?.length > 0 && (
-                        <div style={{ fontSize: 11, color: "#9A9088", marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "#5A4D41", marginTop: 2, fontWeight: 600 }}>
                           {item.included_services.join(', ')}
                         </div>
                       )}
                     </div>
-                    <div style={{ width: 40, textAlign: "center", fontWeight: 500, paddingTop: 1 }}>{item.qty}</div>
-                    <div style={{ width: 80, textAlign: "right", fontWeight: 500, paddingTop: 1 }}>
+                    <div style={{ width: 40, textAlign: "center", fontWeight: 700, paddingTop: 1, color: "#2A2118" }}>{item.qty}</div>
+                    <div style={{ width: 80, textAlign: "right", fontWeight: 700, paddingTop: 1, color: "#2A2118" }}>
                       {fmt(item.price * item.qty)}
                       {item.discountValue > 0 && (
-                        <div style={{ fontSize: 11, color: "#A0303F", fontWeight: 600, marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "#2A2118", fontWeight: 700, marginTop: 2 }}>
                           −{item.discountMode === 'pct' ? `${item.discountValue}%` : fmt(item.discountValue)}
                         </div>
                       )}
@@ -5784,19 +5777,19 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </div>
 
               <div style={{ padding: "0 4px", marginBottom: 24, fontSize: 13, color: "#2A2118" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontWeight: 700 }}>
                   <span>Subtotal</span>
-                  <span style={{ fontWeight: 500 }}>{fmt(doneSlip.subtotal)}</span>
+                  <span>{fmt(doneSlip.subtotal)}</span>
                 </div>
                 {doneSlip.discountAmt > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontWeight: 700 }}>
                     <span>Discount {doneSlip.discReason ? `(${doneSlip.discReason})` : doneSlip.discMode === 'pct' ? `(${doneSlip.discount}%)` : ''}</span>
-                    <span style={{ fontWeight: 500 }}>−{fmt(doneSlip.discountAmt)}</span>
+                    <span>−{fmt(doneSlip.discountAmt)}</span>
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 700, marginTop: 12, paddingTop: 12, borderTop: "1.5px solid #E8E0D4", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 800, marginTop: 12, paddingTop: 12, borderTop: "2px solid #2A2118", alignItems: "center", color: "#2A2118" }}>
                   <span>Total Amount</span>
-                  <span style={{ color: "#B08040", fontSize: 18 }}>{fmt(doneSlip.total)}</span>
+                  <span style={{ fontSize: 18 }}>{fmt(doneSlip.total)}</span>
                 </div>
               </div>
 
