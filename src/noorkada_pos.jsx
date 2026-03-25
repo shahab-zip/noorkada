@@ -5243,7 +5243,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div class="divider-box">${(s.cart || []).map(item => `<div class="svc-row"><div><div style="font-weight:500;">${esc(item.service)}</div><div style="font-size:11px;color:#B08040;">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div style="font-weight:500;">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}</div>
                   <div style="padding:0 4px;margin-bottom:24px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>${(s.discountAmt || 0) > 0 ? `<div style="display:flex;justify-content:space-between;color:#A0303F;margin-bottom:8px;"><span>Discount</span><span>−PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}<div class="total-row"><span>Total</span><span class="total-val">PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div></div>
                   <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">Amended receipt · Original: PKR ${(originalSnapshot?.total || 0).toLocaleString('en-PK')}</div>
-                  <div class="footer">Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div></body></html>`);
+                  <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div></body></html>`);
                 }} style={{ width: "100%", fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "13px", cursor: "pointer", marginTop: 4 }}>
                   🖨️ Print Updated Slip
                 </button>
@@ -5371,7 +5371,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       <div class="total-row"><span>Total Amount</span><span class="total-val">PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div>
                     </div>
                     <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">This is an amended receipt. Original total: PKR ${(editingBill.total || 0).toLocaleString('en-PK')}</div>
-                    <div class="footer">Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div>
+                    <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div>
                     </body></html>`);
                   }}
                     style={{ flex: 2, fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
@@ -5879,7 +5879,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   </div>
                   
                   <div class="footer">
-                    Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/>
+                    Thank you for choosing Noorkada!<br/>
                     We look forward to seeing you again.<br/>
                     <span style="font-size:12px; color:#B08040;">★ ★ ★ ★ ★</span>
                   </div>
