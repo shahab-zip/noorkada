@@ -5698,8 +5698,15 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </div>
             )}
 
-            <div style={{ fontSize: 11, color: "#B8AFA5", textAlign: "center", fontStyle: "italic", marginBottom: 20 }}>
+            <div style={{ fontSize: 11, color: "#B8AFA5", textAlign: "center", fontStyle: "italic", marginBottom: 16 }}>
               Please complete transaction at front desk after service.
+            </div>
+
+            {/* Footer */}
+            <div style={{ textAlign: "center", borderTop: "1px dashed #C4B9AB", paddingTop: 14, marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 2 }}>Thank you for choosing Noorkada!</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 8 }}>We look forward to seeing you again.</div>
+              <div style={{ fontSize: 18, letterSpacing: 6, color: "#2A2118" }}>★ ★ ★ ★ ★</div>
             </div>
 
             {/* Actions */}
@@ -5791,6 +5798,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <span>Total Amount</span>
                   <span style={{ fontSize: 18 }}>{fmt(doneSlip.total)}</span>
                 </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ textAlign: "center", borderTop: "1px dashed #C4B9AB", paddingTop: 14, marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 2 }}>Thank you for choosing Noorkada!</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 8 }}>We look forward to seeing you again.</div>
+                <div style={{ fontSize: 18, letterSpacing: 6, color: "#2A2118" }}>★ ★ ★ ★ ★</div>
               </div>
 
               {/* Action buttons */}
