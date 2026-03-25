@@ -1026,7 +1026,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
   const fetchServices = async () => {
     try {
-      const r = await fetch('/api/services');
+      const r = await fetch('/api/services', { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await r.json();
       if (Array.isArray(data) && data.length > 0) setDbServices(data);
     } catch (e) { /* keep catalogue mock data */ }
@@ -1034,15 +1034,15 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
   const fetchStylists = async () => {
     try {
-      const r = await fetch('/api/stylists');
+      const r = await fetch('/api/stylists', { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await r.json();
-      setDbStylists(data);
+      if (Array.isArray(data)) setDbStylists(data);
     } catch (e) { devLog('Fetch stylists error:', e); }
   };
 
   const fetchStaffPositions = async () => {
     try {
-      const r = await fetch('/api/staff-positions');
+      const r = await fetch('/api/staff-positions', { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await r.json();
       if (Array.isArray(data)) setStaffPositions(data);
     } catch (e) { devLog('Fetch staff positions error:', e); }
@@ -1170,7 +1170,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     fetchServices();
     fetchStylists();
     fetchStaffPositions();
-    fetch('/api/categories').then(r => r.json()).then(data => { if (Array.isArray(data) && data.length > 0) setCategories(data); }).catch(() => {});
+    fetch('/api/categories', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(data => { if (Array.isArray(data) && data.length > 0) setCategories(data); }).catch(() => {});
 
     if (ROLE_RANK[user.role] >= 1) {
       fetch('/api/transactions', {
