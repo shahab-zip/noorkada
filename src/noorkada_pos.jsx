@@ -1640,7 +1640,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       <div class="header-tag">Staff Service Slip</div>
       <div class="center">
         ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:55px;max-width:140px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
-        <div class="sub">Salon &amp; Spa</div>
+        <div class="sub">Noor Kada</div>
       </div>
       <div class="divider"></div>
       <div class="row"><span class="lbl">Order #</span><span class="val">${esc(s.slip)}</span></div>
@@ -1883,7 +1883,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
           </div>
           <div style={{ maxWidth: 180, flex: "0 0 180px", overflow: "hidden" }}>
             <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, color: "#2A2118", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{salonName.split(' ')[0] || salonName}</div>
-            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 10, color: "#C4A870", letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{salonName.split(' ').slice(1).join(' ') || "Salon & Spa"}</div>
+            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 10, color: "#C4A870", letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{salonName.split(' ').slice(1).join(' ') || "Noor Kada"}</div>
           </div>
         </div>
 
@@ -5225,7 +5225,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   printHTML(`<!DOCTYPE html><html><head>
                   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
                   <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:800;color:#000;}.svc-staff{font-size:11px;font-weight:700;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
-                  <div class="center">${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}<div class="sub">Salon &amp; Spa</div>
+                  <div class="center">${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}<div class="sub">Noor Kada</div>
                   <div style="font-size:12px;color:#000;margin-bottom:14px;font-weight:700;">
                     <div>Receipt #: ${esc(s.slip)}</div>
                     <div>Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
@@ -5349,7 +5349,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </style></head><body>
                     <div class="center">
                       ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
-                      <div class="sub">Salon &amp; Spa</div>
+                      <div class="sub">Noor Kada</div>
                       <div class="header-info">
                         <div class="header-line">Receipt #: ${esc(s.slip)}</div>
                         <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
@@ -5669,7 +5669,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 ? <img src={salonLogo} style={{ maxHeight: 60, maxWidth: 140, margin: "0 auto 10px", display: "block", objectFit: "contain" }} />
                 : <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: "#2A2118", marginBottom: 6 }}>{salonName || "Noorkada"}</div>
               }
-              <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 10 }}>Salon &amp; Spa</div>
+              <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 10 }}>Noor Kada</div>
               <div style={{ display: "inline-block", background: "#2A2118", color: "#FFF", padding: "4px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>Staff Service Slip</div>
               <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Order #: {staffSlipPreview.slip}</div>
               <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Date: {staffSlipPreview.date} | Time: {staffSlipPreview.time}</div>
@@ -5738,7 +5738,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     {salonName || 'Noorkada'}
                   </div>
                 )}
-                <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 16 }}>Salon &amp; Spa</div>
+                <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 16 }}>Noor Kada</div>
 
                 <div style={{ fontSize: 13, color: "#2A2118", marginBottom: 2, fontWeight: 700 }}>Receipt #: {doneSlip.slip}</div>
                 <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Date: {doneSlip.date} | Time: {doneSlip.time}</div>
@@ -5829,7 +5829,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 </head><body>
                   <div class="center">
                     ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
-                    <div class="sub">Salon &amp; Spa</div>
+                    <div class="sub">Noor Kada</div>
                     <div class="header-info">
                       <div class="header-line">Receipt #: ${esc(s.slip)}</div>
                       <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
