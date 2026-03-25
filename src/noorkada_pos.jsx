@@ -1665,7 +1665,9 @@ export default function NoorKadaPOS({ user, onLogout }) {
       ${s.note ? `<div style="margin-top:16px;padding:12px;background:#FDFBF7;border-radius:8px;font-size:11px;color:#6B5030;border:1px solid #EDE6D8;"><strong>Customer Note:</strong><br/>${esc(s.note)}</div>` : ""}
 
       <div class="footer">
-        Please complete transaction at front desk after service.
+        Thank you for choosing Noorkada!<br/>
+        We look forward to seeing you again.<br/>
+        <span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span>
       </div>
     </body></html>`);
     updTab({ staffSlipPrinted: true });
