@@ -1160,6 +1160,12 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [hFrom, setHFrom] = useState("");
   const [hTo, setHTo] = useState("");
   const [hTab, setHTab] = useState("transactions"); // transactions | clients
+  const [expandedAmendments, setExpandedAmendments] = useState(new Set());
+  const toggleAmendments = (id) => setExpandedAmendments(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const [clientQ, setClientQ] = useState("");
   const [tierFilter, setTierFilter] = useState("");
 
@@ -3273,9 +3279,11 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <span className="badge" style={{ background: txn.payMode === "CASH" ? "#D1FAE5" : txn.payMode === "ONLINE" ? "#DBEAFE" : "#FEF3C7", color: txn.payMode === "CASH" ? "#065F46" : txn.payMode === "ONLINE" ? "#1E40AF" : "#92400E" }}>{txn.payMode}</span>
                         {Array.isArray(txn.amendments) && txn.amendments.length > 0 && (
-                          <span title={`${txn.amendments.length} edit${txn.amendments.length > 1 ? "s" : ""}`} style={{ fontSize: 10, fontWeight: 700, background: "#FEF3C7", color: "#92400E", borderRadius: 100, padding: "2px 7px", border: "1px solid #FDE68A" }}>
-                            ✏️ {txn.amendments.length}
-                          </span>
+                          <button onClick={() => toggleAmendments(txn.id)}
+                            title="View edit history"
+                            style={{ fontSize: 10, fontWeight: 700, background: expandedAmendments.has(txn.id) ? "#FDE68A" : "#FEF3C7", color: "#92400E", borderRadius: 100, padding: "3px 9px", border: "1px solid #FDE68A", cursor: "pointer" }}>
+                            ✏️ {txn.amendments.length} edit{txn.amendments.length > 1 ? "s" : ""} {expandedAmendments.has(txn.id) ? "▲" : "▼"}
+                          </button>
                         )}
                         <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 600, color: "#2A2118" }}>{fmt(txn.total)}</div>
                         {ROLE_RANK[user.role] >= 2 && (
@@ -3301,6 +3309,45 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       })}
                     </div>
                     {txn.discount > 0 && <div style={{ fontSize: 10, color: "#A0303F", marginTop: 8 }}>Discount {txn.discount}% applied — saved {fmt(txn.discountAmt)}</div>}
+
+                    {/* Inline amendment history */}
+                    {expandedAmendments.has(txn.id) && Array.isArray(txn.amendments) && txn.amendments.length > 0 && (
+                      <div style={{ marginTop: 12, borderTop: "1.5px dashed #EDE6D8", paddingTop: 12 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#92400E", marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>📋 Edit History</div>
+                        {[...txn.amendments].reverse().map((amend, i) => (
+                          <div key={i} style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "#92400E" }}>
+                                  Version {txn.amendments.length - i} → {txn.amendments.length - i + 1}
+                                </span>
+                                {amend.edit_note && (
+                                  <span style={{ fontSize: 11, color: "#B45309", fontStyle: "italic" }}>"{amend.edit_note}"</span>
+                                )}
+                              </div>
+                              <span style={{ fontSize: 10, color: "#B8AFA5" }}>
+                                by {amend.edited_by} · {amend.edited_at ? new Date(amend.edited_at).toLocaleString("en-PK", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+                              {(amend.snapshot?.cart || []).map((item, j) => (
+                                <span key={j} style={{ fontSize: 11, background: "#FEF3C7", color: "#92400E", borderRadius: 100, padding: "2px 8px", border: "1px solid #FDE68A" }}>
+                                  {item.service}{item.qty > 1 ? ` ×${item.qty}` : ""} · {fmt((item.price || 0) * (item.qty || 1), true)}
+                                </span>
+                              ))}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#8B7355", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                              <span>Total: <b style={{ color: "#92400E" }}>{fmt(amend.snapshot?.total || 0, true)}</b></span>
+                              <span>Pay: <b>{amend.snapshot?.pay_mode || "—"}</b></span>
+                              {amend.snapshot?.disc_mode && amend.snapshot.disc_mode !== "none" && (
+                                <span>Disc: <b>{amend.snapshot.disc_mode === "pct" ? `${amend.snapshot.disc_pct}%` : `PKR ${amend.snapshot.disc_flat}`}</b></span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        <div style={{ fontSize: 10, color: "#B8AFA5", textAlign: "right" }}>Current version shown above ↑</div>
+                      </div>
+                    )}
                   </div>
                 ))
               }
