@@ -77,9 +77,8 @@ const Login = ({ onLogin }) => {
             } else {
                 setError(data.message || 'Login failed');
             }
-        } catch (err) {
-            console.error('Login Fetch Error:', err);
-            setError(`Could not connect to server: ${err.message}`);
+        } catch {
+            setError('Could not connect to server. Please try again.');
         } finally {
             setLoading(false);
         }

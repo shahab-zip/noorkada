@@ -5,19 +5,77 @@ import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: '2mb' }));
 
+// ── CORS — only allow known origins ────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://noorkada-pos.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:4173',
+];
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow server-to-server / Postman (no origin) in dev only
+    if (!origin) return cb(null, process.env.NODE_ENV !== 'production');
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
+
+// ── Security headers ────────────────────────────────────────────────────────────
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+  next();
+});
+
+app.use(express.json({ limit: '500kb' }));
+
+// ── Supabase ────────────────────────────────────────────────────────────────────
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
 );
 
-const JWT_SECRET = process.env.JWT_SECRET || 'noorkada-change-this-secret';
+// ── JWT secret — refuse to start without a real secret ─────────────────────────
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET env var is missing or too short (min 32 chars).');
+  // In serverless we can't exit, so all JWT ops will throw safely below
+}
 
 // ── Role hierarchy ─────────────────────────────────────────────────────────────
 // receptionist(1) < manager(2) < admin(3) < superadmin(4)
 const ROLE_RANK = { receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
+
+// ── In-memory rate limiter (login brute-force protection) ──────────────────────
+// Stores { attempts, resetAt } per IP. Resets after WINDOW_MS.
+const RATE_LIMIT_MAP = new Map();
+const MAX_LOGIN_ATTEMPTS = 10;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+const loginRateLimit = (req, res, next) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  let entry = RATE_LIMIT_MAP.get(ip);
+  if (!entry || now > entry.resetAt) {
+    entry = { attempts: 0, resetAt: now + WINDOW_MS };
+    RATE_LIMIT_MAP.set(ip, entry);
+  }
+  entry.attempts++;
+  if (entry.attempts > MAX_LOGIN_ATTEMPTS) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    res.setHeader('Retry-After', retryAfter);
+    return res.status(429).json({ message: `Too many login attempts. Try again in ${Math.ceil(retryAfter / 60)} minutes.` });
+  }
+  next();
+};
 
 // ── Activity logger ────────────────────────────────────────────────────────────
 const log = (user, action, entity, entity_id, details) => {
@@ -35,7 +93,8 @@ const log = (user, action, entity, entity_id, details) => {
 
 // ── Auth middleware ────────────────────────────────────────────────────────────
 const auth = (req, res, next) => {
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!JWT_SECRET) return res.status(500).json({ message: 'Server misconfiguration' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ message: 'No token provided' });
   try {
     req.user = jwt.verify(token, JWT_SECRET);
@@ -53,6 +112,15 @@ const requireRole = (minRole) => (req, res, next) =>
     next();
   });
 
+// ── Input helpers ──────────────────────────────────────────────────────────────
+const sanitizeStr = (v, maxLen = 200) =>
+  typeof v === 'string' ? v.trim().slice(0, maxLen) : '';
+
+const sanitizeNum = (v, fallback = 0) => {
+  const n = Number(v);
+  return isFinite(n) ? n : fallback;
+};
+
 // ── Setup (first-time admin creation) ─────────────────────────────────────────
 app.get('/api/setup', async (_req, res) => {
   const { count } = await supabase.from('users').select('id', { count: 'exact', head: true });
@@ -62,207 +130,281 @@ app.get('/api/setup', async (_req, res) => {
 app.post('/api/setup', async (req, res) => {
   const { count } = await supabase.from('users').select('id', { count: 'exact', head: true });
   if (count > 0) return res.status(400).json({ message: 'Setup already completed' });
-  const { username, password, salonName } = req.body;
+  const username = sanitizeStr(req.body.username, 50);
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const salonName = sanitizeStr(req.body.salonName, 100);
   if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
-  const password_hash = await bcrypt.hash(password, 10);
+  if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+  if (!JWT_SECRET) return res.status(500).json({ message: 'Server misconfiguration' });
+  const password_hash = await bcrypt.hash(password, 12);
   const { data, error } = await supabase.from('users').insert({ username, password_hash, role: 'superadmin' }).select().single();
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Could not create account' });
   if (salonName) await supabase.from('settings').upsert({ key: 'salon_name', value: { v: salonName } });
-  const token = jwt.sign({ id: data.id, username: data.username, role: data.role }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: data.id, username: data.username, role: data.role }, JWT_SECRET, { expiresIn: '24h' });
   log({ id: data.id, username: data.username, role: data.role }, 'SETUP_COMPLETE', 'user', data.id, { salonName });
   res.json({ token, username: data.username, role: data.role });
 });
 
 // ── Login ──────────────────────────────────────────────────────────────────────
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
+app.post('/api/login', loginRateLimit, async (req, res) => {
+  const username = sanitizeStr(req.body.username, 50).toLowerCase();
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
   if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
-  const { data: users } = await supabase.from('users').select('*').eq('username', username.toLowerCase().trim()).limit(1);
+  if (!JWT_SECRET) return res.status(500).json({ message: 'Server misconfiguration' });
+  const { data: users } = await supabase.from('users').select('*').eq('username', username).limit(1);
   const user = users?.[0];
-  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-    log(null, 'LOGIN_FAILED', 'user', null, { attempted_username: username.toLowerCase().trim() });
+  // Always run bcrypt even when user not found (prevents timing attacks)
+  const dummyHash = '$2a$12$dummyhashtopreventtimingattacksxxxxxxxxxxxxxxxxxx';
+  const valid = user ? await bcrypt.compare(password, user.password_hash) : await bcrypt.compare(password, dummyHash).then(() => false);
+  if (!user || !valid) {
+    log(null, 'LOGIN_FAILED', 'user', null, { attempted_username: username });
     return res.status(401).json({ message: 'Invalid username or password' });
   }
-  const token = jwt.sign({ id: user.id, username: user.username, full_name: user.full_name || '', role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign(
+    { id: user.id, username: user.username, full_name: user.full_name || '', role: user.role },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
   log(user, 'LOGIN', 'user', user.id, null);
   res.json({ token, username: user.username, full_name: user.full_name || '', role: user.role });
 });
 
 app.post('/api/forgot-password', async (_req, res) => {
+  // Always return same message to prevent user enumeration
   res.json({ message: 'If an account exists, a reset link was sent.' });
 });
 
 // ── Activity Logs (admin+ only) ────────────────────────────────────────────────
 app.get('/api/logs', requireRole('admin'), async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 200, 500);
-  const offset = parseInt(req.query.offset) || 0;
+  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
   const { data, error } = await supabase
     .from('activity_logs')
     .select('*')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch logs' });
   res.json(data);
 });
 
-// ── Categories (manager+ can mutate) ──────────────────────────────────────────
-app.get('/api/categories', async (_req, res) => {
+// ── Categories ─────────────────────────────────────────────────────────────────
+app.get('/api/categories', auth, async (_req, res) => {
   const { data, error } = await supabase.from('categories').select('*').order('id');
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch categories' });
   res.json(data);
 });
 
 app.post('/api/categories', requireRole('manager'), async (req, res) => {
-  const { name, icon, color } = req.body;
+  const name = sanitizeStr(req.body.name, 100);
+  const icon = sanitizeStr(req.body.icon, 10);
+  const color = sanitizeStr(req.body.color, 20);
   if (!name) return res.status(400).json({ message: 'Name required' });
   const { data, error } = await supabase.from('categories').insert({ name, icon, color }).select().single();
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to create category' });
   log(req.user, 'CREATE_CATEGORY', 'category', data.id, { name });
   res.json(data);
 });
 
 app.delete('/api/categories/:id', requireRole('manager'), async (req, res) => {
-  const { data: cat } = await supabase.from('categories').select('name').eq('id', req.params.id).single();
-  const { error } = await supabase.from('categories').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'DELETE_CATEGORY', 'category', req.params.id, { name: cat?.name });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const { data: cat } = await supabase.from('categories').select('name').eq('id', id).single();
+  const { error } = await supabase.from('categories').delete().eq('id', id);
+  if (error) return res.status(500).json({ message: 'Failed to delete category' });
+  log(req.user, 'DELETE_CATEGORY', 'category', id, { name: cat?.name });
   res.json({ success: true });
 });
 
-// ── Services (manager+ can mutate) ────────────────────────────────────────────
-app.get('/api/services', async (_req, res) => {
+// ── Services ───────────────────────────────────────────────────────────────────
+app.get('/api/services', auth, async (_req, res) => {
   const { data, error } = await supabase.from('services').select('*').order('id');
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch services' });
   res.json(data);
 });
 
 app.post('/api/services', requireRole('manager'), async (req, res) => {
-  const { name, category, price, icon, color, included_services } = req.body;
+  const name = sanitizeStr(req.body.name, 200);
+  const category = sanitizeStr(req.body.category, 100);
+  const price = sanitizeNum(req.body.price, 0);
+  const icon = sanitizeStr(req.body.icon, 10);
+  const color = sanitizeStr(req.body.color, 20);
+  const included_services = Array.isArray(req.body.included_services) ? req.body.included_services.map(s => sanitizeStr(s, 200)) : [];
   if (!name || !category) return res.status(400).json({ message: 'Name and category required' });
-  const { data, error } = await supabase.from('services').insert({ name, category, price: price || 0, icon, color, included_services: included_services || [] }).select().single();
-  if (error) return res.status(500).json({ message: error.message });
+  const { data, error } = await supabase.from('services').insert({ name, category, price, icon, color, included_services }).select().single();
+  if (error) return res.status(500).json({ message: 'Failed to create service' });
   log(req.user, 'CREATE_SERVICE', 'service', data.id, { name, category, price });
   res.json(data);
 });
 
 app.put('/api/services/:id', requireRole('manager'), async (req, res) => {
-  const { name, category, price, icon, color, included_services } = req.body;
-  const { data, error } = await supabase.from('services').update({ name, category, price, icon, color, included_services }).eq('id', req.params.id).select().single();
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'UPDATE_SERVICE', 'service', req.params.id, { name, category, price });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const name = sanitizeStr(req.body.name, 200);
+  const category = sanitizeStr(req.body.category, 100);
+  const price = sanitizeNum(req.body.price, 0);
+  const icon = sanitizeStr(req.body.icon, 10);
+  const color = sanitizeStr(req.body.color, 20);
+  const included_services = Array.isArray(req.body.included_services) ? req.body.included_services.map(s => sanitizeStr(s, 200)) : [];
+  const { data, error } = await supabase.from('services').update({ name, category, price, icon, color, included_services }).eq('id', id).select().single();
+  if (error) return res.status(500).json({ message: 'Failed to update service' });
+  log(req.user, 'UPDATE_SERVICE', 'service', id, { name, category, price });
   res.json(data);
 });
 
 app.delete('/api/services/:id', requireRole('manager'), async (req, res) => {
-  const { data: svc } = await supabase.from('services').select('name').eq('id', req.params.id).single();
-  const { error } = await supabase.from('services').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'DELETE_SERVICE', 'service', req.params.id, { name: svc?.name });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const { data: svc } = await supabase.from('services').select('name').eq('id', id).single();
+  const { error } = await supabase.from('services').delete().eq('id', id);
+  if (error) return res.status(500).json({ message: 'Failed to delete service' });
+  log(req.user, 'DELETE_SERVICE', 'service', id, { name: svc?.name });
   res.json({ success: true });
 });
 
-// ── Staff (manager+ can mutate) ───────────────────────────────────────────────
-app.get('/api/stylists', async (_req, res) => {
+// ── Staff ──────────────────────────────────────────────────────────────────────
+app.get('/api/stylists', auth, async (_req, res) => {
   const { data, error } = await supabase.from('stylists').select('*').order('id');
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch staff' });
   res.json(data);
 });
 
 app.post('/api/stylists', requireRole('manager'), async (req, res) => {
-  const { name, phone, email, address, color, position } = req.body;
+  const name = sanitizeStr(req.body.name, 100);
+  const phone = sanitizeStr(req.body.phone, 20);
+  const email = sanitizeStr(req.body.email, 200);
+  const address = sanitizeStr(req.body.address, 300);
+  const color = sanitizeStr(req.body.color, 20) || '#B08040';
+  const position = sanitizeStr(req.body.position, 100);
   if (!name) return res.status(400).json({ message: 'Name required' });
   const joined_date = new Date().toISOString().split('T')[0];
-  const { data, error } = await supabase.from('stylists').insert({ name, phone: phone || '', email: email || '', address: address || '', color: color || '#B08040', joined_date, position: position || '' }).select().single();
-  if (error) return res.status(500).json({ message: error.message });
+  const { data, error } = await supabase.from('stylists').insert({ name, phone, email, address, color, joined_date, position }).select().single();
+  if (error) return res.status(500).json({ message: 'Failed to create staff member' });
   log(req.user, 'CREATE_STAFF', 'staff', data.id, { name, position, phone, email });
   res.json(data);
 });
 
 app.put('/api/stylists/:id', requireRole('manager'), async (req, res) => {
-  const { name, phone, email, address, color, position } = req.body;
-  const { data, error } = await supabase.from('stylists').update({ name, phone, email, address, color, position }).eq('id', req.params.id).select().single();
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'UPDATE_STAFF', 'staff', req.params.id, { name, position });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const name = sanitizeStr(req.body.name, 100);
+  const phone = sanitizeStr(req.body.phone, 20);
+  const email = sanitizeStr(req.body.email, 200);
+  const address = sanitizeStr(req.body.address, 300);
+  const color = sanitizeStr(req.body.color, 20);
+  const position = sanitizeStr(req.body.position, 100);
+  const { data, error } = await supabase.from('stylists').update({ name, phone, email, address, color, position }).eq('id', id).select().single();
+  if (error) return res.status(500).json({ message: 'Failed to update staff member' });
+  log(req.user, 'UPDATE_STAFF', 'staff', id, { name, position });
   res.json(data);
 });
 
 app.delete('/api/stylists/:id', requireRole('manager'), async (req, res) => {
-  const { data: sty } = await supabase.from('stylists').select('name').eq('id', req.params.id).single();
-  const { error } = await supabase.from('stylists').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'DELETE_STAFF', 'staff', req.params.id, { name: sty?.name });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const { data: sty } = await supabase.from('stylists').select('name').eq('id', id).single();
+  const { error } = await supabase.from('stylists').delete().eq('id', id);
+  if (error) return res.status(500).json({ message: 'Failed to delete staff member' });
+  log(req.user, 'DELETE_STAFF', 'staff', id, { name: sty?.name });
   res.json({ success: true });
 });
 
-// ── Staff Positions (manager+ can mutate) ──────────────────────────────────────
-app.get('/api/staff-positions', async (_req, res) => {
+// ── Staff Positions ────────────────────────────────────────────────────────────
+app.get('/api/staff-positions', auth, async (_req, res) => {
   const { data, error } = await supabase.from('staff_positions').select('*').order('name');
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch positions' });
   res.json(data);
 });
 
 app.post('/api/staff-positions', requireRole('manager'), async (req, res) => {
-  const { name, emoji } = req.body;
+  const name = sanitizeStr(req.body.name, 100);
+  const emoji = sanitizeStr(req.body.emoji, 10) || '👤';
   if (!name) return res.status(400).json({ message: 'Name required' });
-  const { data, error } = await supabase.from('staff_positions').insert({ name: name.trim(), emoji: emoji || '👤' }).select().single();
-  if (error) return res.status(500).json({ message: error.message });
+  const { data, error } = await supabase.from('staff_positions').insert({ name, emoji }).select().single();
+  if (error) return res.status(500).json({ message: 'Failed to create position' });
   log(req.user, 'CREATE_STAFF_POSITION', 'staff_position', data.id, { name });
   res.json(data);
 });
 
 app.delete('/api/staff-positions/:id', requireRole('manager'), async (req, res) => {
-  const { data: pos } = await supabase.from('staff_positions').select('name').eq('id', req.params.id).single();
-  const { error } = await supabase.from('staff_positions').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'DELETE_STAFF_POSITION', 'staff_position', req.params.id, { name: pos?.name });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const { data: pos } = await supabase.from('staff_positions').select('name').eq('id', id).single();
+  const { error } = await supabase.from('staff_positions').delete().eq('id', id);
+  if (error) return res.status(500).json({ message: 'Failed to delete position' });
+  log(req.user, 'DELETE_STAFF_POSITION', 'staff_position', id, { name: pos?.name });
   res.json({ success: true });
 });
 
 // ── Transactions ───────────────────────────────────────────────────────────────
 app.get('/api/transactions', requireRole('receptionist'), async (_req, res) => {
   const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(2000);
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch transactions' });
   res.json(data);
 });
 
-app.post('/api/transactions', async (req, res) => {
-  const { tab_name, cust_name, cust_phone, cart, total, pay_mode, disc_mode, disc_pct, disc_flat, disc_reason, disc_courtesy_by, note, staff_name, split_cash, split_other_mode, split_other_amt } = req.body;
+app.post('/api/transactions', requireRole('receptionist'), async (req, res) => {
+  const cust_name = sanitizeStr(req.body.cust_name, 200) || 'Walk-in';
+  const cust_phone = sanitizeStr(req.body.cust_phone, 30);
+  const tab_name = sanitizeStr(req.body.tab_name, 200) || cust_name;
+  const pay_mode = sanitizeStr(req.body.pay_mode, 20) || 'CASH';
+  const disc_mode = sanitizeStr(req.body.disc_mode, 20) || 'none';
+  const disc_reason = sanitizeStr(req.body.disc_reason, 300);
+  const disc_courtesy_by = sanitizeStr(req.body.disc_courtesy_by, 100);
+  const note = sanitizeStr(req.body.note, 500);
+  const staff_name = sanitizeStr(req.body.staff_name, 100);
+  const split_other_mode = sanitizeStr(req.body.split_other_mode, 20) || 'ONLINE';
+  const total = sanitizeNum(req.body.total, 0);
+  const disc_pct = sanitizeNum(req.body.disc_pct, 0);
+  const disc_flat = sanitizeNum(req.body.disc_flat, 0);
+  const split_cash = sanitizeNum(req.body.split_cash, 0);
+  const split_other_amt = sanitizeNum(req.body.split_other_amt, 0);
+  const cart = Array.isArray(req.body.cart) ? req.body.cart.slice(0, 100) : [];
+
   const { data, error } = await supabase.from('transactions').insert({
-    tab_name, cust_name, cust_phone, cart: cart || [], total: total || 0,
-    pay_mode, disc_mode, disc_pct: disc_pct || 0, disc_flat: disc_flat || 0,
-    disc_reason: disc_reason || '', disc_courtesy_by: disc_courtesy_by || '',
-    note: note || '', staff_name: staff_name || '',
-    split_cash: split_cash || 0, split_other_mode: split_other_mode || 'ONLINE', split_other_amt: split_other_amt || 0
+    tab_name, cust_name, cust_phone, cart, total,
+    pay_mode, disc_mode, disc_pct, disc_flat,
+    disc_reason, disc_courtesy_by,
+    note, staff_name,
+    split_cash, split_other_mode, split_other_amt
   }).select().single();
-  if (error) return res.status(500).json({ message: error.message });
-  // Log with actor from token if present
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
-  let actor = null;
-  try { actor = jwt.verify(token, JWT_SECRET); } catch {}
-  log(actor, 'CREATE_TRANSACTION', 'transaction', data.id, {
+  if (error) return res.status(500).json({ message: 'Failed to save transaction' });
+  log(req.user, 'CREATE_TRANSACTION', 'transaction', data.id, {
     cust_name, total, pay_mode, staff_name,
-    items: (cart || []).length,
+    items: cart.length,
     disc_mode: disc_mode || 'none',
   });
   res.json(data);
 });
 
 app.put('/api/transactions/:id', requireRole('receptionist'), async (req, res) => {
-  const {
-    cart, total, pay_mode, cust_name, cust_phone, staff_name,
-    disc_mode, disc_pct, disc_flat, disc_reason, disc_courtesy_by,
-    note, split_cash, split_other_mode, split_other_amt, edit_note
-  } = req.body;
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
 
-  // Fetch current state to store as amendment snapshot
+  const cust_name = sanitizeStr(req.body.cust_name, 200) || 'Walk-in';
+  const cust_phone = sanitizeStr(req.body.cust_phone, 30);
+  const pay_mode = sanitizeStr(req.body.pay_mode, 20) || 'CASH';
+  const disc_mode = sanitizeStr(req.body.disc_mode, 20) || 'none';
+  const disc_reason = sanitizeStr(req.body.disc_reason, 300);
+  const disc_courtesy_by = sanitizeStr(req.body.disc_courtesy_by, 100);
+  const note = sanitizeStr(req.body.note, 500);
+  const staff_name = sanitizeStr(req.body.staff_name, 100);
+  const split_other_mode = sanitizeStr(req.body.split_other_mode, 20) || 'ONLINE';
+  const edit_note = sanitizeStr(req.body.edit_note, 500);
+  const total = sanitizeNum(req.body.total, 0);
+  const disc_pct = sanitizeNum(req.body.disc_pct, 0);
+  const disc_flat = sanitizeNum(req.body.disc_flat, 0);
+  const split_cash = sanitizeNum(req.body.split_cash, 0);
+  const split_other_amt = sanitizeNum(req.body.split_other_amt, 0);
+  const cart = Array.isArray(req.body.cart) ? req.body.cart.slice(0, 100) : [];
+
   const { data: current, error: fetchErr } = await supabase
-    .from('transactions').select('*').eq('id', req.params.id).single();
+    .from('transactions').select('*').eq('id', id).single();
   if (fetchErr || !current) return res.status(404).json({ message: 'Transaction not found' });
 
   const amendment = {
     edited_at: new Date().toISOString(),
     edited_by: req.user.username,
-    edit_note: edit_note || '',
+    edit_note,
     snapshot: {
       cart: current.cart,
       total: current.total,
@@ -280,42 +422,33 @@ app.put('/api/transactions/:id', requireRole('receptionist'), async (req, res) =
   const prevAmendments = Array.isArray(current.amendments) ? current.amendments : [];
 
   const updates = {
-    cart: cart || [],
-    total: total || 0,
-    pay_mode: pay_mode || 'CASH',
-    cust_name: cust_name || 'Walk-in',
+    cart, total, pay_mode,
+    cust_name,
     tab_name: cust_name || current.tab_name || 'Walk-in',
-    cust_phone: cust_phone || '',
-    staff_name: staff_name || '',
-    disc_mode: disc_mode || 'none',
-    disc_pct: disc_pct || 0,
-    disc_flat: disc_flat || 0,
-    disc_reason: disc_reason || '',
-    disc_courtesy_by: disc_courtesy_by || '',
-    note: note || '',
-    split_cash: split_cash || 0,
-    split_other_mode: split_other_mode || 'ONLINE',
-    split_other_amt: split_other_amt || 0,
+    cust_phone,
+    staff_name,
+    disc_mode, disc_pct, disc_flat, disc_reason, disc_courtesy_by,
+    note,
+    split_cash, split_other_mode, split_other_amt,
     amendments: [...prevAmendments, amendment],
   };
 
-  let { data, error } = await supabase.from('transactions').update(updates).eq('id', req.params.id).select().single();
+  let { data, error } = await supabase.from('transactions').update(updates).eq('id', id).select().single();
 
-  // If amendments column doesn't exist yet, retry without it
   if (error && (error.message?.includes('amendments') || error.code === '42703')) {
     const { amendments: _omit, ...updatesWithoutAmendments } = updates;
-    const result = await supabase.from('transactions').update(updatesWithoutAmendments).eq('id', req.params.id).select().single();
+    const result = await supabase.from('transactions').update(updatesWithoutAmendments).eq('id', id).select().single();
     data = result.data;
     error = result.error;
   }
 
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to update transaction' });
 
-  log(req.user, 'EDIT_TRANSACTION', 'transaction', req.params.id, {
+  log(req.user, 'EDIT_TRANSACTION', 'transaction', id, {
     cust_name: cust_name || current.cust_name,
     old_total: current.total,
     new_total: total,
-    edit_note: edit_note || '',
+    edit_note,
   });
   res.json(data);
 });
@@ -323,28 +456,36 @@ app.put('/api/transactions/:id', requireRole('receptionist'), async (req, res) =
 // ── Users ──────────────────────────────────────────────────────────────────────
 app.get('/api/users', requireRole('manager'), async (_req, res) => {
   const { data, error } = await supabase.from('users').select('id, username, full_name, email, role, created_at').order('id');
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: 'Failed to fetch users' });
   res.json(data);
 });
 
 app.post('/api/users', requireRole('manager'), async (req, res) => {
-  const { username, password, role, email, full_name } = req.body;
+  const username = sanitizeStr(req.body.username, 50).toLowerCase();
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const role = sanitizeStr(req.body.role, 20) || 'receptionist';
+  const email = sanitizeStr(req.body.email, 200);
+  const full_name = sanitizeStr(req.body.full_name, 100);
   if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
+  if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+  if (!ROLE_RANK[role]) return res.status(400).json({ message: 'Invalid role' });
   const actorRank = ROLE_RANK[req.user.role] || 0;
   const targetRank = ROLE_RANK[role] || 1;
   if (targetRank >= actorRank) return res.status(403).json({ message: 'Cannot create a user with equal or higher role' });
-  const password_hash = await bcrypt.hash(password, 10);
+  const password_hash = await bcrypt.hash(password, 12);
   const { data, error } = await supabase.from('users')
-    .insert({ username: username.toLowerCase().trim(), full_name: full_name || '', password_hash, role: role || 'receptionist', email: email || '' })
+    .insert({ username, full_name, password_hash, role, email })
     .select('id, username, full_name, email, role, created_at').single();
-  if (error) return res.status(500).json({ message: error.message });
+  if (error) return res.status(500).json({ message: error.code === '23505' ? 'Username already exists' : 'Failed to create user' });
   log(req.user, 'CREATE_USER', 'user', data.id, { username: data.username, full_name: data.full_name, role: data.role });
   res.json(data);
 });
 
 // Must be defined BEFORE /api/users/:id
 app.put('/api/users/profile', auth, async (req, res) => {
-  const { password, currentPassword } = req.body;
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const currentPassword = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
+  if (password && password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
   const { data: users } = await supabase.from('users').select('*').eq('id', req.user.id).limit(1);
   const user = users?.[0];
   if (!user) return res.status(404).json({ message: 'User not found' });
@@ -353,7 +494,7 @@ app.put('/api/users/profile', auth, async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Current password is incorrect' });
   }
   if (password) {
-    const password_hash = await bcrypt.hash(password, 10);
+    const password_hash = await bcrypt.hash(password, 12);
     await supabase.from('users').update({ password_hash }).eq('id', req.user.id);
     log(req.user, 'CHANGE_PASSWORD', 'user', req.user.id, null);
   }
@@ -361,41 +502,49 @@ app.put('/api/users/profile', auth, async (req, res) => {
 });
 
 app.put('/api/users/:id', requireRole('manager'), async (req, res) => {
-  const { role, password, username } = req.body;
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  const role = sanitizeStr(req.body.role, 20);
+  const username = sanitizeStr(req.body.username, 50);
+  const full_name = sanitizeStr(req.body.full_name, 100);
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  if (password && password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
   const actorRank = ROLE_RANK[req.user.role] || 0;
-  const isSelf = String(req.user.id) === String(req.params.id);
+  const isSelf = String(req.user.id) === String(id);
 
   if (!isSelf) {
-    const { data: target } = await supabase.from('users').select('role').eq('id', req.params.id).single();
+    const { data: target } = await supabase.from('users').select('role').eq('id', id).single();
     if (!target) return res.status(404).json({ message: 'User not found' });
     if ((ROLE_RANK[target.role] || 0) >= actorRank) return res.status(403).json({ message: 'Cannot modify a user with equal or higher role' });
     if (role && (ROLE_RANK[role] || 0) >= actorRank) return res.status(403).json({ message: 'Cannot assign equal or higher role' });
   }
 
   const updates = {};
-  if (username) updates.username = username.toLowerCase().trim();
-  if (req.body.full_name !== undefined) updates.full_name = req.body.full_name;
-  if (!isSelf && role) updates.role = role;
-  if (password) updates.password_hash = await bcrypt.hash(password, 10);
-  const { data, error } = await supabase.from('users').update(updates).eq('id', req.params.id).select('id, username, full_name, email, role').single();
-  if (error) return res.status(500).json({ message: error.message });
+  if (username) updates.username = username.toLowerCase();
+  if (full_name !== undefined) updates.full_name = full_name;
+  if (!isSelf && role && ROLE_RANK[role]) updates.role = role;
+  if (password) updates.password_hash = await bcrypt.hash(password, 12);
+  const { data, error } = await supabase.from('users').update(updates).eq('id', id).select('id, username, full_name, email, role').single();
+  if (error) return res.status(500).json({ message: 'Failed to update user' });
   const changes = {};
   if (username) changes.username = username;
   if (!isSelf && role) changes.role = role;
   if (password) changes.password_changed = true;
-  log(req.user, isSelf ? 'UPDATE_OWN_PROFILE' : 'UPDATE_USER', 'user', req.params.id, changes);
+  log(req.user, isSelf ? 'UPDATE_OWN_PROFILE' : 'UPDATE_USER', 'user', id, changes);
   res.json(data);
 });
 
 app.delete('/api/users/:id', requireRole('manager'), async (req, res) => {
-  if (String(req.user.id) === String(req.params.id)) return res.status(400).json({ message: 'Cannot delete yourself' });
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid ID' });
+  if (String(req.user.id) === String(id)) return res.status(400).json({ message: 'Cannot delete yourself' });
   const actorRank = ROLE_RANK[req.user.role] || 0;
-  const { data: target } = await supabase.from('users').select('role, username').eq('id', req.params.id).single();
+  const { data: target } = await supabase.from('users').select('role, username').eq('id', id).single();
   if (!target) return res.status(404).json({ message: 'User not found' });
   if ((ROLE_RANK[target.role] || 0) >= actorRank) return res.status(403).json({ message: 'Cannot delete a user with equal or higher role' });
-  const { error } = await supabase.from('users').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'DELETE_USER', 'user', req.params.id, { deleted_username: target.username, deleted_role: target.role });
+  const { error } = await supabase.from('users').delete().eq('id', id);
+  if (error) return res.status(500).json({ message: 'Failed to delete user' });
+  log(req.user, 'DELETE_USER', 'user', id, { deleted_username: target.username, deleted_role: target.role });
   res.json({ success: true });
 });
 
@@ -410,5 +559,8 @@ app.post('/api/settings/smtp', requireRole('admin'), async (req, res) => {
   log(req.user, 'UPDATE_SMTP_SETTINGS', 'settings', 'smtp', null);
   res.json({ success: true });
 });
+
+// ── 404 catch-all ──────────────────────────────────────────────────────────────
+app.use((_req, res) => res.status(404).json({ message: 'Not found' }));
 
 export default app;

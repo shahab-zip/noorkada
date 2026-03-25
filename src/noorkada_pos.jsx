@@ -1,6 +1,10 @@
 import React, { useState, useMemo } from "react";
 import ReactDOM from "react-dom";
 
+// Suppress console output in production
+const isDev = import.meta.env.DEV;
+const devLog = isDev ? console.error.bind(console) : () => {};
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 // STYLISTS and STYLIST_COLORS are now fetched from the backend dynamically.
 
@@ -906,7 +910,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       const r = await fetch('/api/logs?limit=200', { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await r.json();
       if (Array.isArray(data)) setActivityLogs(data);
-    } catch (e) { console.error('Fetch logs error:', e); }
+    } catch (e) { devLog('Fetch logs error:', e); }
     setLogsLoading(false);
   };
 
@@ -1033,7 +1037,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       const r = await fetch('/api/stylists');
       const data = await r.json();
       setDbStylists(data);
-    } catch (e) { console.error("Fetch stylists error:", e); }
+    } catch (e) { devLog('Fetch stylists error:', e); }
   };
 
   const fetchStaffPositions = async () => {
@@ -1041,7 +1045,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       const r = await fetch('/api/staff-positions');
       const data = await r.json();
       if (Array.isArray(data)) setStaffPositions(data);
-    } catch (e) { console.error("Fetch staff positions error:", e); }
+    } catch (e) { devLog('Fetch staff positions error:', e); }
   };
 
   const addService = async () => {
@@ -1176,7 +1180,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
         .then(data => {
           if (Array.isArray(data)) setTransactions(data.map(normalizeTxn));
         })
-        .catch(err => console.error("Fetch transactions error:", err));
+        .catch(err => devLog('Fetch transactions error:', err));
 
       fetch('/api/users', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -1185,7 +1189,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
         .then(data => {
           if (Array.isArray(data)) setDbUsers(data);
         })
-        .catch(err => console.error("Fetch users error:", err));
+        .catch(err => devLog('Fetch users error:', err));
 
       fetch('/api/settings/smtp', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -1194,7 +1198,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
         .then(data => {
           if (data && !data.error) setSmtpSettings(data);
         })
-        .catch(err => console.error("Fetch SMTP settings error:", err));
+        .catch(err => devLog('Fetch SMTP settings error:', err));
     }
   }, [user.role, token]);
   const [dashTab, setDashTab] = useState(() => localStorage.getItem('noorkada_dashTab') || "overview");
@@ -1394,7 +1398,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     try {
       localStorage.setItem('noorkada_showSalonName', showSalonName ? 'true' : 'false');
     } catch (e) {
-      console.error('Failed to save showSalonName', e);
+      devLog('Failed to save showSalonName', e);
     }
   }, [showSalonName]);
 
@@ -1411,7 +1415,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       localStorage.setItem('noorkada_salonName', salonName);
       localStorage.setItem('noorkada_salonLogo', salonLogo);
       localStorage.setItem('noorkada_salonAddress', salonAddress);
-    } catch (e) { console.error('Failed to save name/logo', e); }
+    } catch (e) { devLog('Failed to save name/logo', e); }
 
     try {
       // Update browser tab title
@@ -1431,7 +1435,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
         link.href = salonLogo;
       }
     } catch (e) {
-      console.error('Failed to update favicon', e);
+      devLog('Failed to update favicon', e);
     }
   }, [salonName, salonLogo, salonAddress]);
 
@@ -1581,7 +1585,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       })
       .catch(err => {
         setCheckoutLoading(false);
-        console.error("Checkout error:", err);
+        devLog('Checkout error:', err);
         showToast(`Save Error: ${err.message}`, "error");
       });
   };
