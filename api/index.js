@@ -24,6 +24,7 @@ const log = (user, action, entity, entity_id, details) => {
   supabase.from('activity_logs').insert({
     user_id: user?.id || null,
     username: user?.username || 'system',
+    full_name: user?.full_name || '',
     role: user?.role || 'system',
     action,
     entity: entity || null,
@@ -82,9 +83,9 @@ app.post('/api/login', async (req, res) => {
     log(null, 'LOGIN_FAILED', 'user', null, { attempted_username: username.toLowerCase().trim() });
     return res.status(401).json({ message: 'Invalid username or password' });
   }
-  const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user.id, username: user.username, full_name: user.full_name || '', role: user.role }, JWT_SECRET, { expiresIn: '7d' });
   log(user, 'LOGIN', 'user', user.id, null);
-  res.json({ token, username: user.username, role: user.role });
+  res.json({ token, username: user.username, full_name: user.full_name || '', role: user.role });
 });
 
 app.post('/api/forgot-password', async (_req, res) => {
@@ -201,9 +202,9 @@ app.get('/api/staff-positions', async (_req, res) => {
 });
 
 app.post('/api/staff-positions', requireRole('manager'), async (req, res) => {
-  const { name } = req.body;
+  const { name, emoji } = req.body;
   if (!name) return res.status(400).json({ message: 'Name required' });
-  const { data, error } = await supabase.from('staff_positions').insert({ name: name.trim() }).select().single();
+  const { data, error } = await supabase.from('staff_positions').insert({ name: name.trim(), emoji: emoji || '👤' }).select().single();
   if (error) return res.status(500).json({ message: error.message });
   log(req.user, 'CREATE_STAFF_POSITION', 'staff_position', data.id, { name });
   res.json(data);
@@ -218,7 +219,7 @@ app.delete('/api/staff-positions/:id', requireRole('manager'), async (req, res) 
 });
 
 // ── Transactions ───────────────────────────────────────────────────────────────
-app.get('/api/transactions', requireRole('manager'), async (_req, res) => {
+app.get('/api/transactions', requireRole('receptionist'), async (_req, res) => {
   const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(2000);
   if (error) return res.status(500).json({ message: error.message });
   res.json(data);
@@ -246,7 +247,7 @@ app.post('/api/transactions', async (req, res) => {
   res.json(data);
 });
 
-app.put('/api/transactions/:id', requireRole('manager'), async (req, res) => {
+app.put('/api/transactions/:id', requireRole('receptionist'), async (req, res) => {
   const {
     cart, total, pay_mode, cust_name, cust_phone, staff_name,
     disc_mode, disc_pct, disc_flat, disc_reason, disc_courtesy_by,
@@ -321,23 +322,23 @@ app.put('/api/transactions/:id', requireRole('manager'), async (req, res) => {
 
 // ── Users ──────────────────────────────────────────────────────────────────────
 app.get('/api/users', requireRole('manager'), async (_req, res) => {
-  const { data, error } = await supabase.from('users').select('id, username, email, role, created_at').order('id');
+  const { data, error } = await supabase.from('users').select('id, username, full_name, email, role, created_at').order('id');
   if (error) return res.status(500).json({ message: error.message });
   res.json(data);
 });
 
 app.post('/api/users', requireRole('manager'), async (req, res) => {
-  const { username, password, role, email } = req.body;
+  const { username, password, role, email, full_name } = req.body;
   if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
   const actorRank = ROLE_RANK[req.user.role] || 0;
   const targetRank = ROLE_RANK[role] || 1;
   if (targetRank >= actorRank) return res.status(403).json({ message: 'Cannot create a user with equal or higher role' });
   const password_hash = await bcrypt.hash(password, 10);
   const { data, error } = await supabase.from('users')
-    .insert({ username: username.toLowerCase().trim(), password_hash, role: role || 'receptionist', email: email || '' })
-    .select('id, username, email, role, created_at').single();
+    .insert({ username: username.toLowerCase().trim(), full_name: full_name || '', password_hash, role: role || 'receptionist', email: email || '' })
+    .select('id, username, full_name, email, role, created_at').single();
   if (error) return res.status(500).json({ message: error.message });
-  log(req.user, 'CREATE_USER', 'user', data.id, { username: data.username, role: data.role });
+  log(req.user, 'CREATE_USER', 'user', data.id, { username: data.username, full_name: data.full_name, role: data.role });
   res.json(data);
 });
 
@@ -373,9 +374,10 @@ app.put('/api/users/:id', requireRole('manager'), async (req, res) => {
 
   const updates = {};
   if (username) updates.username = username.toLowerCase().trim();
+  if (req.body.full_name !== undefined) updates.full_name = req.body.full_name;
   if (!isSelf && role) updates.role = role;
   if (password) updates.password_hash = await bcrypt.hash(password, 10);
-  const { data, error } = await supabase.from('users').update(updates).eq('id', req.params.id).select('id, username, email, role').single();
+  const { data, error } = await supabase.from('users').update(updates).eq('id', req.params.id).select('id, username, full_name, email, role').single();
   if (error) return res.status(500).json({ message: error.message });
   const changes = {};
   if (username) changes.username = username;

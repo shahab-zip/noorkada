@@ -333,12 +333,83 @@ const MOCK_SERVICES = [
 
 const DEFAULT_COURTESY_PERSONS = ["Owner", "Manager", "Ahmed", "Ayesha", "Sara", "Usman", "Fatima", "Ali"];
 
+// ── Shared salon/spa emoji set ─────────────────────────────────────────────────
+const SALON_EMOJIS = [
+  // Hair
+  "✂️","💇","💈","🪮","🧴","💆","🧖","🪒","🚿","🛁","🧼","🪥",
+  // Face & Makeup
+  "💄","💅","👄","💋","👁️","🫦","🪭","👃","🧖‍♀️","🧖‍♂️","🫧","💦",
+  // Skin & Beauty
+  "✨","🌟","💫","⭐","🌸","🌺","🌼","🌻","🌹","🪷","🌷","🍀",
+  // Spa & Wellness
+  "🧘","🛀","🌿","🍃","🌱","🪴","🌾","💐","🫚","🧪","💊","🩺",
+  // Tools
+  "🪄","🖌️","🔧","🧲","💡","🔥","⚡","🎨","🖼️","🪞","🧹","🧺",
+  // Colors
+  "🎨","🌈","🔴","🟠","🟡","🟢","🔵","🟣","🤍","🖤","🤎","⚪",
+  // Nails & Accessories
+  "💍","💎","💎","🎀","🎗️","🏅","🥇","🌙","☀️","🦋","🌊","💨",
+  // Business & Management
+  "👔","💼","📋","🗓️","✅","🔑","🎯","🏆","👑","🎁","🛎️","📞",
+  // People & Roles
+  "💪","🤲","🙌","👐","🤝","👩‍⚕️","👨‍⚕️","🧑‍⚕️","💁","🙋","🧑‍🎨","👩‍🎨",
+  // Extra spa
+  "🫁","🌊","🕯️","🪔","🧸","🫖","🍵","🌴","🏝️","🌺","🏮","🔮",
+];
+
+// ── Reusable emoji picker dropdown ────────────────────────────────────────────
+function EmojiPickerDropdown({ value, onChange, defaultEmoji = "✨" }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        title="Pick emoji"
+        style={{ width: 44, height: 44, borderRadius: 12, border: `1.5px solid ${open ? "#B08040" : "#EDE6D8"}`, background: "#FFF", fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(44,33,24,.06)" }}
+      >{value || defaultEmoji}</button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 9999, background: "#FDFBF7", border: "1.5px solid #EDE6D8", borderRadius: 16, padding: 14, boxShadow: "0 8px 32px rgba(44,33,24,.22)", width: 300 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>Quick Pick</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12, maxHeight: 220, overflowY: "auto" }}>
+            {SALON_EMOJIS.map((em, i) => (
+              <button key={`${em}-${i}`} type="button" onClick={() => { onChange(em); setOpen(false); }}
+                style={{ width: 34, height: 34, borderRadius: 8, border: value === em ? "2px solid #B08040" : "1.5px solid #EDE6D8", background: value === em ? "#FEF3C7" : "#FFF", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {em}
+              </button>
+            ))}
+          </div>
+          <div style={{ borderTop: "1px solid #EDE6D8", paddingTop: 10 }}>
+            <div style={{ fontSize: 11, color: "#9A9088", marginBottom: 6 }}>Or type / paste any emoji:</div>
+            <input
+              value={value}
+              onChange={e => { const v = [...e.target.value].slice(-2).join(""); onChange(v || defaultEmoji); }}
+              placeholder="😊"
+              style={{ width: "100%", boxSizing: "border-box", fontSize: 22, textAlign: "center", border: "1.5px solid #EDE6D8", borderRadius: 10, padding: "8px", outline: "none", background: "#FFF" }}
+              onKeyDown={e => { if (e.key === "Enter") setOpen(false); }}
+            />
+            <div style={{ fontSize: 10, color: "#C4B9AB", marginTop: 5, textAlign: "center" }}>Press Ctrl+Cmd+Space (Mac) or Win+. (Windows)</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── RBAC Helpers ───────────────────────────────────────────────────────────────
 const ROLE_RANK = { receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
 const hasNavAccess = (role, v) => {
   if (v === 'pos') return true;
+  if (v === 'history') return true; // all roles can access history to view/edit transactions
   if (v === 'settings') return (ROLE_RANK[role] || 0) >= 2;
-  return (ROLE_RANK[role] || 0) >= 3; // dashboard, history require admin+
+  return (ROLE_RANK[role] || 0) >= 3; // dashboard requires admin+
 };
 const creatableRoles = (role) => {
   if (role === 'superadmin') return [['receptionist','Receptionist'],['manager','Manager'],['admin','Admin']];
@@ -657,6 +728,119 @@ function StylistPicker({ value, onChange, color, id, stylists = [], highlight = 
   );
 }
 
+// ─── CourtesyPicker ─────────────────────────────────────────────────────────
+function CourtesyPicker({ value, onChange, persons = [] }) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [dropPos, setDropPos] = React.useState({ top: 0, left: 0, width: 200 });
+  const triggerRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+  const dropRef = React.useRef(null);
+
+  const filtered = persons.filter(p => p.toLowerCase().includes(query.toLowerCase()));
+
+  React.useEffect(() => {
+    const handler = e => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        dropRef.current && !dropRef.current.contains(e.target)
+      ) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleOpen = () => {
+    if (open) return setOpen(false);
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom, left: r.left, width: r.width });
+    }
+    setOpen(true);
+    setQuery("");
+    setTimeout(() => inputRef.current?.focus(), 40);
+  };
+
+  const select = (name) => { onChange(name); setOpen(false); setQuery(""); };
+  const clear = (e) => { e.stopPropagation(); onChange(""); setOpen(false); };
+
+  const dropdown = open ? ReactDOM.createPortal(
+    <div ref={dropRef} style={{
+      position: "fixed", top: dropPos.top, left: dropPos.left, width: dropPos.width,
+      zIndex: 99999, background: "#FFFFFF", borderRadius: "0 0 12px 12px",
+      boxShadow: "0 8px 32px rgba(44,33,24,.18), 0 2px 8px rgba(44,33,24,.08)",
+      border: "1.5px solid #EDE6D8", borderTop: "none", overflow: "hidden",
+    }}>
+      <div style={{ padding: "9px 10px", borderBottom: "1px solid #F0EAE0", display: "flex", alignItems: "center", gap: 7 }}>
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="#C4B9AB" strokeWidth="1.4" />
+          <path d="M10 10l2.5 2.5" stroke="#C4B9AB" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
+          placeholder="Search name…"
+          style={{ border: "none", outline: "none", fontSize: 12, color: "#2A2118", background: "transparent", flex: 1, fontFamily: "'Outfit',sans-serif" }} />
+        {query && <button onClick={() => setQuery("")} style={{ color: "#D4C4B0", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>}
+      </div>
+      <div style={{ maxHeight: 200, overflowY: "auto" }}>
+        {filtered.length === 0
+          ? <div style={{ padding: "12px 14px", fontSize: 12, color: "#C4B9AB", textAlign: "center" }}>No match found</div>
+          : filtered.map(p => {
+            const isSelected = p === value;
+            return (
+              <div key={p} onClick={() => select(p)}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", cursor: "pointer", background: isSelected ? "#FAF5EC" : "transparent", transition: "background .12s" }}
+                onMouseEnter={e => e.currentTarget.style.background = isSelected ? "#FAF5EC" : "#FDFAF6"}
+                onMouseLeave={e => e.currentTarget.style.background = isSelected ? "#FAF5EC" : "transparent"}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#B08040", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#FFF", flexShrink: 0 }}>{p[0].toUpperCase()}</div>
+                <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? "#B08040" : "#2A2118", flex: 1 }}>{p}</span>
+                {isSelected && <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3.5 3.5 6-6" stroke="#B08040" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+              </div>
+            );
+          })
+        }
+      </div>
+      {value && (
+        <div style={{ borderTop: "1px solid #F0EAE0" }}>
+          <div onClick={() => select("")} style={{ padding: "8px 12px", fontSize: 11, color: "#B8AFA5", cursor: "pointer", textAlign: "center", transition: "background .12s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#FDFAF6"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            Clear selection
+          </div>
+        </div>
+      )}
+    </div>, document.body
+  ) : null;
+
+  return (
+    <div style={{ position: "relative", flex: 1 }}>
+      <div ref={triggerRef} onClick={handleOpen} style={{
+        display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+        padding: "7px 10px", borderRadius: open ? "8px 8px 0 0" : 8,
+        background: open ? "#FFFFFF" : "#F8F4EE",
+        border: `1.5px solid #EDE6D8`,
+        borderBottom: open ? "1px solid #F0EAE0" : "1.5px solid #EDE6D8",
+        transition: "all .15s",
+      }}>
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: .45 }}>
+          <circle cx="6" cy="5" r="3" stroke="#6B5540" strokeWidth="1.4" />
+          <path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="#6B5540" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        {value
+          ? <><div style={{ width: 18, height: 18, borderRadius: "50%", background: "#B08040", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#FFF", flexShrink: 0 }}>{value[0].toUpperCase()}</div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#B08040", flex: 1 }}>{value}</span>
+            <button onClick={clear} style={{ color: "#C4B9AB", fontSize: 14, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, marginLeft: 4 }}>×</button>
+          </>
+          : <span style={{ fontSize: 12, color: "#C4B9AB", flex: 1 }}>👤 Courtesy by (optional)…</span>
+        }
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s", flexShrink: 0 }}>
+          <path d="M1 1l4 4 4-4" stroke="#C4B9AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      {dropdown}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NoorKadaPOS({ user, onLogout }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
@@ -684,6 +868,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [dbStylists, setDbStylists] = useState([]);
   const [staffPositions, setStaffPositions] = useState([]);
   const [newPositionName, setNewPositionName] = useState("");
+  const [newPositionEmoji, setNewPositionEmoji] = useState("👤");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [categories, setCategories] = useState(MOCK_CATEGORIES);
   const [dbUsers, setDbUsers] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -975,7 +1161,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
   };
 
 
-
   // Fetch transactions, categories, and users on mount if admin
   React.useEffect(() => {
     fetchServices();
@@ -983,7 +1168,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     fetchStaffPositions();
     fetch('/api/categories').then(r => r.json()).then(data => { if (Array.isArray(data) && data.length > 0) setCategories(data); }).catch(() => {});
 
-    if (ROLE_RANK[user.role] >= 2) {
+    if (ROLE_RANK[user.role] >= 1) {
       fetch('/api/transactions', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -1025,6 +1210,23 @@ export default function NoorKadaPOS({ user, onLogout }) {
   React.useEffect(() => {
     localStorage.setItem('noorkada_courtesy_persons', JSON.stringify(courtesyPersons));
   }, [courtesyPersons]);
+
+  // Auto-synced names from stylists + system users (always included, not deletable)
+  const autoCourtesyNames = useMemo(() => {
+    const names = new Set();
+    dbStylists.forEach(s => { if (s.name && s.name.trim()) names.add(s.name.trim()); });
+    dbUsers.forEach(u => {
+      const n = (u.full_name || u.username || "").trim();
+      if (n) names.add(n);
+    });
+    return [...names].sort();
+  }, [dbStylists, dbUsers]);
+
+  // Full merged list for the dropdown (auto + manual, deduped)
+  const allCourtesyPersons = useMemo(() => {
+    const combined = new Set([...autoCourtesyNames, ...courtesyPersons]);
+    return [...combined].sort();
+  }, [autoCourtesyNames, courtesyPersons]);
 
   const [showCatLabelModal, setShowCatLabelModal] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
@@ -1070,6 +1272,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
   const [activeCat, setActiveCat] = useState("All");
   const [doneSlip, setDoneSlip] = useState(null);
+  const [staffSlipPreview, setStaffSlipPreview] = useState(null);
 
   const emptyTab = { cart: [], custName: "", custPhone: "", payMode: "CASH", discMode: "none", discPct: 0, discFlat: 0, itemDiscounts: {}, discReason: "", discCourtesyBy: "", note: "", collapsed: false, footerCollapsed: true, cartCollapsed: true, staffSlipPrinted: false, splitCash: 0, splitOtherMode: "ONLINE", splitOtherAmt: 0 };
   const tab = tabs[activeTab] || tabs[0] || emptyTab;
@@ -1168,6 +1371,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   });
   const [clientQ, setClientQ] = useState("");
   const [tierFilter, setTierFilter] = useState("");
+  const [viewingAmendment, setViewingAmendment] = useState(null); // txn to show in amendment comparison modal
 
   const [salonName, setSalonName] = useState(() => {
     try { return localStorage.getItem('noorkada_salonName') || "Noorkada POS"; } catch (e) { return "Noorkada POS"; }
@@ -1368,9 +1572,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
       })
       .then(rawTxn => {
         const savedTxn = normalizeTxn(rawTxn);
+        const calcSubtotal = (savedTxn.cart || []).reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
         setTransactions(prev => [savedTxn, ...prev]);
         setCheckoutLoading(false);
-        setDoneSlip(savedTxn);
+        setDoneSlip({ ...savedTxn, subtotal: calcSubtotal });
         updTab({ staffSlipPrinted: false });
         doCloseTab(activeTab, false);
       })
@@ -1381,9 +1586,20 @@ export default function NoorKadaPOS({ user, onLogout }) {
       });
   };
 
+  const printHTML = (html) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;opacity:0;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {}
+      setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2000);
+    }, 500);
+  };
+
   const printStaffSlip = () => {
     if (!cart.length) return;
-    const win = window.open("", "_blank", "width=380,height=600");
     const s = {
       customerName: custName || "Walk-in",
       date: todayStr(),
@@ -1393,7 +1609,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       total: total,
       slip: tab.id ? `ORDER-${tab.id.toString().slice(-4)}` : "ORDER-NEW"
     };
-    win.document.write(`<!DOCTYPE html><html><head>
+    printHTML(`<!DOCTYPE html><html><head>
       <title>Staff Slip - ${esc(s.customerName)}</title>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
       <style>
@@ -1413,7 +1629,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
         .svc-stylist{font-size:12px;color:#A0303F;font-weight:600;text-align:right;flex-shrink:0;}
         .svc-stylist.assigned{color:#B08040;}
         .footer{text-align:center;font-size:11px;color:#9A9088;margin-top:32px;font-style:italic;border-top:1px dashed #E8E0D4;padding-top:16px;}
-        @media print{body{padding:12px;}}
+        @page{size:79mm auto;margin:2mm;}
+        @media print{body{padding:6px;width:75mm;}}
       </style>
     </head><body>
       <div class="header-tag">Staff Service Slip</div>
@@ -1447,20 +1664,22 @@ export default function NoorKadaPOS({ user, onLogout }) {
         Please complete transaction at front desk after service.
       </div>
     </body></html>`);
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); }, 400);
     updTab({ staffSlipPrinted: true });
   };
   const clients = useMemo(() => {
     const map = {};
     transactions.forEach(t => {
-      const key = t.customerName.trim().toLowerCase();
-      if (!map[key]) map[key] = { name: t.customerName, phone: t.customerPhone || "", visits: [], spend: 0, services: {} };
-      if (t.customerPhone && !map[key].phone) map[key].phone = t.customerPhone;
+      const phone = (t.customerPhone || "").trim().replace(/\s+/g, "");
+      const name = (t.customerName || "Walk-in").trim();
+      // Group by phone number if available, otherwise by name
+      const key = phone ? `phone:${phone}` : `name:${name.toLowerCase()}`;
+      if (!map[key]) map[key] = { key, name, phone, visits: [], spend: 0, services: {} };
+      // Always update to the most recent non-Walk-in name for this phone
+      if (phone && name && name.toLowerCase() !== "walk-in") map[key].name = name;
+      if (phone && !map[key].phone) map[key].phone = phone;
       map[key].visits.push(t);
       map[key].spend += t.total;
-      t.cart.forEach(s => { map[key].services[s.service] = (map[key].services[s.service] || 0) + s.qty; });
+      (t.cart || []).forEach(s => { map[key].services[s.service] = (map[key].services[s.service] || 0) + (s.qty || 1); });
     });
     return Object.values(map)
       .map(cl => ({
@@ -1476,9 +1695,11 @@ export default function NoorKadaPOS({ user, onLogout }) {
   }, [transactions]);
 
   const filteredClients = useMemo(() => {
-    if (!clientQ.trim()) return clients;
-    const q = clientQ.trim().toLowerCase();
-    let res = clients.filter(cl => cl.name.toLowerCase().includes(q) || (cl.phone || "").includes(q));
+    let res = clients;
+    if (clientQ.trim()) {
+      const q = clientQ.trim().toLowerCase();
+      res = res.filter(cl => cl.name.toLowerCase().includes(q) || (cl.phone || "").includes(q));
+    }
     if (tierFilter) res = res.filter(cl => cl.tier.includes(tierFilter));
     return res;
   }, [clients, clientQ, tierFilter]);
@@ -1653,7 +1874,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       `}</style>
 
       {/* ══ TOPBAR ══════════════════════════════════════════════════════════ */}
-      <header style={{ background: "#FFFFFF", borderBottom: "1px solid #EDE6D8", height: 64, display: "flex", alignItems: "center", padding: "0 24px", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 16px rgba(44,33,24,.07)" }}>
+      <header style={{ background: "#FFFFFF", borderBottom: "1px solid #EDE6D8", minHeight: 64, display: "flex", alignItems: "center", padding: "0 16px", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 16px rgba(44,33,24,.07)", gap: 8, flexWrap: "nowrap", overflow: "hidden" }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: salonLogo === "default" ? 38 : "auto", maxWidth: 120, height: 38, borderRadius: salonLogo === "default" ? "50%" : "8px", background: salonLogo === "default" ? "linear-gradient(145deg,#2A2118,#5A4030)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: salonLogo === "default" ? "0 2px 10px rgba(42,33,24,.25)" : "none", overflow: "hidden", flexShrink: 0 }}>
@@ -1700,7 +1921,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       {user.username ? user.username[0].toUpperCase() : 'A'}
                     </div>
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#2A2118", lineHeight: 1.2 }}>{user.username}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#2A2118", lineHeight: 1.2 }}>{user.full_name || user.username}</div>
                       <div style={{ fontSize: 11, color: "#B08040", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>{user.role}</div>
                     </div>
                   </div>
@@ -1709,7 +1930,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                 {/* Stats Section replacing old username/role */}
                 <div style={{ textAlign: "left", marginTop: 4 }}>
-                  <span style={{ fontSize: 11, color: "#C4A870", textTransform: "uppercase", letterSpacing: 1, fontWeight: 800, display: "block", marginBottom: 2 }}>{user.role}</span>
+                  <span style={{ fontSize: 11, color: "#C4A870", textTransform: "uppercase", letterSpacing: 1, fontWeight: 800, display: "block", marginBottom: 2 }}>{user.full_name || user.username}</span>
                   <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 600, color: "#2A2118", display: "flex", alignItems: "center", gap: 8 }}>
                     {now.toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long" })}
                   </div>
@@ -1769,10 +1990,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
         )}
 
         {/* User stats (Desktop) */}
-        <div className="hide-mobile" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: cartWidth - 24, paddingLeft: 16, boxSizing: "border-box" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left", lineHeight: 1.1 }}>
-            <span style={{ fontSize: 10, color: "#C4A870", textTransform: "uppercase", letterSpacing: 1, fontWeight: 800, marginBottom: 1 }}>{user.role}</span>
-            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 600, color: "#2A2118", display: "flex", alignItems: "center", gap: 8, marginBottom: 1 }}>
+        <div className="hide-mobile" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, flex: "0 0 auto", maxWidth: "100%", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", lineHeight: 1.2, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>{user.full_name || user.username}</span>
+            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 500, color: "#9A9088", whiteSpace: "nowrap" }}>
               {now.toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {ROLE_RANK[user.role] >= 3 && (
@@ -1785,7 +2006,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
           </div>
           <button onClick={onLogout} style={{
             background: "transparent", border: "1.5px solid #E8E0D4", borderRadius: "100px", padding: "6px 14px",
-            fontSize: 11, fontWeight: 600, color: "#9A9088", cursor: "pointer", transition: "all .2s", fontFamily: "'Outfit',sans-serif"
+            fontSize: 11, fontWeight: 600, color: "#9A9088", cursor: "pointer", transition: "all .2s", fontFamily: "'Outfit',sans-serif", whiteSpace: "nowrap", flexShrink: 0
           }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#A0303F"; e.currentTarget.style.color = "#A0303F"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "#E8E0D4"; e.currentTarget.style.color = "#9A9088"; }}
@@ -2444,11 +2665,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                 )}
                                 {/* Courtesy By + Reason */}
                                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: discMode === "item" ? 4 : 0 }}>
-                                  <select className="inp" value={discCourtesyBy} onChange={e => setDiscCourtesyBy(e.target.value)}
-                                    style={{ fontSize: 12, padding: "7px 10px" }}>
-                                    <option value="">👤 Courtesy by (optional)...</option>
-                                    {courtesyPersons.map(p => <option key={p} value={p}>{p}</option>)}
-                                  </select>
+                                  <CourtesyPicker value={discCourtesyBy} onChange={setDiscCourtesyBy} persons={allCourtesyPersons} />
                                   <input className="inp" placeholder="Reason..." value={discReason} onChange={e => setDiscReason(e.target.value)} style={{ fontSize: 12, padding: "7px 10px" }} />
                                 </div>
                               </div>
@@ -2525,7 +2742,19 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           {/* Two print options */}
                           <div style={{ display: "flex", gap: 8 }}>
                             <button
-                              onClick={printStaffSlip}
+                              onClick={() => {
+                                if (!cart.length) return;
+                                setStaffSlipPreview({
+                                  customerName: custName || "Walk-in",
+                                  customerPhone: custPhone || "",
+                                  date: todayStr(),
+                                  time: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }),
+                                  cart,
+                                  note,
+                                  total,
+                                  slip: tab.id ? `NK${String(tab.id).slice(-6)}` : "NEW"
+                                });
+                              }}
                               style={{ flex: 1, height: 50, fontSize: 13, fontWeight: 700, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5A4030", color: "#F5E6C8", border: "none", cursor: "pointer" }}
                             >
                               <span style={{ fontSize: 17 }}>🖨️</span> Staff Slip
@@ -2654,6 +2883,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     ↺ Reset filters
                   </button>
                 )}
+                {ROLE_RANK[user.role] >= 3 && (
                 <button onClick={exportCSV}
                   style={{
                     fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600,
@@ -2664,6 +2894,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   onMouseLeave={e => e.currentTarget.style.background = "#2A2118"}>
                   ⬇ Export CSV
                 </button>
+                )}
               </div>
             </div>
           </div>
@@ -3171,7 +3402,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 {hTab === "transactions" ? "Transaction History" : "Client Directory"}
               </div>
               <div style={{ display: "flex", background: "#F5F0E8", padding: 4, borderRadius: 10, gap: 2 }}>
-                {[["transactions", "📋 Transactions"], ["clients", "👥 Clients"]].map(([t, l]) => (
+                {[["transactions", "📋 Transactions"], ...(ROLE_RANK[user.role] >= 3 ? [["clients", "👥 Clients"]] : [])].map(([t, l]) => (
                   <button key={t} className={`nav-tab ${hTab === t ? "on" : "off"}`}
                     onClick={() => setHTab(t)} style={{ padding: "6px 16px", fontSize: 12 }}>{l}</button>
                 ))}
@@ -3247,6 +3478,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         ↺ Reset
                       </button>
                     )}
+                    {ROLE_RANK[user.role] >= 3 && (
                     <button onClick={exportHistCSV}
                       style={{
                         fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600,
@@ -3257,6 +3489,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       onMouseLeave={e => e.currentTarget.style.background = "#2A2118"}>
                       ⬇ Export CSV
                     </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -3266,8 +3499,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
                   <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, color: "#C4B9AB" }}>No transactions found</div>
                 </div>
-                : histTxns.map(txn => (
-                  <div key={txn.id} className="hrow card" style={{ marginBottom: 10 }}>
+                : histTxns.map(txn => {
+                  const isAmended = Array.isArray(txn.amendments) && txn.amendments.length > 0;
+                  return (
+                  <div key={txn.id} className="hrow card" style={{ marginBottom: 10, borderLeft: isAmended ? "3px solid #F59E0B" : undefined, background: isAmended ? "#FFFDF7" : undefined }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -3278,15 +3513,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <span className="badge" style={{ background: txn.payMode === "CASH" ? "#D1FAE5" : txn.payMode === "ONLINE" ? "#DBEAFE" : "#FEF3C7", color: txn.payMode === "CASH" ? "#065F46" : txn.payMode === "ONLINE" ? "#1E40AF" : "#92400E" }}>{txn.payMode}</span>
-                        {Array.isArray(txn.amendments) && txn.amendments.length > 0 && (
-                          <button onClick={() => toggleAmendments(txn.id)}
-                            title="View edit history"
-                            style={{ fontSize: 10, fontWeight: 700, background: expandedAmendments.has(txn.id) ? "#FDE68A" : "#FEF3C7", color: "#92400E", borderRadius: 100, padding: "3px 9px", border: "1px solid #FDE68A", cursor: "pointer" }}>
-                            ✏️ {txn.amendments.length} edit{txn.amendments.length > 1 ? "s" : ""} {expandedAmendments.has(txn.id) ? "▲" : "▼"}
+                        {isAmended && (
+                          <button onClick={() => setViewingAmendment(txn)}
+                            style={{ fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E", borderRadius: 8, padding: "4px 10px", border: "1px solid #FDE68A", cursor: "pointer", whiteSpace: "nowrap" }}>
+                            ✏️ {txn.amendments.length} edit{txn.amendments.length > 1 ? "s" : ""}
                           </button>
                         )}
                         <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 600, color: "#2A2118" }}>{fmt(txn.total)}</div>
-                        {ROLE_RANK[user.role] >= 2 && (
+                        {ROLE_RANK[user.role] >= 1 && (
                           <button onClick={() => openEditBill(txn)}
                             style={{ fontFamily: "'Outfit',sans-serif", fontSize: 11, fontWeight: 600, color: "#B08040", background: "#FEF9EE", border: "1.5px solid #F0D98A", borderRadius: 8, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
                             onMouseEnter={e => e.currentTarget.style.background = "#FDF0C0"}
@@ -3309,47 +3543,9 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       })}
                     </div>
                     {txn.discount > 0 && <div style={{ fontSize: 10, color: "#A0303F", marginTop: 8 }}>Discount {txn.discount}% applied — saved {fmt(txn.discountAmt)}</div>}
-
-                    {/* Inline amendment history */}
-                    {expandedAmendments.has(txn.id) && Array.isArray(txn.amendments) && txn.amendments.length > 0 && (
-                      <div style={{ marginTop: 12, borderTop: "1.5px dashed #EDE6D8", paddingTop: 12 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#92400E", marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>📋 Edit History</div>
-                        {[...txn.amendments].reverse().map((amend, i) => (
-                          <div key={i} style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: "#92400E" }}>
-                                  Version {txn.amendments.length - i} → {txn.amendments.length - i + 1}
-                                </span>
-                                {amend.edit_note && (
-                                  <span style={{ fontSize: 11, color: "#B45309", fontStyle: "italic" }}>"{amend.edit_note}"</span>
-                                )}
-                              </div>
-                              <span style={{ fontSize: 10, color: "#B8AFA5" }}>
-                                by {amend.edited_by} · {amend.edited_at ? new Date(amend.edited_at).toLocaleString("en-PK", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
-                              </span>
-                            </div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
-                              {(amend.snapshot?.cart || []).map((item, j) => (
-                                <span key={j} style={{ fontSize: 11, background: "#FEF3C7", color: "#92400E", borderRadius: 100, padding: "2px 8px", border: "1px solid #FDE68A" }}>
-                                  {item.service}{item.qty > 1 ? ` ×${item.qty}` : ""} · {fmt((item.price || 0) * (item.qty || 1), true)}
-                                </span>
-                              ))}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#8B7355", display: "flex", gap: 12, flexWrap: "wrap" }}>
-                              <span>Total: <b style={{ color: "#92400E" }}>{fmt(amend.snapshot?.total || 0, true)}</b></span>
-                              <span>Pay: <b>{amend.snapshot?.pay_mode || "—"}</b></span>
-                              {amend.snapshot?.disc_mode && amend.snapshot.disc_mode !== "none" && (
-                                <span>Disc: <b>{amend.snapshot.disc_mode === "pct" ? `${amend.snapshot.disc_pct}%` : `PKR ${amend.snapshot.disc_flat}`}</b></span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        <div style={{ fontSize: 10, color: "#B8AFA5", textAlign: "right" }}>Current version shown above ↑</div>
-                      </div>
-                    )}
                   </div>
-                ))
+                  );
+                })
               }
             </div>)}{/* end transactions tab */}
 
@@ -3405,17 +3601,17 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div style={{ fontSize: 14, color: "#C4B9AB" }}>No clients found</div>
                 </div>
                 : filteredClients.map(cl => {
-                  const isOpen = expandedClient === cl.name;
+                  const isOpen = expandedClient === cl.key;
                   const daysSince = Math.floor((new Date() - new Date(cl.lastVisit)) / (864e5));
                   return (
-                    <div key={cl.name} style={{
+                    <div key={cl.key} style={{
                       background: "#FFFFFF", border: "1px solid #EDE6D8",
                       borderRadius: 14, marginBottom: 8, overflow: "hidden",
                       boxShadow: isOpen ? "0 4px 20px rgba(44,33,24,.08)" : "none", transition: "box-shadow .2s"
                     }}>
 
                       {/* Row — always visible */}
-                      <div onClick={() => setExpandedClient(isOpen ? null : cl.name)}
+                      <div onClick={() => setExpandedClient(isOpen ? null : cl.key)}
                         style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", cursor: "pointer" }}>
 
                         {/* Avatar */}
@@ -3542,7 +3738,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           </div>
 
                           {/* Jump to transactions */}
-                          <button onClick={() => { setHTab("transactions"); setHQ(cl.name); }}
+                          <button onClick={() => { setHTab("transactions"); setHQ(cl.phone || cl.name); }}
                             style={{
                               marginTop: 12, width: "100%", fontFamily: "'Outfit',sans-serif",
                               fontSize: 12, fontWeight: 600, color: "#B08040", background: "#FBF6EE",
@@ -3813,7 +4009,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </div>
                     {(staffSubTab === 'stylists' || creatableRoles(user.role).length > 0) && (
                       <button
-                        onClick={() => staffSubTab === 'stylists' ? setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '', position: '' }) : setEditingUser({ id: 'new', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
+                        onClick={() => staffSubTab === 'stylists' ? setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '', position: '' }) : setEditingUser({ id: 'new', username: '', full_name: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
                         className="btn-gold"
                         style={{ padding: "8px 16px", fontSize: 12, borderRadius: 8, width: "auto" }}
                       >{staffSubTab === 'stylists' ? '+ Add Staff Member' : '+ Add Member'}</button>
@@ -3831,6 +4027,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
 
                       <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
+                          <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Enter full name" />
+                        </div>
                         <div>
                           <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username</label>
                           <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username (no spaces)" />
@@ -3860,7 +4060,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                               const res = await fetch('/api/users', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                body: JSON.stringify({ username: editingUser.username, password: editingUser.password, role: editingUser.role, email: editingUser.email })
+                                body: JSON.stringify({ username: editingUser.username, full_name: editingUser.full_name || '', password: editingUser.password, role: editingUser.role, email: editingUser.email })
                               });
                               const data = await res.json();
                               if (!res.ok) throw new Error(data.message || 'Error creating user');
@@ -4035,52 +4235,91 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       </div>
 
                       {/* Manage Positions */}
-                      <div className="card" style={{ padding: 20 }}>
-                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 6 }}>Manage Positions</div>
-                        <p style={{ fontSize: 12, color: "#9A9088", marginBottom: 16 }}>Define job titles/roles for staff members (e.g. Hair Stylist, Barber, Colorist).</p>
-                        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                          <input
-                            className="inp"
-                            placeholder="New position name..."
-                            value={newPositionName}
-                            onChange={e => setNewPositionName(e.target.value)}
-                            onKeyDown={async e => {
-                              if (e.key === 'Enter' && newPositionName.trim()) {
-                                const res = await fetch('/api/staff-positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: newPositionName.trim() }) });
-                                if (res.ok) { fetchStaffPositions(); setNewPositionName(""); showToast('Position added!'); }
-                                else { const d = await res.json(); showToast(d.message || 'Error', 'error'); }
-                              }
-                            }}
-                          />
-                          <button
-                            className="btn-gold"
-                            style={{ width: "auto", padding: "10px 20px", fontSize: 13, whiteSpace: "nowrap" }}
-                            disabled={!newPositionName.trim()}
-                            onClick={async () => {
-                              if (!newPositionName.trim()) return;
-                              const res = await fetch('/api/staff-positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: newPositionName.trim() }) });
-                              if (res.ok) { fetchStaffPositions(); setNewPositionName(""); showToast('Position added!'); }
-                              else { const d = await res.json(); showToast(d.message || 'Error adding position', 'error'); }
-                            }}
-                          >+ Add</button>
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          {staffPositions.map(p => (
-                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 6, background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 100, padding: "5px 12px" }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: "#92400E" }}>{p.name}</span>
-                              <button
-                                onClick={async () => {
-                                  if (!confirm(`Remove position "${p.name}"?`)) return;
-                                  const res = await fetch(`/api/staff-positions/${p.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                                  if (res.ok) { fetchStaffPositions(); showToast('Position removed'); }
-                                }}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: "#92400E", fontSize: 14, lineHeight: 1, padding: 0, opacity: 0.6 }}
-                              >×</button>
+                      {(() => {
+                        const autoEmoji = (name) => {
+                          const n = name.toLowerCase();
+                          if (n.includes("barber") || n.includes("hair cut")) return "💈";
+                          if (n.includes("color") || n.includes("colour")) return "🎨";
+                          if (n.includes("hair")) return "✂️";
+                          if (n.includes("makeup") || n.includes("make up")) return "💄";
+                          if (n.includes("nail")) return "💅";
+                          if (n.includes("massage") || n.includes("therapist")) return "💆";
+                          if (n.includes("esthet") || n.includes("facial") || n.includes("skin")) return "✨";
+                          if (n.includes("recept") || n.includes("front")) return "📋";
+                          if (n.includes("manager") || n.includes("manage")) return "👔";
+                          if (n.includes("lash") || n.includes("brow")) return "👁️";
+                          if (n.includes("wax")) return "🌸";
+                          if (n.includes("stylist")) return "💇";
+                          return null;
+                        };
+                        const addPosition = async () => {
+                          if (!newPositionName.trim()) return;
+                          const emoji = newPositionEmoji || autoEmoji(newPositionName) || "👤";
+                          const res = await fetch('/api/staff-positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: newPositionName.trim(), emoji }) });
+                          if (res.ok) { fetchStaffPositions(); setNewPositionName(""); setNewPositionEmoji("👤"); setShowEmojiPicker(false); showToast('Position added!'); }
+                          else { const d = await res.json(); showToast(d.message || 'Error adding position', 'error'); }
+                        };
+                        return (
+                        <div className="card" style={{ padding: 24 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🪪</div>
+                            <div>
+                              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Manage Positions</div>
+                              <div style={{ fontSize: 11, color: "#9A9088" }}>Job titles shown on staff profiles</div>
                             </div>
-                          ))}
-                          {staffPositions.length === 0 && <span style={{ fontSize: 13, color: "#9A9088" }}>No positions defined yet.</span>}
+                          </div>
+                          {/* Add new position row */}
+                          <div style={{ display: "flex", gap: 8, marginTop: 16, marginBottom: 20, alignItems: "center" }}>
+                            {/* Emoji picker */}
+                            <EmojiPickerDropdown value={newPositionEmoji} onChange={v => setNewPositionEmoji(v)} defaultEmoji="👤" />
+                            <input
+                              className="inp"
+                              placeholder="Position name (e.g. Hair Stylist)…"
+                              value={newPositionName}
+                              style={{ flex: 1 }}
+                              onChange={e => {
+                                setNewPositionName(e.target.value);
+                                const auto = autoEmoji(e.target.value);
+                                if (auto) setNewPositionEmoji(auto);
+                              }}
+                              onKeyDown={e => { if (e.key === 'Enter') addPosition(); }}
+                            />
+                            <button
+                              className="btn-gold"
+                              style={{ width: "auto", padding: "10px 18px", fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}
+                              disabled={!newPositionName.trim()}
+                              onClick={addPosition}
+                            >+ Add</button>
+                          </div>
+                          {/* Positions grid */}
+                          {staffPositions.length === 0
+                            ? <div style={{ textAlign: "center", padding: "24px 0", color: "#C4B9AB", fontSize: 13 }}>No positions yet — add one above</div>
+                            : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+                              {staffPositions.map(p => (
+                                <div key={p.id} style={{ background: "#FDFBF7", border: "1.5px solid #EDE6D8", borderRadius: 14, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", transition: "box-shadow .15s" }}
+                                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,33,24,.1)"}
+                                  onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}>
+                                  <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#FEF9EE,#FEF3C7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: "0 2px 8px rgba(176,128,64,.15)" }}>
+                                    {p.emoji || "👤"}
+                                  </div>
+                                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, color: "#2A2118", textAlign: "center", lineHeight: 1.3 }}>{p.name}</div>
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm(`Remove "${p.name}"?`)) return;
+                                      const res = await fetch(`/api/staff-positions/${p.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                                      if (res.ok) { fetchStaffPositions(); showToast('Position removed'); }
+                                    }}
+                                    style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#C4B9AB", fontSize: 15, lineHeight: 1, padding: "2px 4px", borderRadius: 6, transition: "color .15s, background .15s" }}
+                                    onMouseEnter={e => { e.currentTarget.style.color = "#E53E3E"; e.currentTarget.style.background = "#FFF0F0"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.color = "#C4B9AB"; e.currentTarget.style.background = "none"; }}
+                                  >×</button>
+                                </div>
+                              ))}
+                            </div>
+                          }
                         </div>
-                      </div>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -4115,8 +4354,11 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                       <div style={{
                                         width: 36, height: 36, borderRadius: "50%", background: "#F5F0E8",
                                         display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700
-                                      }}>{u.username[0].toUpperCase()}</div>
-                                      <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 14 }}>{u.username}</div>
+                                      }}>{(u.full_name || u.username)[0].toUpperCase()}</div>
+                                      <div>
+                                        <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 14 }}>{u.full_name || u.username}</div>
+                                        {u.full_name && <div style={{ fontSize: 10, color: "#9A9088" }}>@{u.username}</div>}
+                                      </div>
                                     </div>
                                   </td>
                                   <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", fontSize: isMobile ? 11 : 12, color: "#9A9088" }}>{u.email || '—'}</td>
@@ -4130,7 +4372,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                     <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10 }}>
                                       {(user.role === 'superadmin' || (ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0)) && (
                                         <button
-                                          onClick={() => setEditingUser({ id: u.id, username: u.username, role: u.role, password: '' })}
+                                          onClick={() => setEditingUser({ id: u.id, username: u.username, full_name: u.full_name || '', role: u.role, password: '' })}
                                           style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
                                         >Edit</button>
                                       )}
@@ -4146,10 +4388,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                 {editingUser?.id === u.id && (
                                   <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
                                     <td colSpan={4} style={{ padding: 16 }}>
-                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingUser.username}</div>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingUser.full_name || editingUser.username}</div>
                                       <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
                                       <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
                                       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
+                                        <div>
+                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
+                                          <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Enter full name" />
+                                        </div>
                                         <div>
                                           <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Username</label>
                                           <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username" />
@@ -4181,7 +4427,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                         <button
                                           onClick={async () => {
                                             try {
-                                              const body = { username: editingUser.username };
+                                              const body = { username: editingUser.username, full_name: editingUser.full_name || '' };
                                               if ((ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0)) body.role = editingUser.role;
                                               if (editingUser.password) body.password = editingUser.password;
                                               const res = await fetch(`/api/users/${editingUser.id}`, {
@@ -4191,7 +4437,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                               });
                                               const data = await res.json();
                                               if (!res.ok) throw new Error(data.message || 'Error updating user');
-                                              setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, username: data.username || editingUser.username, role: data.role || x.role } : x));
+                                              setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, username: data.username || editingUser.username, full_name: data.full_name ?? editingUser.full_name, role: data.role || x.role } : x));
                                               setEditingUser(null);
                                               showToast('User updated successfully!');
                                             } catch (err) {
@@ -4240,18 +4486,18 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       />
                       <button
                         className="btn-gold"
-                        style={{ padding: "12px 24px", fontSize: 13, width: "auto", flexShrink: 0, whiteSpace: "nowrap", opacity: (!newCourtesyName.trim() || courtesyPersons.includes(newCourtesyName.trim())) ? 0.5 : 1 }}
-                        disabled={!newCourtesyName.trim() || courtesyPersons.includes(newCourtesyName.trim())}
+                        style={{ padding: "12px 24px", fontSize: 13, width: "auto", flexShrink: 0, whiteSpace: "nowrap", opacity: (!newCourtesyName.trim() || allCourtesyPersons.includes(newCourtesyName.trim())) ? 0.5 : 1 }}
+                        disabled={!newCourtesyName.trim() || allCourtesyPersons.includes(newCourtesyName.trim())}
                         onClick={() => {
                           const n = newCourtesyName.trim();
-                          if (n && !courtesyPersons.includes(n)) {
+                          if (n && !allCourtesyPersons.includes(n)) {
                             setCourtesyPersons([...courtesyPersons, n]);
                             setNewCourtesyName("");
                           }
                         }}
                       >+ Add</button>
                     </div>
-                    {newCourtesyName.trim() && courtesyPersons.includes(newCourtesyName.trim()) && (
+                    {newCourtesyName.trim() && allCourtesyPersons.includes(newCourtesyName.trim()) && (
                       <div style={{ fontSize: 11, color: "#A0303F", marginTop: 6 }}>⚠ This name already exists in the list.</div>
                     )}
                   </div>
@@ -4260,7 +4506,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div className="card">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                       <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Current List</div>
-                      <div style={{ fontSize: 12, color: "#9A9088" }}>{courtesyPersons.length} {courtesyPersons.length === 1 ? "person" : "people"}</div>
+                      <div style={{ fontSize: 12, color: "#9A9088" }}>{allCourtesyPersons.length} {allCourtesyPersons.length === 1 ? "person" : "people"}</div>
                     </div>
                     <input
                       className="inp"
@@ -4269,28 +4515,52 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       onChange={e => setCourtesySearch(e.target.value)}
                       style={{ fontSize: 12, padding: "7px 12px", width: "100%", boxSizing: "border-box", marginBottom: 12 }}
                     />
-                    {courtesyPersons.length === 0 && (
-                      <div style={{ fontSize: 13, color: "#C4B9AB", padding: "16px 0", textAlign: "center" }}>No courtesy staff added yet.</div>
-                    )}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {courtesyPersons.filter(p => !courtesySearch || p.toLowerCase().includes(courtesySearch.toLowerCase())).map((person, idx) => (
-                        <div key={person} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
-                          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#FAF7F3", fontWeight: 700, flexShrink: 0 }}>
-                            {person.charAt(0)}
-                          </div>
-                          <div style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontWeight: 600, fontSize: 14, color: "#2A2118" }}>{person}</div>
-                          <button
-                            onClick={() => setCourtesyPersons(courtesyPersons.filter((_, i) => i !== idx))}
-                            style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#A0303F", cursor: "pointer", flexShrink: 0 }}
-                          >Remove</button>
+
+                    {/* Auto-synced section */}
+                    {autoCourtesyNames.length > 0 && (
+                      <>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .8, marginBottom: 8, marginTop: 4 }}>
+                          🔄 Auto-synced from Staff & Users
                         </div>
-                      ))}
-                    </div>
-                    {courtesyPersons.length > 0 && (
-                      <button
-                        onClick={() => { if (confirm("Reset to default list?")) { setCourtesyPersons(DEFAULT_COURTESY_PERSONS); } }}
-                        style={{ marginTop: 16, background: "none", border: "1.5px solid #EDE6D8", borderRadius: 8, padding: "8px 16px", fontSize: 12, color: "#9A9088", cursor: "pointer", width: "100%" }}
-                      >↺ Reset to defaults</button>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+                          {autoCourtesyNames.filter(p => !courtesySearch || p.toLowerCase().includes(courtesySearch.toLowerCase())).map(person => (
+                            <div key={`auto-${person}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", background: "#F0FDF4", borderRadius: 10, border: "1px solid #BBF7D0" }}>
+                              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#065F46", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#FFF", fontWeight: 700, flexShrink: 0 }}>
+                                {person.charAt(0).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontWeight: 600, fontSize: 14, color: "#2A2118" }}>{person}</div>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "#065F46", background: "#DCFCE7", borderRadius: 6, padding: "2px 8px", letterSpacing: .4 }}>AUTO</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Manually added */}
+                    {courtesyPersons.filter(p => !autoCourtesyNames.includes(p)).length > 0 && (
+                      <>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .8, marginBottom: 8 }}>
+                          ✍️ Manually Added
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {courtesyPersons.filter(p => !autoCourtesyNames.includes(p) && (!courtesySearch || p.toLowerCase().includes(courtesySearch.toLowerCase()))).map((person) => (
+                            <div key={`manual-${person}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
+                              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#FAF7F3", fontWeight: 700, flexShrink: 0 }}>
+                                {person.charAt(0).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontWeight: 600, fontSize: 14, color: "#2A2118" }}>{person}</div>
+                              <button
+                                onClick={() => setCourtesyPersons(courtesyPersons.filter(p2 => p2 !== person))}
+                                style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#A0303F", cursor: "pointer", flexShrink: 0 }}
+                              >Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {allCourtesyPersons.length === 0 && (
+                      <div style={{ fontSize: 13, color: "#C4B9AB", padding: "16px 0", textAlign: "center" }}>No courtesy staff yet. Add staff members to get started.</div>
                     )}
                   </div>
                 </div>
@@ -4493,8 +4763,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </select>
                     <select className="inp" style={{ flex: 1, minWidth: 140 }} value={logUserFilter} onChange={e => setLogUserFilter(e.target.value)}>
                       <option value="">All Users</option>
-                      {[...new Set(activityLogs.map(l => l.username))].filter(Boolean).sort().map(u => (
-                        <option key={u} value={u}>{u}</option>
+                      {[...new Map(activityLogs.map(l => [l.username, l])).values()].filter(l => l.username).sort((a,b) => (a.full_name||a.username).localeCompare(b.full_name||b.username)).map(l => (
+                        <option key={l.username} value={l.username}>{l.full_name ? `${l.full_name} (@${l.username})` : l.username}</option>
                       ))}
                     </select>
                   </div>
@@ -4506,7 +4776,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     const filtered = activityLogs.filter(l =>
                       (!logActionFilter || l.action === logActionFilter) &&
                       (!logUserFilter || l.username === logUserFilter) &&
-                      (!q || l.username?.toLowerCase().includes(q) || l.action?.toLowerCase().includes(q) || l.entity?.toLowerCase().includes(q) || JSON.stringify(l.details || {}).toLowerCase().includes(q))
+                      (!q || l.username?.toLowerCase().includes(q) || l.full_name?.toLowerCase().includes(q) || l.action?.toLowerCase().includes(q) || l.entity?.toLowerCase().includes(q) || JSON.stringify(l.details || {}).toLowerCase().includes(q))
                     );
                     if (filtered.length === 0) return (
                       <div style={{ textAlign: "center", padding: "48px 0", color: "#9A9088" }}>
@@ -4543,7 +4813,73 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                 const dt = l.created_at ? new Date(l.created_at) : null;
                                 const dateStr = dt ? dt.toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" }) : "—";
                                 const timeStr = dt ? dt.toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
-                                const details = l.details ? Object.entries(l.details).map(([k, v]) => `${k}: ${v}`).join(" · ") : "";
+                                const d = l.details || {};
+                                const fmtAmt = (v) => v != null ? `PKR ${Number(v).toLocaleString()}` : null;
+                                const humanDetails = (() => {
+                                  switch (l.action) {
+                                    case 'LOGIN': return { icon: "🔐", text: "Signed in successfully" };
+                                    case 'LOGIN_FAILED': return { icon: "🚫", text: `Failed login attempt${d.attempted_username ? ` for @${d.attempted_username}` : ""}` };
+                                    case 'LOGOUT': return { icon: "👋", text: "Signed out" };
+                                    case 'CREATE_TRANSACTION': {
+                                      const parts = [];
+                                      if (d.cust_name && d.cust_name !== 'Walk-in') parts.push(`Client: ${d.cust_name}`);
+                                      if (d.total) parts.push(`Total: ${fmtAmt(d.total)}`);
+                                      if (d.pay_mode) parts.push(`Paid via ${d.pay_mode}`);
+                                      if (d.staff_name && d.staff_name !== 'Unassigned') parts.push(`Staff: ${d.staff_name}`);
+                                      if (d.items) parts.push(`${d.items} service${d.items > 1 ? 's' : ''}`);
+                                      return { icon: "🧾", text: parts.join(" · ") || "New transaction created" };
+                                    }
+                                    case 'EDIT_TRANSACTION': {
+                                      const parts = [];
+                                      if (d.cust_name) parts.push(`Client: ${d.cust_name}`);
+                                      if (d.old_total != null && d.new_total != null) {
+                                        const diff = Number(d.new_total) - Number(d.old_total);
+                                        parts.push(`${fmtAmt(d.old_total)} → ${fmtAmt(d.new_total)}${diff !== 0 ? ` (${diff > 0 ? "+" : ""}${fmtAmt(diff)})` : " (no change)"}`);
+                                      }
+                                      if (d.edit_note) parts.push(`Note: "${d.edit_note}"`);
+                                      return { icon: "✏️", text: parts.join(" · ") || "Bill edited" };
+                                    }
+                                    case 'CREATE_USER': {
+                                      const name = d.full_name || d.username;
+                                      return { icon: "👤", text: `Added user ${name}${d.full_name ? ` (@${d.username})` : ""}${d.role ? ` as ${d.role}` : ""}` };
+                                    }
+                                    case 'UPDATE_USER': {
+                                      const changes = [];
+                                      if (d.username) changes.push(`username → ${d.username}`);
+                                      if (d.full_name !== undefined) changes.push(`name → ${d.full_name || "(cleared)"}`);
+                                      if (d.role) changes.push(`role → ${d.role}`);
+                                      if (d.password_changed) changes.push("password changed");
+                                      return { icon: "🔄", text: changes.length ? `Updated: ${changes.join(", ")}` : "User profile updated" };
+                                    }
+                                    case 'UPDATE_OWN_PROFILE': return { icon: "🔄", text: "Updated own profile" };
+                                    case 'CHANGE_PASSWORD': return { icon: "🔑", text: "Changed own password" };
+                                    case 'DELETE_USER': return { icon: "🗑️", text: `Removed user ${d.deleted_username || ""}${d.deleted_role ? ` (${d.deleted_role})` : ""}` };
+                                    case 'CREATE_STYLIST':
+                                    case 'CREATE_STAFF': {
+                                      const parts = [`Added ${d.name || "staff member"}`];
+                                      if (d.position) parts.push(d.position);
+                                      if (d.phone) parts.push(`📞 ${d.phone}`);
+                                      if (d.email) parts.push(d.email);
+                                      return { icon: "✂️", text: parts.join(" · ") };
+                                    }
+                                    case 'UPDATE_STYLIST': return { icon: "✏️", text: `Updated ${d.name || "staff"}'s profile${d.position ? ` · Position: ${d.position}` : ""}` };
+                                    case 'DELETE_STYLIST': return { icon: "🗑️", text: `Removed staff member ${d.name || ""}` };
+                                    case 'CREATE_SERVICE': return { icon: "➕", text: `Added service "${d.name || ""}"${d.category ? ` in ${d.category}` : ""}${d.price ? ` · ${fmtAmt(d.price)}` : ""}` };
+                                    case 'UPDATE_SERVICE': return { icon: "✏️", text: `Updated service "${d.name || d.old_name || ""}"` };
+                                    case 'DELETE_SERVICE': return { icon: "🗑️", text: `Removed service "${d.name || ""}"` };
+                                    case 'CREATE_CATEGORY': return { icon: "📂", text: `Created category "${d.name || ""}"` };
+                                    case 'DELETE_CATEGORY': return { icon: "🗑️", text: `Removed category "${d.name || ""}"` };
+                                    case 'CREATE_STAFF_POSITION': return { icon: "🪪", text: `Added position: ${d.emoji || ""} ${d.name || ""}` };
+                                    case 'DELETE_STAFF_POSITION': return { icon: "🗑️", text: `Removed position: ${d.name || ""}` };
+                                    case 'UPDATE_SMTP_SETTINGS': return { icon: "📧", text: "Email (SMTP) settings updated" };
+                                    case 'UPDATE_BRANDING': return { icon: "🎨", text: "Branding settings updated" };
+                                    case 'SETUP_COMPLETE': return { icon: "🚀", text: `Initial setup completed${d.salonName ? ` for "${d.salonName}"` : ""}` };
+                                    default: {
+                                      const raw = Object.entries(d).filter(([,v]) => v != null && v !== '').map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(" · ");
+                                      return { icon: "📋", text: raw || null };
+                                    }
+                                  }
+                                })();
                                 return (
                                   <tr key={l.id} style={{ borderBottom: i < filtered.length - 1 ? "1px solid #F0EBE3" : "none", background: i % 2 === 0 ? "#FFF" : "#FDFAF6" }}>
                                     <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
@@ -4551,7 +4887,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                       <div style={{ fontSize: 11, color: "#9A9088" }}>{timeStr}</div>
                                     </td>
                                     <td style={{ padding: "12px 16px" }}>
-                                      <div style={{ fontWeight: 600, color: "#2A2118" }}>{l.username}</div>
+                                      <div style={{ fontWeight: 600, color: "#2A2118" }}>{l.full_name || l.username}</div>
+                                      {l.full_name && <div style={{ fontSize: 10, color: "#9A9088", marginBottom: 2 }}>@{l.username}</div>}
                                       <div style={{ fontSize: 10, padding: "2px 8px", borderRadius: 100, display: "inline-block", ...roleBadgeStyle(l.role) }}>{l.role}</div>
                                     </td>
                                     <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
@@ -4560,8 +4897,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                       </span>
                                       {l.entity && <div style={{ fontSize: 10, color: "#9A9088", marginTop: 3 }}>{l.entity}{l.entity_id ? ` #${l.entity_id}` : ""}</div>}
                                     </td>
-                                    <td style={{ padding: "12px 16px", color: "#5A4D41", maxWidth: 300 }}>
-                                      <div style={{ fontSize: 11, wordBreak: "break-word" }}>{details || "—"}</div>
+                                    <td style={{ padding: "12px 16px", color: "#5A4D41", maxWidth: 320 }}>
+                                      {humanDetails.text
+                                        ? <div style={{ fontSize: 12 }}>
+                                            <span style={{ marginRight: 6 }}>{humanDetails.icon}</span>
+                                            {humanDetails.text}
+                                          </div>
+                                        : <span style={{ color: "#C4B9AB", fontSize: 11 }}>—</span>
+                                      }
                                     </td>
                                   </tr>
                                 );
@@ -4604,12 +4947,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Icon</label>
-                  <input
-                    className="inp"
-                    placeholder="e.g. ✨"
-                    value={newCatIcon}
-                    onChange={e => setNewCatIcon(e.target.value)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <EmojiPickerDropdown value={newCatIcon} onChange={v => setNewCatIcon(v)} defaultEmoji="✨" />
+                    <span style={{ fontSize: 11, color: "#9A9088" }}>Click to pick or type/paste any emoji</span>
+                  </div>
                 </div>
               </div>
 
@@ -4742,7 +5083,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 <div style={{ display: "flex", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Icon</label>
-                    <input className="inp" placeholder="✨" value={newSvc.icon} onChange={e => setNewSvc({ ...newSvc, icon: e.target.value })} />
+                    <EmojiPickerDropdown value={newSvc.icon} onChange={v => setNewSvc({ ...newSvc, icon: v })} defaultEmoji="✨" />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: "block", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700, letterSpacing: .5, marginBottom: 6 }}>Theme Color</label>
@@ -4794,6 +5135,120 @@ export default function NoorKadaPOS({ user, onLogout }) {
           </div>
         )
       }
+      {/* ══ AMENDMENT HISTORY MODAL ══════════════════════════════════════════ */}
+      {viewingAmendment && (() => {
+        const txn = viewingAmendment;
+        const originalSnapshot = txn.amendments[0]?.snapshot;
+        return (
+          <div className="ovl" onClick={() => setViewingAmendment(null)}>
+            <div onClick={e => e.stopPropagation()} style={{
+              background: "#FDFBF7", borderRadius: 18, padding: 0,
+              maxWidth: 620, width: "96%", maxHeight: "90vh", overflowY: "auto",
+              boxShadow: "0 24px 72px rgba(42,33,24,.24)", display: "flex", flexDirection: "column"
+            }}>
+              {/* Header */}
+              <div style={{ padding: "20px 24px 16px", borderBottom: "1.5px solid #EDE6D8", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#FDFBF7", zIndex: 10, borderRadius: "18px 18px 0 0" }}>
+                <div>
+                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 17, fontWeight: 700, color: "#2A2118" }}>📋 Edit History</div>
+                  <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 2 }}>#{txn.slip} · {txn.customerName} · {txn.date}</div>
+                </div>
+                <button onClick={() => setViewingAmendment(null)} style={{ background: "#F5F0E8", border: "none", borderRadius: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, color: "#6B5540", fontWeight: 600 }}>✕ Close</button>
+              </div>
+
+              <div style={{ padding: "20px 24px 24px" }}>
+                {/* Original vs Current comparison */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                  {/* Original */}
+                  <div style={{ background: "#F5F0E8", borderRadius: 12, padding: "14px 16px", border: "1.5px solid #D4C4A8" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#8B7355", textTransform: "uppercase", letterSpacing: .6, marginBottom: 10 }}>🕐 Original Bill</div>
+                    {(originalSnapshot?.cart || []).map((item, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#5A4D41", marginBottom: 5 }}>
+                        <span>{item.service}{item.qty > 1 ? ` ×${item.qty}` : ""}</span>
+                        <span style={{ fontWeight: 600 }}>{fmt((item.price || 0) * (item.qty || 1), true)}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: "1px solid #D4C4A8", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 13, color: "#2A2118" }}>
+                      <span>Total</span><span>{fmt(originalSnapshot?.total || 0, true)}</span>
+                    </div>
+                  </div>
+                  {/* Current */}
+                  <div style={{ background: "#D1FAE5", borderRadius: 12, padding: "14px 16px", border: "1.5px solid #6EE7B7" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#065F46", textTransform: "uppercase", letterSpacing: .6, marginBottom: 10 }}>✅ Current Bill</div>
+                    {(txn.cart || []).map((item, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#065F46", marginBottom: 5 }}>
+                        <span>{item.service}{item.qty > 1 ? ` ×${item.qty}` : ""}</span>
+                        <span style={{ fontWeight: 600 }}>{fmt((item.price || 0) * (item.qty || 1), true)}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: "1px solid #6EE7B7", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 13, color: "#065F46" }}>
+                      <span>Total</span><span>{fmt(txn.total, true)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Difference */}
+                {originalSnapshot && originalSnapshot.total !== txn.total && (
+                  <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, fontWeight: 700, color: txn.total > (originalSnapshot?.total || 0) ? "#065F46" : "#A0303F" }}>
+                    {txn.total > (originalSnapshot?.total || 0) ? "▲" : "▼"} {fmt(Math.abs(txn.total - (originalSnapshot?.total || 0)), true)} difference from original
+                  </div>
+                )}
+
+                {/* Edit timeline */}
+                {txn.amendments.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", marginBottom: 10 }}>Edit Timeline</div>
+                    {txn.amendments.map((amend, i) => (
+                      <div key={i} style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#FEF3C7", border: "2px solid #F59E0B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#92400E" }}>{i + 1}</div>
+                          {i < txn.amendments.length - 1 && <div style={{ width: 2, flex: 1, background: "#FDE68A", marginTop: 4 }} />}
+                        </div>
+                        <div style={{ flex: 1, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", marginBottom: 2 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#92400E" }}>Edit #{i + 1}</span>
+                            <span style={{ fontSize: 10, color: "#B8AFA5" }}>
+                              {amend.edited_by} · {amend.edited_at ? new Date(amend.edited_at).toLocaleString("en-PK", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                            </span>
+                          </div>
+                          {amend.edit_note && <div style={{ fontSize: 11, color: "#B45309", fontStyle: "italic", marginBottom: 6 }}>"{amend.edit_note}"</div>}
+                          <div style={{ fontSize: 11, color: "#8B7355" }}>
+                            <span>Before: <b style={{ color: "#92400E" }}>{fmt(amend.snapshot?.total || 0, true)}</b></span>
+                            <span style={{ margin: "0 8px" }}>→</span>
+                            <span>After: <b style={{ color: "#2A2118" }}>{fmt(i < txn.amendments.length - 1 ? (txn.amendments[i + 1]?.snapshot?.total || txn.total) : txn.total, true)}</b></span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Print button */}
+                <button onClick={() => {
+                  const s = txn;
+                  const subtotal = (s.cart || []).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
+                  printHTML(`<!DOCTYPE html><html><head>
+                  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:32px;color:#2A2118;background:#FDFBF7;font-size:13px;line-height:1.4;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;letter-spacing:0.5px;margin-bottom:12px;color:#2A2118;}.amended{font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:2px 8px;display:inline-block;margin-top:6px;}.divider-box{border-top:1.5px solid #E8E0D4;border-bottom:1.5px solid #E8E0D4;padding:16px 0;margin-bottom:16px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;}.total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1.5px solid #E8E0D4;}.total-val{color:#B08040;font-size:18px;}.footer{text-align:center;font-size:11px;color:#B8AFA5;margin-top:32px;font-style:italic;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:6px;width:75mm;-webkit-print-color-adjust:exact;}}</style></head><body>
+                  <div class="center">${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:70px;max-width:160px;margin:0 auto 12px;display:block;" />` : ''}
+                  <div style="font-size:13px;color:#2A2118;margin-bottom:24px;">
+                    <div style="font-weight:500;">Receipt #: ${esc(s.slip)}</div>
+                    <div style="font-weight:500;">Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
+                    <div style="font-weight:700;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
+                    <div class="amended">✏️ Amended Bill — ${txn.amendments.length} edit${txn.amendments.length > 1 ? 's' : ''}</div>
+                  </div></div>
+                  <div class="divider-box">${(s.cart || []).map(item => `<div class="svc-row"><div><div style="font-weight:500;">${esc(item.service)}</div><div style="font-size:11px;color:#B08040;">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div style="font-weight:500;">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}</div>
+                  <div style="padding:0 4px;margin-bottom:24px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>${(s.discountAmt || 0) > 0 ? `<div style="display:flex;justify-content:space-between;color:#A0303F;margin-bottom:8px;"><span>Discount</span><span>−PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}<div class="total-row"><span>Total</span><span class="total-val">PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div></div>
+                  <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">Amended receipt · Original: PKR ${(originalSnapshot?.total || 0).toLocaleString('en-PK')}</div>
+                  <div class="footer">Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div></body></html>`);
+                }} style={{ width: "100%", fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "13px", cursor: "pointer", marginTop: 4 }}>
+                  🖨️ Print Updated Slip
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ══ EDIT BILL MODAL ═══════════════════════════════════════════════════ */}
       {editingBill && (
         <div className="ovl" onClick={closeEditBill}>
@@ -4865,8 +5320,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <button onClick={() => {
                     const s = editSavedTxn;
                     const subtotal = s.subtotal || (s.cart || []).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
-                    const win = window.open("", "_blank", "width=420,height=600");
-                    win.document.write(`<!DOCTYPE html><html><head>
+                    printHTML(`<!DOCTYPE html><html><head>
                     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
                       *{margin:0;padding:0;box-sizing:border-box;}
@@ -4890,7 +5344,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       .total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:12px;padding-top:12px;border-top:1.5px solid #E8E0D4;align-items:center;}
                       .total-val{color:#B08040;font-size:18px;}
                       .footer{text-align:center;font-size:11px;color:#B8AFA5;margin-top:32px;font-style:italic;}
-                      @media print{body{padding:20px;-webkit-print-color-adjust:exact;}}
+                      @page{size:79mm auto;margin:2mm;}
+                      @media print{body{padding:6px;width:75mm;-webkit-print-color-adjust:exact;}}
                     </style></head><body>
                     <div class="center">
                       ${Boolean(showSalonName) ? `<div class="logo">${esc(salonName || 'Noorkada')}</div>` : ''}
@@ -4914,9 +5369,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     <div style="text-align:center;font-size:11px;color:#92400E;background:#FEF3C7;border-radius:6px;padding:8px;margin-bottom:16px;">This is an amended receipt. Original total: PKR ${(editingBill.total || 0).toLocaleString('en-PK')}</div>
                     <div class="footer">Thank you for choosing ${esc(salonName || 'Noorkada')}!<br/>We look forward to seeing you again.<br/><span style="font-size:12px;color:#B08040;">★ ★ ★ ★ ★</span></div>
                     </body></html>`);
-                    win.document.close();
-                    win.focus();
-                    setTimeout(() => win.print(), 400);
                   }}
                     style={{ flex: 2, fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
                     🖨️ Print Updated Slip
@@ -5203,6 +5655,68 @@ export default function NoorKadaPOS({ user, onLogout }) {
         </div>
       )}
 
+      {/* ══ STAFF SLIP PREVIEW MODAL ══════════════════════════════════════════ */}
+      {staffSlipPreview && (
+        <div className="ovl" onClick={() => setStaffSlipPreview(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#FDFBF7", borderRadius: 16, padding: "40px 32px 32px", maxWidth: 420, width: "92%", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(42,33,24,.22)", position: "relative" }}>
+
+            {/* Close */}
+            <button onClick={() => setStaffSlipPreview(null)} style={{ position: "absolute", top: 16, right: 16, background: "#F5F0E8", border: "none", borderRadius: 8, padding: "6px 14px", fontFamily: "'Outfit',sans-serif", fontSize: 13, color: "#6B5540", cursor: "pointer", fontWeight: 600 }}>Close</button>
+
+            {/* Header */}
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              {salonLogo && salonLogo !== 'default'
+                ? <img src={salonLogo} style={{ maxHeight: 60, maxWidth: 140, margin: "0 auto 10px", display: "block", objectFit: "contain" }} />
+                : <div style={{ color: "#C4A870", fontSize: 40, marginBottom: 12, lineHeight: 1 }}>✂️</div>
+              }
+              {Boolean(showSalonName) && <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#2A2118", marginBottom: 10 }}>{salonName || "Noorkada POS"}</div>}
+              <div style={{ display: "inline-block", background: "#2A2118", color: "#FFF", padding: "4px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>Staff Service Slip</div>
+              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500, marginBottom: 2 }}>Order #: {staffSlipPreview.slip}</div>
+              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500, marginBottom: 2 }}>Date: {staffSlipPreview.date} | Time: {staffSlipPreview.time}</div>
+              <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 500 }}>Customer: <span style={{ fontWeight: 700 }}>{staffSlipPreview.customerName}</span></div>
+            </div>
+
+            {/* Services */}
+            <div style={{ borderTop: "1.5px solid #E8E0D4", borderBottom: "1.5px solid #E8E0D4", padding: "14px 0", marginBottom: 16 }}>
+              {staffSlipPreview.cart.map((item, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 10, borderBottom: i < staffSlipPreview.cart.length - 1 ? "1px solid #F5F0E8" : "none" }}>
+                  <div>
+                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{item.service}{item.qty > 1 ? ` (×${item.qty})` : ""}</div>
+                    {item.stylist
+                      ? <div style={{ fontSize: 12, color: "#B08040", fontWeight: 600, marginTop: 3 }}>✂ {item.stylist}</div>
+                      : <div style={{ fontSize: 12, color: "#D97706", fontWeight: 600, marginTop: 3 }}>⚠️ No Staff Assigned</div>
+                    }
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Note */}
+            {staffSlipPreview.note && (
+              <div style={{ background: "#FEF9EC", border: "1px solid #EDE6D8", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#6B5030", marginBottom: 16 }}>
+                <strong>Note:</strong> {staffSlipPreview.note}
+              </div>
+            )}
+
+            <div style={{ fontSize: 11, color: "#B8AFA5", textAlign: "center", fontStyle: "italic", marginBottom: 20 }}>
+              Please complete transaction at front desk after service.
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 12 }}>
+              <button onClick={() => setStaffSlipPreview(null)}
+                style={{ flex: 1, padding: "14px", fontSize: 14, fontFamily: "'Outfit',sans-serif", fontWeight: 700, background: "#F5F0E8", color: "#6B5540", border: "none", borderRadius: 12, cursor: "pointer" }}>
+                ✕ Close
+              </button>
+              <button onClick={() => { printStaffSlip(); setStaffSlipPreview(null); }}
+                style={{ flex: 2, padding: "14px", fontSize: 14, fontFamily: "'Outfit',sans-serif", fontWeight: 700, background: "#5A4030", color: "#F5E6C8", border: "none", borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                🖨️ Print Staff Slip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {
         doneSlip && (
           <div className="ovl" onClick={() => setDoneSlip(null)}>
@@ -5291,8 +5805,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 <button className="btn-gold" style={{ flex: 2, padding: "14px", fontSize: 14 }} onClick={() => { setDoneSlip(null); if (tabs.length === 0) addTab(); }}>New Transaction →</button>
                 <button className="btn-ghost" onClick={() => {
                   const s = doneSlip;
-                  const win = window.open("", "_blank", "width=420,height=600");
-                  win.document.write(`<!DOCTYPE html><html><head>
+                  printHTML(`<!DOCTYPE html><html><head>
                   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                   <style>
                     *{margin:0;padding:0;box-sizing:border-box;}
@@ -5316,7 +5829,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     .total-row{display:flex; justify-content:space-between; font-size:16px; font-weight:700; margin-top:12px; paddingTop:12px; border-top:1.5px solid #E8E0D4; align-items:center;}
                     .total-val{color:#B08040; font-size:18px;}
                     .footer{text-align:center; font-size:11px; color:#B8AFA5; margin-top:32px; font-style:italic;}
-                    @media print{body{padding:20px; -webkit-print-color-adjust: exact;}}
+                    @page{size:79mm auto;margin:2mm;}
+                    @media print{body{padding:6px;width:75mm;-webkit-print-color-adjust:exact;}}
                   </style>
                 </head><body>
                   <div class="center">
@@ -5352,7 +5866,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   </div>
                   
                   <div class="summary">
-                    <div class="sum-row"><span>Subtotal</span><span style="font-weight:500;">PKR ${s.subtotal.toLocaleString("en-PK")}</span></div>
+                    <div class="sum-row"><span>Subtotal</span><span style="font-weight:500;">PKR ${(s.subtotal || (s.cart||[]).reduce((a,i)=>a+(i.price||0)*(i.qty||1),0)).toLocaleString("en-PK")}</span></div>
                     ${s.discountAmt > 0 ? `<div class="sum-row" style="color:#A0303F;"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span style="font-weight:500;">−PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>` : ""}
                     <div class="total-row">
                       <span>Total Amount</span>
@@ -5366,9 +5880,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     <span style="font-size:12px; color:#B08040;">★ ★ ★ ★ ★</span>
                   </div>
                 </body></html>`);
-                  win.document.close();
-                  win.focus();
-                  setTimeout(() => { win.print(); }, 400);
                 }} style={{
                   flex: 1, padding: "14px", fontSize: 14, background: "#FFF", display: "flex",
                   alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0
