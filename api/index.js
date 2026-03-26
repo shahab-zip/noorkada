@@ -648,7 +648,7 @@ const buildSummary = (txns, staffName) => {
   };
 };
 
-// GET /api/staff/me/summary?date=YYYY-MM-DD or ?range=today|week|month
+// GET /api/staff/me/summary?date=YYYY-MM-DD | ?range=week|month | ?from=YYYY-MM-DD&to=YYYY-MM-DD
 app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
   const staffName = req.user.full_name;
   if (!staffName) return res.status(400).json({ message: 'Staff profile incomplete — full_name required' });
@@ -656,8 +656,18 @@ app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
   const todayStr = new Date().toISOString().slice(0, 10);
   let dateStart, dateEnd, dateLabel;
 
-  const range = sanitizeStr(req.query.range, 10);
-  if (range === 'week') {
+  const range     = sanitizeStr(req.query.range, 10);
+  const fromParam = sanitizeStr(req.query.from, 10);
+  const toParam   = sanitizeStr(req.query.to, 10);
+
+  if (fromParam && toParam) {
+    // Custom date range
+    dateStart = parseDate(fromParam);
+    dateEnd   = parseDate(toParam);
+    if (!dateStart || !dateEnd) return res.status(400).json({ message: 'Invalid date range. Use YYYY-MM-DD' });
+    if (dateStart > dateEnd) return res.status(400).json({ message: 'from must be ≤ to' });
+    dateLabel = 'custom';
+  } else if (range === 'week') {
     const d = new Date();
     d.setUTCDate(d.getUTCDate() - 6);
     dateStart = d.toISOString().slice(0, 10);
@@ -718,14 +728,26 @@ app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
   }
 });
 
-// GET /api/staff/me/services?date=YYYY-MM-DD&page=1&limit=50
+// GET /api/staff/me/services?date=YYYY-MM-DD | ?from=YYYY-MM-DD&to=YYYY-MM-DD  &page=1&limit=50
 app.get('/api/staff/me/services', requireStaff, async (req, res) => {
   const staffName = req.user.full_name;
   if (!staffName) return res.status(400).json({ message: 'Staff profile incomplete' });
 
-  const rawDate = sanitizeStr(req.query.date, 10) || new Date().toISOString().slice(0, 10);
-  const date = parseDate(rawDate);
-  if (!date) return res.status(400).json({ message: 'Invalid date. Use YYYY-MM-DD' });
+  const fromParam = sanitizeStr(req.query.from, 10);
+  const toParam   = sanitizeStr(req.query.to, 10);
+  let dateStart, dateEnd;
+
+  if (fromParam && toParam) {
+    dateStart = parseDate(fromParam);
+    dateEnd   = parseDate(toParam);
+    if (!dateStart || !dateEnd) return res.status(400).json({ message: 'Invalid date range. Use YYYY-MM-DD' });
+    if (dateStart > dateEnd) return res.status(400).json({ message: 'from must be ≤ to' });
+  } else {
+    const rawDate = sanitizeStr(req.query.date, 10) || new Date().toISOString().slice(0, 10);
+    dateStart = parseDate(rawDate);
+    if (!dateStart) return res.status(400).json({ message: 'Invalid date. Use YYYY-MM-DD' });
+    dateEnd = dateStart;
+  }
 
   const page  = Math.max(1, parseInt(req.query.page)  || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 50));
@@ -735,8 +757,8 @@ app.get('/api/staff/me/services', requireStaff, async (req, res) => {
     const { data: txns, error } = await supabase
       .from('transactions')
       .select('id, cart, cust_name, cust_phone, pay_mode, total, created_at')
-      .gte('created_at', date + 'T00:00:00.000Z')
-      .lte('created_at', date + 'T23:59:59.999Z')
+      .gte('created_at', dateStart + 'T00:00:00.000Z')
+      .lte('created_at', dateEnd + 'T23:59:59.999Z')
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw error;
