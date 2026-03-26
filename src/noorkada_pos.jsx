@@ -1704,7 +1704,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       <div class="divider"></div>
       <div class="summary">
         <div class="sum-row"><span>Subtotal</span><span>PKR ${(s.subtotal || (s.cart||[]).reduce((a,i)=>a+(i.price||0)*(i.qty||1),0)).toLocaleString("en-PK")}</span></div>
-        ${s.discountAmt > 0 ? `<div class="sum-row"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span>-PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>` : ""}
+        ${s.discountAmt > 0 ? `<div class="sum-row"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span>-PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>${s.discCourtesyBy ? `<div class="sum-row" style="font-size:11px;color:#000;font-style:italic;margin-top:-4px;"><span>Courtesy by: ${esc(s.discCourtesyBy)}</span><span></span></div>` : ""}` : ""}
         <div class="total-row">
           <span>Total Amount</span>
           <span>PKR ${s.total.toLocaleString("en-PK")}</span>
@@ -5580,7 +5580,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:75px;text-align:right;">Amount</div></div>
                   ${(s.cart || []).map(item => `<div class="svc-row"><div class="svc-info"><div class="svc-name">${esc(item.service)}</div><div class="svc-staff">Staff: ${esc(item.stylist || 'Unassigned')}</div></div><div class="svc-amt">PKR ${((item.price || 0) * (item.qty || 1)).toLocaleString('en-PK')}</div></div>`).join('')}
                   <div class="divider"></div>
-                  <div style="padding:0 2px;margin-bottom:14px;"><div class="sum-row"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>${(s.discountAmt || 0) > 0 ? `<div class="sum-row"><span>Discount</span><span>-PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}<div class="total-row"><span>Total Amount</span><span>PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div></div>
+                  <div style="padding:0 2px;margin-bottom:14px;"><div class="sum-row"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>${(s.discountAmt || 0) > 0 ? `<div class="sum-row"><span>Discount${s.discReason ? ` (${s.discReason})` : ''}</span><span>-PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>${s.discCourtesyBy ? `<div class="sum-row" style="font-size:11px;font-style:italic;margin-top:-4px;"><span>Courtesy by: ${esc(s.discCourtesyBy)}</span><span></span></div>` : ''}` : ''}<div class="total-row"><span>Total Amount</span><span>PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div></div>
                   <div style="text-align:center;font-size:11px;font-weight:700;border:1px solid #000;padding:6px;margin-bottom:14px;">Amended Receipt · Original: PKR ${(originalSnapshot?.total || 0).toLocaleString('en-PK')}</div>
                   <div class="footer">Thank you for choosing Noorkada!<br/>We look forward to seeing you again.<br/><span class="stars">★ ★ ★ ★ ★</span></div></body></html>`);
                 }} style={{ width: "100%", fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, background: "#2A2118", color: "#FFF", border: "none", borderRadius: 10, padding: "13px", cursor: "pointer", marginTop: 4 }}>
@@ -5711,7 +5711,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     <div class="divider"></div>
                     <div class="summary">
                       <div class="sum-row"><span>Subtotal</span><span>PKR ${subtotal.toLocaleString('en-PK')}</span></div>
-                      ${(s.discountAmt || 0) > 0 ? `<div class="sum-row"><span>Discount${s.discReason ? ` (${s.discReason})` : ''}</span><span>-PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>` : ''}
+                      ${(s.discountAmt || 0) > 0 ? `<div class="sum-row"><span>Discount${s.discReason ? ` (${s.discReason})` : ''}</span><span>-PKR ${(s.discountAmt || 0).toLocaleString('en-PK')}</span></div>${s.discCourtesyBy ? `<div class="sum-row" style="font-size:11px;font-style:italic;margin-top:-4px;"><span>Courtesy by: ${esc(s.discCourtesyBy)}</span><span></span></div>` : ''}` : ''}
                       <div class="total-row"><span>Total Amount</span><span>PKR ${(s.total || 0).toLocaleString('en-PK')}</span></div>
                     </div>
                     <div style="text-align:center;font-size:11px;font-weight:700;border:1px solid #000;padding:6px;margin-bottom:14px;color:#000;">Amended Receipt · Original: PKR ${(editingBill.total || 0).toLocaleString('en-PK')}</div>
@@ -6122,9 +6122,16 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <span>{fmt(doneSlip.subtotal)}</span>
                 </div>
                 {doneSlip.discountAmt > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontWeight: 700 }}>
-                    <span>Discount {doneSlip.discReason ? `(${doneSlip.discReason})` : doneSlip.discMode === 'pct' ? `(${doneSlip.discount}%)` : ''}</span>
-                    <span>−{fmt(doneSlip.discountAmt)}</span>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+                      <span>Discount {doneSlip.discReason ? `(${doneSlip.discReason})` : doneSlip.discMode === 'pct' ? `(${doneSlip.discount}%)` : ''}</span>
+                      <span>−{fmt(doneSlip.discountAmt)}</span>
+                    </div>
+                    {doneSlip.discCourtesyBy && (
+                      <div style={{ fontSize: 11, color: "#8A7060", marginTop: 3, fontStyle: "italic" }}>
+                        Courtesy by: {doneSlip.discCourtesyBy}
+                      </div>
+                    )}
                   </div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 800, marginTop: 12, paddingTop: 12, borderTop: "2px solid #2A2118", alignItems: "center", color: "#2A2118" }}>
