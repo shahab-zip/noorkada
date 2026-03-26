@@ -4638,7 +4638,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                   </tr>
 
                                   {/* Inline edit — profile */}
-                                  {editingStylist?.id === row.stylist?.id && editingStylist?.id !== 'new' && (
+                                  {editingStylist && editingStylist.id === row.stylist?.id && editingStylist.id !== 'new' && (
                                     <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
                                       <td colSpan={5} style={{ padding: 16 }}>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Profile — {editingStylist.name}</div>
@@ -4689,7 +4689,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                   )}
 
                                   {/* Inline edit — login */}
-                                  {editingUser?.id === row.user?.id && editingUser?.id !== 'new' && (
+                                  {editingUser && editingUser.id === row.user?.id && editingUser.id !== 'new' && (
                                     <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
                                       <td colSpan={5} style={{ padding: 16 }}>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Login — {editingUser.full_name || editingUser.username}</div>
