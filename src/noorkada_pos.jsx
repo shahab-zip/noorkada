@@ -1830,13 +1830,23 @@ export default function NoorKadaPOS({ user, onLogout }) {
   React.useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
-      if (doneSlip) { setDoneSlip(null); return; }
-      if (showAddModal) { setShowAddModal(false); return; }
+      // Priority order: innermost/most recent modal first
       if (stylistWarningOpen) { setStylistWarningOpen(false); return; }
+      if (confirmClose) { setConfirmClose(false); return; }
+      if (delCatConfirmId) { setDelCatConfirmId(null); return; }
+      if (delSvcConfirmId) { setDelSvcConfirmId(null); return; }
+      if (delStylistConfirmId) { setDelStylistConfirmId(null); return; }
+      if (delUserConfirmId) { setDelUserConfirmId(null); return; }
+      if (showCatLabelModal) { setShowCatLabelModal(false); return; }
+      if (showAddModal) { setShowAddModal(false); return; }
+      if (staffSlipPreview) { setStaffSlipPreview(null); return; }
+      if (viewingAmendment) { setViewingAmendment(null); return; }
+      if (editingBill) { closeEditBill(); return; }
+      if (doneSlip) { setDoneSlip(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [doneSlip, showAddModal, stylistWarningOpen]);
+  }, [doneSlip, showAddModal, stylistWarningOpen, confirmClose, delCatConfirmId, delSvcConfirmId, delStylistConfirmId, delUserConfirmId, showCatLabelModal, staffSlipPreview, viewingAmendment, editingBill]);
 
   return (
     <div style={{ fontFamily: "'Outfit','Helvetica Neue',sans-serif", background: "#FDFAF6", minHeight: "100vh", color: "#2A2118" }}>
@@ -4025,7 +4035,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
               ].map(item => (
                 <div
                   key={item.id}
-                  onClick={() => setAdminTab(item.id)}
+                  onClick={() => { setAdminTab(item.id); setEditingSvc(null); setEditingStylist(null); setEditingUser(null); }}
                   style={{
                     padding: isMobile ? "14px 20px" : "12px 24px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
                     background: adminTab === item.id ? "#FBF6EE" : "transparent",
@@ -5163,7 +5173,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
       {
         showCatLabelModal && (
           <div className="ovl" onClick={() => setShowCatLabelModal(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 360, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, width: "90%", maxWidth: 360, boxShadow: "0 24px 64px rgba(42,33,24,.2)", position: "relative" }}>
+              <button onClick={() => setShowCatLabelModal(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", fontSize: 18, color: "#B8AFA5", cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
               <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>New Category</h2>
               <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 20 }}>Enter details for the new category.</p>
 
@@ -5275,11 +5286,18 @@ export default function NoorKadaPOS({ user, onLogout }) {
               <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Missing Stylist</h2>
               <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24, lineHeight: 1.5 }}>Some services are missing a stylist (see red highlights in the bill).<br /><br />Would you like to assign them now or continue without stylists?</p>
               <div style={{ display: "flex", gap: 10 }}>
-                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => setStylistWarningOpen(false)}>Assign Stylist</button>
+                <button className="btn-ghost" style={{ flex: 1, padding: "8px 0" }} onClick={() => {
+                  setStylistWarningOpen(false);
+                  // Scroll cart into view so user can assign stylist to highlighted items
+                  setTimeout(() => {
+                    const el = document.querySelector('[data-missing-stylist="true"]') || document.querySelector('.cart-panel');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 100);
+                }}>← Back to Cart</button>
                 <button className="btn-gold" style={{ flex: 1, padding: "8px 0" }} onClick={() => {
                   setStylistWarningOpen(false);
-                  checkout(true); // pass override flag to skip the warning
-                }}>Continue</button>
+                  checkout(true);
+                }}>Continue Anyway</button>
               </div>
             </div>
           </div>
@@ -5290,7 +5308,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
       {
         showAddModal && (
           <div className="ovl" onClick={() => setShowAddModal(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 20, padding: 32, width: "90%", maxWidth: 460, boxShadow: "0 24px 64px rgba(42,33,24,.2)" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 20, padding: 32, width: "90%", maxWidth: 460, boxShadow: "0 24px 64px rgba(42,33,24,.2)", position: "relative" }}>
+              <button onClick={() => setShowAddModal(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", fontSize: 18, color: "#B8AFA5", cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
               <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Add New Service</h2>
               <p style={{ fontSize: 13, color: "#9A9088", marginBottom: 24 }}>Enter service details to add it to the menu.</p>
 
@@ -5548,10 +5567,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 )}
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: 12, width: "100%" }}>
+                <div style={{ display: "flex", gap: 10, width: "100%", flexWrap: "wrap" }}>
                   <button onClick={closeEditBill}
                     style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, background: "#F5F0E8", color: "#6B5540", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
                     ✕ Close
+                  </button>
+                  <button onClick={() => { closeEditBill(); setView("history"); setHTab("transactions"); setHRange("all"); setHQ(editSavedTxn?.slip || ""); }}
+                    style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, background: "#EDE6D8", color: "#2A2118", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                    📋 View in History
                   </button>
                   <button onClick={() => {
                     const s = editSavedTxn;
@@ -6036,8 +6059,12 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: "flex", gap: 12 }}>
-                <button className="btn-gold" style={{ flex: 2, padding: "14px", fontSize: 14 }} onClick={() => { setDoneSlip(null); if (tabs.length === 0) addTab(); }}>New Transaction →</button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button style={{ flex: "1 1 auto", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600, background: "#F5F0E8", color: "#6B5540", border: "none", borderRadius: 10, padding: "12px 10px", cursor: "pointer" }}
+                  onClick={() => { setDoneSlip(null); setView("history"); setHTab("transactions"); setHRange("all"); setHQ(doneSlip.slip || ""); }}>
+                  📋 View in History
+                </button>
+                <button className="btn-gold" style={{ flex: "2 1 auto", padding: "12px 14px", fontSize: 14 }} onClick={() => { setDoneSlip(null); if (tabs.length === 0) addTab(); }}>New Transaction →</button>
                 <button className="btn-ghost" onClick={() => {
                   const s = doneSlip;
                   printHTML(`<!DOCTYPE html><html><head>
