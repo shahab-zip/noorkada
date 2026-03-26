@@ -1448,8 +1448,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
     if (dashCFrom || dashCTo) t = t.filter(x => (!dashCFrom || x.date >= dashCFrom) && (!dashCTo || x.date <= dashCTo));
     else { const days = dashRange === "today" ? 1 : dashRange === "7d" ? 7 : dashRange === "30d" ? 30 : dashRange === "90d" ? 90 : 99999; const cut = new Date(); cut.setDate(cut.getDate() - days); t = t.filter(x => new Date(x.date) >= cut); }
     if (fStylist) t = t.filter(x =>
-      x.cart.some(c => c.stylist === fStylist) ||
-      (!x.stylist?.includes(',') && x.stylist === fStylist)
+      (Array.isArray(x.cart) && x.cart.some(c => c.stylist === fStylist)) ||
+      (x.stylist || "").split(',').map(s => s.trim()).includes(fStylist)
     );
     if (fPay) t = t.filter(x => x.payMode === fPay);
     if (fCat) t = t.filter(x => x.cart.some(c => c.category === fCat));
@@ -1465,8 +1465,9 @@ export default function NoorKadaPOS({ user, onLogout }) {
     t.forEach(x => x.cart.forEach(c => { cR[c.category] = (cR[c.category] || 0) + c.price * c.qty; cC[c.category] = (cC[c.category] || 0) + c.qty; sR[c.service] = (sR[c.service] || 0) + c.price * c.qty; sC[c.service] = (sC[c.service] || 0) + c.qty; }));
     const styM = {};
     t.forEach(x => {
-      // txnSty: fallback for old data where per-item stylist wasn't tracked.
-      // Only use transaction-level stylist if it's a single name (no comma = old format).
+      // txnSty: fallback only used when a cart item has no individual stylist.
+      // For single-stylist txns (no comma), use that name. Otherwise "Unassigned"
+      // (new txns always have c.stylist set per-item, so txnSty is rarely used).
       const txnSty = x.stylist && !x.stylist.includes(',') ? x.stylist : "Unassigned";
       x.cart.forEach(c => {
         const sty = c.stylist || txnSty;
@@ -1718,7 +1719,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     return t.filter(x =>
       (!q || x.customerName.toLowerCase().includes(q) || x.slip.toLowerCase().includes(q) || (x.customerPhone || "").includes(q)) &&
       (!hDate || x.date === hDate) &&
-      (!hSty || x.cart.some(c => (c.stylist || "Unassigned") === hSty) || (!x.stylist?.includes(',') && x.stylist === hSty)) &&
+      (!hSty || (Array.isArray(x.cart) && x.cart.some(c => (c.stylist || "Unassigned") === hSty)) || (x.stylist || "").split(',').map(s => s.trim()).includes(hSty)) &&
       (!hCat || x.cart.some(c => c.category === hCat)) &&
       (!hPay || x.payMode === hPay)
     );
