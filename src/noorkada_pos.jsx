@@ -1653,18 +1653,18 @@ export default function NoorKadaPOS({ user, onLogout }) {
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
         .center{text-align:center;}
-        .header-tag{border:2px solid #000;padding:5px;font-size:11px;font-weight:600;letter-spacing:1.5px;margin-bottom:14px;text-align:center;text-transform:uppercase;color:#000;}
-        .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
-        .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;font-weight:500;color:#000;}
+        .header-tag{border:2px solid #000;padding:5px;font-size:11px;font-weight:400;letter-spacing:1.5px;margin-bottom:14px;text-align:center;text-transform:uppercase;color:#000;}
+        .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+        .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;font-weight:400;color:#000;}
         .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
         .row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;}
-        .row .lbl{font-weight:500;color:#000;}
-        .row .val{font-weight:500;color:#000;text-align:right;}
+        .row .lbl{font-weight:400;color:#000;}
+        .row .val{font-weight:400;color:#000;text-align:right;}
         .svc-list{margin-top:12px;}
         .svc-item{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;border-bottom:1px dashed #000;padding-bottom:8px;}
-        .svc-name{font-size:13px;font-weight:600;color:#000;flex:1;padding-right:10px;}
-        .svc-stylist{font-size:12px;color:#000;font-weight:500;text-align:right;flex-shrink:0;}
-        .footer{text-align:center;font-size:11px;color:#000;margin-top:20px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}
+        .svc-name{font-size:13px;font-weight:400;color:#000;flex:1;padding-right:10px;}
+        .svc-stylist{font-size:12px;color:#000;font-weight:400;text-align:right;flex-shrink:0;}
+        .footer{text-align:center;font-size:11px;color:#000;margin-top:20px;border-top:1px dashed #000;padding-top:12px;font-weight:400;}
         .stars{font-size:14px;letter-spacing:4px;}
         @page{size:79mm auto;margin:2mm;}
         @media print{body{padding:4px;width:75mm;}}
@@ -1857,29 +1857,29 @@ export default function NoorKadaPOS({ user, onLogout }) {
         select.inp option{background:#FFF;color:#2A2118;}
         .card{background:#FFFFFF;border:1px solid #EDE6D8;border-radius:14px;padding:20px;box-shadow:0 1px 6px rgba(44,33,24,.05);}
         .card-sm{background:#FFFFFF;border:1px solid #EDE6D8;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(44,33,24,.04);}
-        .svc-btn{font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;padding:13px 14px;border-radius:11px;cursor:pointer;border:1.5px solid #EDE6D8;background:#FFFFFF;color:#3D3028;text-align:left;transition:all .18s;position:relative;line-height:1.3;box-shadow:0 1px 4px rgba(44,33,24,.05);}
+        .svc-btn{font-family:'Outfit',sans-serif;font-size:13px;font-weight:400;padding:13px 14px;border-radius:11px;cursor:pointer;border:1.5px solid #EDE6D8;background:#FFFFFF;color:#3D3028;text-align:left;transition:all .18s;position:relative;line-height:1.3;box-shadow:0 1px 4px rgba(44,33,24,.05);}
         .svc-btn:hover{border-color:#C4A870;box-shadow:0 5px 18px rgba(176,128,64,.18);transform:translateY(-2px);background:#FFFDF9;}
         .svc-btn.sel{color:#FFF;border-color:transparent;box-shadow:0 6px 24px rgba(0,0,0,.18);transform:translateY(-1px);}
-        .cat-pill{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;padding:7px 15px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;white-space:nowrap;transition:all .18s;letter-spacing:.2px;}
+        .cat-pill{font-family:'Outfit',sans-serif;font-size:12px;font-weight:400;padding:7px 15px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;white-space:nowrap;transition:all .18s;letter-spacing:.2px;}
         .cat-pill:hover{border-color:#C4A870;color:#6B5030;background:#FBF6EE;}
-        .cat-pill.on{font-weight:600;}
-        .nav-tab{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:8px 18px;border-radius:7px;cursor:pointer;border:none;transition:all .2s;}
+        .cat-pill.on{font-weight:400;}
+        .nav-tab{font-family:'Outfit',sans-serif;font-size:12px;font-weight:400;letter-spacing:1.5px;text-transform:uppercase;padding:8px 18px;border-radius:7px;cursor:pointer;border:none;transition:all .2s;}
         .nav-tab.on{background:#2A2118;color:#FDFAF6;}
         .nav-tab.off{background:transparent;color:#9A9088;}
         .nav-tab.off:hover{color:#2A2118;}
-        .rbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;letter-spacing:.3px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;}
+        .rbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:400;letter-spacing:.3px;padding:5px 11px;border-radius:6px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;}
         .rbtn.on{background:#2A2118;color:#FDFAF6;border-color:#2A2118;}
         .rbtn:hover:not(.on){border-color:#C4A870;color:#6B5030;}
-        .tbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;letter-spacing:.2px;}
+        .tbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:400;padding:7px 16px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;letter-spacing:.2px;}
         .tbtn.on{background:#2A2118;color:#FDFAF6;border-color:#2A2118;}
         .tbtn:hover:not(.on){border-color:#C4A870;color:#6B5030;}
-        .btn-gold{font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;background:linear-gradient(135deg,#2A2118,#4A3828);color:#F5E6C8;border:none;border-radius:11px;padding:14px;cursor:pointer;width:100%;transition:all .22s;letter-spacing:.4px;box-shadow:0 4px 14px rgba(42,33,24,.25);}
+        .btn-gold{font-family:'Outfit',sans-serif;font-size:13px;font-weight:400;background:linear-gradient(135deg,#2A2118,#4A3828);color:#F5E6C8;border:none;border-radius:11px;padding:14px;cursor:pointer;width:100%;transition:all .22s;letter-spacing:.4px;box-shadow:0 4px 14px rgba(42,33,24,.25);}
         .btn-gold:hover{background:linear-gradient(135deg,#3A3028,#5A4838);box-shadow:0 6px 20px rgba(42,33,24,.32);transform:translateY(-1px);}
-        .btn-ghost{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;background:transparent;color:#9A9088;border:1.5px solid #E8E0D4;border-radius:11px;padding:10px;cursor:pointer;width:100%;transition:all .2s;}
+        .btn-ghost{font-family:'Outfit',sans-serif;font-size:12px;font-weight:400;background:transparent;color:#9A9088;border:1.5px solid #E8E0D4;border-radius:11px;padding:10px;cursor:pointer;width:100%;transition:all .2s;}
         .btn-ghost:hover{border-color:#C4A870;color:#6B5030;background:#FFFDF9;}
         .qty-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid #E8E0D4;background:#FFF;color:#6B5030;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;line-height:1;flex-shrink:0;}
         .qty-btn:hover{border-color:#B08040;background:#FBF6EE;}
-        .badge{display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:600;padding:2px 9px;border-radius:100px;letter-spacing:.3px;}
+        .badge{display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:400;padding:2px 9px;border-radius:100px;letter-spacing:.3px;}
         .hrow{transition:all .18s;cursor:default;}
         .hrow:hover{border-color:#C4A870!important;box-shadow:0 3px 16px rgba(176,128,64,.12)!important;}
         .ovl{position:fixed;inset:0;background:rgba(42,33,24,.55);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(10px);animation:fi .2s;}
@@ -5461,13 +5461,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   const subtotal = (s.cart || []).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
                   printHTML(`<!DOCTYPE html><html><head>
                   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:500;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:600;color:#000;}.svc-staff{font-size:11px;font-weight:500;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:500;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:500;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:600;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
+                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:400;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:400;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:400;color:#000;}.svc-staff{font-size:11px;font-weight:400;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:400;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:400;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:400;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:400;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
                   <div class="center"><img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" /><div class="sub">Noor Kada</div>
                   <div style="font-size:12px;color:#000;margin-bottom:14px;font-weight:700;">
                     <div>Receipt #: ${esc(s.slip)}</div>
                     <div>Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
-                    <div style="font-weight:600;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
-                    <div style="font-size:11px;font-weight:600;border:1.5px solid #000;display:inline-block;padding:2px 8px;margin-top:6px;">** AMENDED BILL — ${txn.amendments.length} EDIT${txn.amendments.length > 1 ? 'S' : ''} **</div>
+                    <div style="font-weight:400;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
+                    <div style="font-size:11px;font-weight:400;border:1.5px solid #000;display:inline-block;padding:2px 8px;margin-top:6px;">** AMENDED BILL — ${txn.amendments.length} EDIT${txn.amendments.length > 1 ? 'S' : ''} **</div>
                   </div></div>
                   <div class="divider"></div>
                   <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:75px;text-align:right;">Amount</div></div>
@@ -5562,24 +5562,24 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       *{margin:0;padding:0;box-sizing:border-box;}
                       body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
                       .center{text-align:center;}
-                      .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
-                      .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:500;color:#000;}
+                      .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+                      .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:400;color:#000;}
                       .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
-                      .header-line{margin-bottom:3px;font-weight:500;color:#000;}
-                      .cust-name{font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
-                      .amended{font-size:11px;font-weight:600;border:1.5px solid #000;padding:2px 7px;display:inline-block;margin-top:6px;}
+                      .header-line{margin-bottom:3px;font-weight:400;color:#000;}
+                      .cust-name{font-weight:400;text-transform:uppercase;letter-spacing:0.5px;}
+                      .amended{font-size:11px;font-weight:400;border:1.5px solid #000;padding:2px 7px;display:inline-block;margin-top:6px;}
                       .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
-                      .tbl-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+                      .tbl-head{display:flex;justify-content:space-between;font-weight:400;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
                       .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
                       .svc-info{flex:1;padding-right:8px;}
-                      .svc-name{font-weight:600;color:#000;}
-                      .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:500;}
-                      .svc-qty{width:30px;text-align:center;font-weight:500;color:#000;}
-                      .svc-amt{width:75px;text-align:right;font-weight:500;color:#000;}
+                      .svc-name{font-weight:400;color:#000;}
+                      .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:400;}
+                      .svc-qty{width:30px;text-align:center;font-weight:400;color:#000;}
+                      .svc-amt{width:75px;text-align:right;font-weight:400;color:#000;}
                       .summary{padding:0 2px;margin-bottom:16px;}
-                      .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:500;color:#000;}
-                      .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:600;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
-                      .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}
+                      .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:400;color:#000;}
+                      .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:400;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+                      .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:400;}
                       .stars{font-size:14px;letter-spacing:4px;}
                       @page{size:79mm auto;margin:2mm;}
                       @media print{body{padding:4px;width:75mm;}}
@@ -6046,24 +6046,24 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     *{margin:0;padding:0;box-sizing:border-box;}
                     body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
                     .center{text-align:center;}
-                    .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
-                    .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:500;color:#000;}
+                    .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+                    .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:400;color:#000;}
                     .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
-                    .header-line{margin-bottom:3px;font-weight:500;color:#000;}
-                    .cust-name{font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#000;}
+                    .header-line{margin-bottom:3px;font-weight:400;color:#000;}
+                    .cust-name{font-weight:400;text-transform:uppercase;letter-spacing:0.5px;color:#000;}
                     .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
-                    .tbl-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+                    .tbl-head{display:flex;justify-content:space-between;font-weight:400;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
                     .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
                     .svc-info{flex:1;padding-right:8px;}
-                    .svc-name{font-weight:600;color:#000;}
-                    .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:500;}
-                    .svc-qty{width:30px;text-align:center;font-weight:500;color:#000;}
-                    .svc-amt{width:75px;text-align:right;font-weight:500;color:#000;}
-                    .disc-line{font-size:11px;color:#000;font-weight:500;margin-top:2px;}
+                    .svc-name{font-weight:400;color:#000;}
+                    .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:400;}
+                    .svc-qty{width:30px;text-align:center;font-weight:400;color:#000;}
+                    .svc-amt{width:75px;text-align:right;font-weight:400;color:#000;}
+                    .disc-line{font-size:11px;color:#000;font-weight:400;margin-top:2px;}
                     .summary{padding:0 2px;margin-bottom:16px;}
-                    .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:500;color:#000;}
-                    .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:600;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
-                    .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}
+                    .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:400;color:#000;}
+                    .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:400;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+                    .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:400;}
                     .stars{font-size:14px;letter-spacing:4px;}
                     @page{size:79mm auto;margin:2mm;}
                     @media print{body{padding:4px;width:75mm;}}
@@ -6089,7 +6089,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       <div class="svc-info">
                         <div class="svc-name">${esc(item.service)}</div>
                         <div class="svc-stylist">Stylist: ${esc(item.stylist || "Unassigned")}</div>
-                        ${item.category === 'Deal' && item.included_services?.length > 0 ? `<div style="font-size:10px;color:#000;font-weight:600;margin-top:2px;">${item.included_services.join(', ')}</div>` : ""}
+                        ${item.category === 'Deal' && item.included_services?.length > 0 ? `<div style="font-size:10px;color:#000;font-weight:400;margin-top:2px;">${item.included_services.join(', ')}</div>` : ""}
                       </div>
                       <div class="svc-qty">${item.qty}</div>
                       <div class="svc-amt">
