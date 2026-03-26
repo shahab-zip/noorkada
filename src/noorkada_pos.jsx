@@ -1367,6 +1367,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [hFrom, setHFrom] = useState("");
   const [hTo, setHTo] = useState("");
   const [hTab, setHTab] = useState("transactions"); // transactions | clients
+  const [hNavFromClient, setHNavFromClient] = useState(null); // { name, key } — set when navigating from a client profile
   const [expandedAmendments, setExpandedAmendments] = useState(new Set());
   const toggleAmendments = (id) => setExpandedAmendments(prev => {
     const next = new Set(prev);
@@ -3566,13 +3567,29 @@ export default function NoorKadaPOS({ user, onLogout }) {
               <div style={{ display: "flex", background: "#F5F0E8", padding: 4, borderRadius: 10, gap: 2 }}>
                 {[["transactions", "📋 Transactions"], ...(ROLE_RANK[user.role] >= 3 ? [["clients", "👥 Clients"]] : [])].map(([t, l]) => (
                   <button key={t} className={`nav-tab ${hTab === t ? "on" : "off"}`}
-                    onClick={() => setHTab(t)} style={{ padding: "6px 16px", fontSize: 12 }}>{l}</button>
+                    onClick={() => { setHTab(t); setHNavFromClient(null); if (t === "clients") setHQ(""); }} style={{ padding: "6px 16px", fontSize: 12 }}>{l}</button>
                 ))}
               </div>
             </div>
 
             {/* ── TRANSACTIONS sub-tab ── */}
             {hTab === "transactions" && (<div className="fade">
+
+              {/* Back to client breadcrumb */}
+              {hNavFromClient && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 14px", background: "#FBF6EE", border: "1px solid #EDE6D8", borderRadius: 10 }}>
+                  <button onClick={() => {
+                    setHTab("clients");
+                    setHQ("");
+                    setHNavFromClient(null);
+                    setExpandedClient(hNavFromClient.key);
+                  }} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#2A2118", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600, color: "#FFF", cursor: "pointer", fontFamily: "'Outfit',sans-serif" }}>
+                    ← Back
+                  </button>
+                  <span style={{ fontSize: 13, color: "#6B5030" }}>Showing all transactions for <strong>{hNavFromClient.name}</strong></span>
+                  <button onClick={() => { setHQ(""); setHNavFromClient(null); }} style={{ marginLeft: "auto", fontSize: 11, color: "#B8AFA5", background: "none", border: "none", cursor: "pointer", padding: "4px 8px" }}>✕ Clear</button>
+                </div>
+              )}
 
               {/* History filter bar */}
               <div style={{ background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 14, padding: "16px 18px", marginBottom: 18, boxShadow: "0 1px 6px rgba(44,33,24,.04)" }}>
@@ -3911,7 +3928,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           </div>
 
                           {/* Jump to transactions */}
-                          <button onClick={() => { setView("history"); setHTab("transactions"); setHRange("all"); setHQ(cl.phone || cl.name); }}
+                          <button onClick={() => {
+                            setView("history");
+                            setHTab("transactions");
+                            setHRange("all");
+                            setHQ(cl.phone || cl.name);
+                            setHNavFromClient({ name: cl.name, key: cl.key });
+                            setExpandedClient(null);
+                          }}
                             style={{
                               marginTop: 12, width: "100%", fontFamily: "'Outfit',sans-serif",
                               fontSize: 13, fontWeight: 700, color: "#FFF", background: "#2A2118",
