@@ -4358,75 +4358,28 @@ export default function NoorKadaPOS({ user, onLogout }) {
               {/* 2. Staff Tab */}
               {adminTab === "staff" && (
                 <div className="fade">
-                  <div style={{ marginBottom: isMobile ? 16 : 24 }}>
-                    <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 4 }}>Staff Registry</h1>
-                    <p style={{ fontSize: 13, color: "#9A9088" }}>Manage salon members and POS access roles.</p>
-                  </div>
-
-                  {/* Add User Form */}
-                  {editingUser && editingUser.id === 'new' && (
-                    <div className="card" style={{ marginBottom: 20, padding: 20 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>
-                        ➕ Add New Member
+                  <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <div>
+                        <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 4 }}>Staff Registry</h1>
+                        <p style={{ fontSize: 13, color: "#9A9088" }}>Manage your salon team and system access roles.</p>
                       </div>
-                      {/* hidden inputs to trick browser autofill */}
-                      <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
-                      <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
-
-                      <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
-                          <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Enter full name" />
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <div style={{ background: "#FEF3C7", borderRadius: 10, padding: "8px 14px", textAlign: "center", minWidth: 64 }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: "#92400E" }}>{dbStylists.length}</div>
+                          <div style={{ fontSize: 10, color: "#B45309", fontWeight: 600, textTransform: "uppercase" }}>Team</div>
                         </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username</label>
-                          <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username (no spaces)" />
+                        <div style={{ background: "#DBEAFE", borderRadius: 10, padding: "8px 14px", textAlign: "center", minWidth: 64 }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: "#1D4ED8" }}>{dbUsers.length}</div>
+                          <div style={{ fontSize: 10, color: "#2563EB", fontWeight: 600, textTransform: "uppercase" }}>Logins</div>
                         </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
-                          <input className="inp" type="email" autoComplete="off" value={editingUser.email || ''} onChange={e => setEditingUser(prev => ({ ...prev, email: e.target.value }))} placeholder="Enter email" />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role</label>
-                          <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
-                            {creatableRoles(user.role).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password</label>
-                          <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Enter password" />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                        <button
-                          onClick={async () => {
-                            try {
-                              if (!editingUser.username || !editingUser.password) return showToast('Username and password are required', 'error');
-                              const res = await fetch('/api/users', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                body: JSON.stringify({ username: editingUser.username, full_name: editingUser.full_name || '', password: editingUser.password, role: editingUser.role, email: editingUser.email })
-                              });
-                              const data = await res.json();
-                              if (!res.ok) throw new Error(data.message || 'Error creating user');
-                              setDbUsers(prev => [...prev, data]);
-                              setEditingUser(null);
-                            } catch (err) {
-                              showToast(err.message, 'error');
-                            }
-                          }}
-                          className="btn-gold" style={{ width: "auto", padding: "10px 24px", borderRadius: 8 }}
-                        >Create User</button>
-                        <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px" }}>Cancel</button>
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   {/* ── Section: Salon Team ───────────────────────────────────── */}
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", marginBottom: 20, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: editingStylist?.id === 'new' ? "1px solid #EDE6D8" : "none" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👥</div>
                         <div>
@@ -4436,15 +4389,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       </div>
                       <button
                         onClick={() => setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '', position: '' })}
-                        className="btn-gold"
-                        style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, width: "auto" }}
+                        style={{ padding: "7px 16px", fontSize: 12, borderRadius: 8, width: "auto", background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                       >+ Add Member</button>
                     </div>
 
                       {/* Add Staff Form (Top) */}
                       {editingStylist && editingStylist.id === 'new' && (
-                        <div className="card" style={{ marginBottom: 20, padding: 20 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>➕ Add New Staff Member</div>
+                        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New Staff Member</div>
                           <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                             <div>
                               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
@@ -4490,7 +4442,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       )}
 
                       {/* Staff Table */}
-                      <div className="card" style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%", marginBottom: 24 }}>
+                      <div style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
                         <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
                           <input
                             className="inp"
@@ -4621,7 +4573,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           else { const d = await res.json(); showToast(d.message || 'Error adding position', 'error'); }
                         };
                         return (
-                        <div className="card" style={{ padding: 24 }}>
+                        <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", padding: 20, marginTop: 16 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                             <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🪪</div>
                             <div>
@@ -4685,8 +4637,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                   {/* ── Section: System Access ───────────────────────────────── */}
                   {creatableRoles(user.role).length > 0 && (
-                    <div style={{ marginTop: 32 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", marginBottom: 20, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: editingUser?.id === 'new' ? "1px solid #EDE6D8" : "none" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#DBEAFE,#BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💻</div>
                           <div>
@@ -4696,11 +4648,70 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         </div>
                         <button
                           onClick={() => setEditingUser({ id: 'new', username: '', full_name: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
-                          className="btn-gold"
-                          style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, width: "auto" }}
+                          style={{ padding: "7px 16px", fontSize: 12, borderRadius: 8, width: "auto", background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                         >+ Add User</button>
                       </div>
-                      <div className="card" style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+
+                      {/* Add User Form */}
+                      {editingUser && editingUser.id === 'new' && (
+                        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New System User</div>
+                          {/* hidden inputs to trick browser autofill */}
+                          <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
+                          <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+
+                          <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
+                              <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Enter full name" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username</label>
+                              <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username (no spaces)" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
+                              <input className="inp" type="email" autoComplete="off" value={editingUser.email || ''} onChange={e => setEditingUser(prev => ({ ...prev, email: e.target.value }))} placeholder="Enter email" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role</label>
+                              <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
+                                {creatableRoles(user.role).map(([val, label]) => (
+                                  <option key={val} value={val}>{label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password</label>
+                              <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Enter password" />
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!editingUser.username || !editingUser.password) return showToast('Username and password are required', 'error');
+                                  const res = await fetch('/api/users', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({ username: editingUser.username, full_name: editingUser.full_name || '', password: editingUser.password, role: editingUser.role, email: editingUser.email })
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) throw new Error(data.message || 'Error creating user');
+                                  setDbUsers(prev => [...prev, data]);
+                                  setEditingUser(null);
+                                } catch (err) {
+                                  showToast(err.message, 'error');
+                                }
+                              }}
+                              className="btn-gold" style={{ width: "auto", padding: "10px 24px", borderRadius: 8 }}
+                            >Create User</button>
+                            <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px" }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
                         <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
                           <input
                             className="inp"
