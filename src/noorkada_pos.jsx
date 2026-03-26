@@ -1637,7 +1637,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   };
 
   // ── Reprint any saved transaction receipt ────────────────────────────────────
-  const printReceipt = (s) => {
+  const printReceipt = (s, isReprint = false) => {
     printHTML(`<!DOCTYPE html><html><head>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -1671,7 +1671,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       <div class="center">
         <img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />
         <div class="sub">Noor Kada</div>
-        <div style="margin-bottom:8px;"><span class="reprint-badge">** REPRINT **</span></div>
+        ${isReprint ? `<div style="margin-bottom:8px;"><span class="reprint-badge">** REPRINT **</span></div>` : ""}
         <div class="header-info">
           <div class="header-line">Receipt #: ${esc(s.slip)}</div>
           <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time || "")}</div>
@@ -3844,7 +3844,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, background: pc.bg, color: pc.color, padding: "3px 10px", borderRadius: 100 }}>{txn.payMode}</span>
                         <span style={{ fontSize: 16, fontWeight: 800, color: "#2A2118" }}>{fmt(txn.total)}</span>
-                        <button onClick={() => printReceipt(txn)}
+                        <button onClick={() => printReceipt(txn, true)}
                           style={{ fontSize: 11, fontWeight: 600, color: "#6B5040", background: "#F5F0E8", border: "1.5px solid #E0D4C0", borderRadius: 8, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
                           onMouseEnter={e => e.currentTarget.style.background = "#EDE4D4"}
                           onMouseLeave={e => e.currentTarget.style.background = "#F5F0E8"}
@@ -6144,11 +6144,11 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   📋 View in History
                 </button>
                 <button className="btn-gold" style={{ flex: "2 1 auto", padding: "12px 14px", fontSize: 14 }} onClick={() => { setDoneSlip(null); if (tabs.length === 0) addTab(); }}>New Transaction →</button>
-                <button className="btn-ghost" onClick={() => printReceipt(doneSlip)} style={{
+                <button className="btn-ghost" onClick={() => printReceipt(doneSlip, false)} style={{
                   flex: 1, padding: "14px", fontSize: 14, background: "#FFF", display: "flex",
                   alignItems: "center", justifyContent: "center", gap: 6, flexShrink: 0
                 }}>
-                  🖨️ Reprint
+                  🖨️ Print
                 </button>
               </div>
               <div style={{ textAlign: "center", fontSize: 11, color: "#C4B9AB", fontFamily: "'Outfit',sans-serif" }}>{esc(salonName) || 'Noorkada'}{salonAddress ? ` · ${esc(salonAddress)}` : ''}</div>
