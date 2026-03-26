@@ -1653,18 +1653,18 @@ export default function NoorKadaPOS({ user, onLogout }) {
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
         .center{text-align:center;}
-        .header-tag{border:2px solid #000;padding:5px;font-size:11px;font-weight:800;letter-spacing:1.5px;margin-bottom:14px;text-align:center;text-transform:uppercase;color:#000;}
-        .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
-        .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;font-weight:700;color:#000;}
+        .header-tag{border:2px solid #000;padding:5px;font-size:11px;font-weight:600;letter-spacing:1.5px;margin-bottom:14px;text-align:center;text-transform:uppercase;color:#000;}
+        .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+        .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;font-weight:500;color:#000;}
         .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
         .row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;}
-        .row .lbl{font-weight:700;color:#000;}
-        .row .val{font-weight:700;color:#000;text-align:right;}
+        .row .lbl{font-weight:500;color:#000;}
+        .row .val{font-weight:500;color:#000;text-align:right;}
         .svc-list{margin-top:12px;}
         .svc-item{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;border-bottom:1px dashed #000;padding-bottom:8px;}
-        .svc-name{font-size:13px;font-weight:800;color:#000;flex:1;padding-right:10px;}
-        .svc-stylist{font-size:12px;color:#000;font-weight:700;text-align:right;flex-shrink:0;}
-        .footer{text-align:center;font-size:11px;color:#000;margin-top:20px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}
+        .svc-name{font-size:13px;font-weight:600;color:#000;flex:1;padding-right:10px;}
+        .svc-stylist{font-size:12px;color:#000;font-weight:500;text-align:right;flex-shrink:0;}
+        .footer{text-align:center;font-size:11px;color:#000;margin-top:20px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}
         .stars{font-size:14px;letter-spacing:4px;}
         @page{size:79mm auto;margin:2mm;}
         @media print{body{padding:4px;width:75mm;}}
@@ -1873,7 +1873,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
         .tbtn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;padding:7px 16px;border-radius:100px;cursor:pointer;border:1.5px solid #E8E0D4;background:transparent;color:#9A9088;transition:all .18s;letter-spacing:.2px;}
         .tbtn.on{background:#2A2118;color:#FDFAF6;border-color:#2A2118;}
         .tbtn:hover:not(.on){border-color:#C4A870;color:#6B5030;}
-        .btn-gold{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;background:linear-gradient(135deg,#2A2118,#4A3828);color:#F5E6C8;border:none;border-radius:11px;padding:14px;cursor:pointer;width:100%;transition:all .22s;letter-spacing:.4px;box-shadow:0 4px 14px rgba(42,33,24,.25);}
+        .btn-gold{font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;background:linear-gradient(135deg,#2A2118,#4A3828);color:#F5E6C8;border:none;border-radius:11px;padding:14px;cursor:pointer;width:100%;transition:all .22s;letter-spacing:.4px;box-shadow:0 4px 14px rgba(42,33,24,.25);}
         .btn-gold:hover{background:linear-gradient(135deg,#3A3028,#5A4838);box-shadow:0 6px 20px rgba(42,33,24,.32);transform:translateY(-1px);}
         .btn-ghost{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;background:transparent;color:#9A9088;border:1.5px solid #E8E0D4;border-radius:11px;padding:10px;cursor:pointer;width:100%;transition:all .2s;}
         .btn-ghost:hover{border-color:#C4A870;color:#6B5030;background:#FFFDF9;}
@@ -5461,13 +5461,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   const subtotal = (s.cart || []).reduce((sum, i) => sum + (i.price || 0) * (i.qty || 1), 0);
                   printHTML(`<!DOCTYPE html><html><head>
                   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:800;color:#000;}.svc-staff{font-size:11px;font-weight:700;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
+                  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:500;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:600;color:#000;}.svc-staff{font-size:11px;font-weight:500;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:500;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:500;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:600;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
                   <div class="center"><img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" /><div class="sub">Noor Kada</div>
                   <div style="font-size:12px;color:#000;margin-bottom:14px;font-weight:700;">
                     <div>Receipt #: ${esc(s.slip)}</div>
                     <div>Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
-                    <div style="font-weight:800;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
-                    <div style="font-size:11px;font-weight:800;border:1.5px solid #000;display:inline-block;padding:2px 8px;margin-top:6px;">** AMENDED BILL — ${txn.amendments.length} EDIT${txn.amendments.length > 1 ? 'S' : ''} **</div>
+                    <div style="font-weight:600;text-transform:uppercase;">Customer: ${esc(s.customerName || 'Walk-in')}</div>
+                    <div style="font-size:11px;font-weight:600;border:1.5px solid #000;display:inline-block;padding:2px 8px;margin-top:6px;">** AMENDED BILL — ${txn.amendments.length} EDIT${txn.amendments.length > 1 ? 'S' : ''} **</div>
                   </div></div>
                   <div class="divider"></div>
                   <div class="tbl-head"><div style="flex:1;">Service / Staff</div><div style="width:75px;text-align:right;">Amount</div></div>
@@ -5562,24 +5562,24 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       *{margin:0;padding:0;box-sizing:border-box;}
                       body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
                       .center{text-align:center;}
-                      .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
-                      .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;color:#000;}
+                      .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+                      .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:500;color:#000;}
                       .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
-                      .header-line{margin-bottom:3px;font-weight:700;color:#000;}
-                      .cust-name{font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
-                      .amended{font-size:11px;font-weight:800;border:1.5px solid #000;padding:2px 7px;display:inline-block;margin-top:6px;}
+                      .header-line{margin-bottom:3px;font-weight:500;color:#000;}
+                      .cust-name{font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+                      .amended{font-size:11px;font-weight:600;border:1.5px solid #000;padding:2px 7px;display:inline-block;margin-top:6px;}
                       .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
-                      .tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+                      .tbl-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
                       .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
                       .svc-info{flex:1;padding-right:8px;}
-                      .svc-name{font-weight:800;color:#000;}
-                      .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:700;}
-                      .svc-qty{width:30px;text-align:center;font-weight:700;color:#000;}
-                      .svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}
+                      .svc-name{font-weight:600;color:#000;}
+                      .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:500;}
+                      .svc-qty{width:30px;text-align:center;font-weight:500;color:#000;}
+                      .svc-amt{width:75px;text-align:right;font-weight:500;color:#000;}
                       .summary{padding:0 2px;margin-bottom:16px;}
-                      .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}
-                      .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
-                      .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}
+                      .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:500;color:#000;}
+                      .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:600;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+                      .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}
                       .stars{font-size:14px;letter-spacing:4px;}
                       @page{size:79mm auto;margin:2mm;}
                       @media print{body{padding:4px;width:75mm;}}
@@ -6046,24 +6046,24 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     *{margin:0;padding:0;box-sizing:border-box;}
                     body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
                     .center{text-align:center;}
-                    .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
-                    .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;color:#000;}
+                    .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+                    .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:500;color:#000;}
                     .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
-                    .header-line{margin-bottom:3px;font-weight:700;color:#000;}
-                    .cust-name{font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:#000;}
+                    .header-line{margin-bottom:3px;font-weight:500;color:#000;}
+                    .cust-name{font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#000;}
                     .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
-                    .tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+                    .tbl-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
                     .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
                     .svc-info{flex:1;padding-right:8px;}
-                    .svc-name{font-weight:800;color:#000;}
-                    .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:700;}
-                    .svc-qty{width:30px;text-align:center;font-weight:700;color:#000;}
-                    .svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}
-                    .disc-line{font-size:11px;color:#000;font-weight:700;margin-top:2px;}
+                    .svc-name{font-weight:600;color:#000;}
+                    .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:500;}
+                    .svc-qty{width:30px;text-align:center;font-weight:500;color:#000;}
+                    .svc-amt{width:75px;text-align:right;font-weight:500;color:#000;}
+                    .disc-line{font-size:11px;color:#000;font-weight:500;margin-top:2px;}
                     .summary{padding:0 2px;margin-bottom:16px;}
-                    .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}
-                    .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
-                    .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}
+                    .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:500;color:#000;}
+                    .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:600;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+                    .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:500;}
                     .stars{font-size:14px;letter-spacing:4px;}
                     @page{size:79mm auto;margin:2mm;}
                     @media print{body{padding:4px;width:75mm;}}
