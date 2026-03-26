@@ -1462,16 +1462,18 @@ export default function NoorKadaPOS({ user, onLogout }) {
     t.forEach(x => x.cart.forEach(c => { cR[c.category] = (cR[c.category] || 0) + c.price * c.qty; cC[c.category] = (cC[c.category] || 0) + c.qty; sR[c.service] = (sR[c.service] || 0) + c.price * c.qty; sC[c.service] = (sC[c.service] || 0) + c.qty; }));
     const styM = {};
     t.forEach(x => {
-      // Per-item stylist tracking (new) with fallback to transaction-level stylist (old seed data)
+      // txnSty: fallback for old data where per-item stylist wasn't tracked.
+      // Only use transaction-level stylist if it's a single name (no comma = old format).
+      const txnSty = x.stylist && !x.stylist.includes(',') ? x.stylist : "Unassigned";
       x.cart.forEach(c => {
-        const sty = c.stylist || x.stylist || "Unassigned";
+        const sty = c.stylist || txnSty;
         if (!styM[sty]) styM[sty] = { rev: 0, cust: 0, svcs: 0, cats: {} };
         styM[sty].rev += c.price * c.qty;
         styM[sty].svcs += c.qty;
         styM[sty].cats[c.category] = (styM[sty].cats[c.category] || 0) + c.qty;
       });
       // Count customer per transaction under each unique stylist in it
-      const uniqStys = [...new Set(x.cart.map(c => c.stylist || x.stylist || "Unassigned"))];
+      const uniqStys = [...new Set(x.cart.map(c => c.stylist || txnSty))];
       uniqStys.forEach(sty => { if (!styM[sty]) styM[sty] = { rev: 0, cust: 0, svcs: 0, cats: {} }; styM[sty].cust++; });
     });
     const pR = { CASH: 0, ONLINE: 0, SPLIT: 0 }, pC = { CASH: 0, ONLINE: 0, SPLIT: 0 };
