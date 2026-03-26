@@ -3664,28 +3664,44 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 </div>
                 : histTxns.map(txn => {
                   const isAmended = Array.isArray(txn.amendments) && txn.amendments.length > 0;
+                  // Deduplicate stylists for display
+                  const uniqueStylists = [...new Set(
+                    txn.cart.map(c => c.stylist).filter(Boolean).length > 0
+                      ? txn.cart.map(c => c.stylist).filter(Boolean)
+                      : (txn.stylist || "").split(',').map(s => s.trim()).filter(Boolean)
+                  )];
+                  const payColors = { CASH: { bg: "#ECFDF5", color: "#047857" }, ONLINE: { bg: "#EFF6FF", color: "#1D4ED8" }, CARD: { bg: "#F5F3FF", color: "#6D28D9" }, SPLIT: { bg: "#FFF7ED", color: "#C2410C" } };
+                  const pc = payColors[txn.payMode] || payColors.CASH;
                   return (
-                  <div key={txn.id} className="hrow card" style={{ marginBottom: 10, borderLeft: isAmended ? "3px solid #F59E0B" : undefined, background: isAmended ? "#FFFDF7" : undefined }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <div key={txn.id} className="hrow card" style={{ marginBottom: 10, borderLeft: isAmended ? "3px solid #F59E0B" : "3px solid transparent", background: isAmended ? "#FFFDF7" : "#FFF" }}>
+                    {/* Top row: name + actions */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>{txn.customerName}</span>
-                          {txn.customerPhone && <span style={{ fontSize: 11, color: "#B8AFA5", background: "#F5F0E8", padding: "2px 8px", borderRadius: 100 }}>📞 {txn.customerPhone}</span>}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>{txn.customerName}</span>
+                          {txn.customerPhone && <span style={{ fontSize: 11, color: "#9A9088", background: "#F5F0E8", padding: "2px 8px", borderRadius: 100 }}>📞 {txn.customerPhone}</span>}
+                          {isAmended && (
+                            <button onClick={() => setViewingAmendment(txn)}
+                              style={{ fontSize: 10, fontWeight: 600, background: "#FEF3C7", color: "#92400E", borderRadius: 6, padding: "2px 8px", border: "1px solid #FDE68A", cursor: "pointer" }}>
+                              ✏️ {txn.amendments.length} edit{txn.amendments.length > 1 ? "s" : ""}
+                            </button>
+                          )}
                         </div>
-                        <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 3 }}>#{txn.slip} · {txn.date} at {txn.time} · ✂️ {txn.stylist}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, color: "#B8AFA5" }}>#{txn.slip}</span>
+                          <span style={{ fontSize: 11, color: "#B8AFA5" }}>·</span>
+                          <span style={{ fontSize: 11, color: "#9A9088" }}>{txn.date}</span>
+                          {txn.time && <><span style={{ fontSize: 11, color: "#B8AFA5" }}>·</span><span style={{ fontSize: 11, color: "#9A9088" }}>{txn.time}</span></>}
+                          {uniqueStylists.length > 0 && <><span style={{ fontSize: 11, color: "#B8AFA5" }}>·</span>
+                          <span style={{ fontSize: 11, color: "#9A9088" }}>✂️ {uniqueStylists.join(", ")}</span></>}
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span className="badge" style={{ background: txn.payMode === "CASH" ? "#D1FAE5" : txn.payMode === "ONLINE" ? "#DBEAFE" : "#FEF3C7", color: txn.payMode === "CASH" ? "#065F46" : txn.payMode === "ONLINE" ? "#1E40AF" : "#92400E" }}>{txn.payMode}</span>
-                        {isAmended && (
-                          <button onClick={() => setViewingAmendment(txn)}
-                            style={{ fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E", borderRadius: 8, padding: "4px 10px", border: "1px solid #FDE68A", cursor: "pointer", whiteSpace: "nowrap" }}>
-                            ✏️ {txn.amendments.length} edit{txn.amendments.length > 1 ? "s" : ""}
-                          </button>
-                        )}
-                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 16, fontWeight: 600, color: "#2A2118" }}>{fmt(txn.total)}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, background: pc.bg, color: pc.color, padding: "3px 10px", borderRadius: 100 }}>{txn.payMode}</span>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: "#2A2118" }}>{fmt(txn.total)}</span>
                         {ROLE_RANK[user.role] >= 1 && (
                           <button onClick={() => openEditBill(txn)}
-                            style={{ fontFamily: "'Outfit',sans-serif", fontSize: 11, fontWeight: 600, color: "#B08040", background: "#FEF9EE", border: "1.5px solid #F0D98A", borderRadius: 8, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
+                            style={{ fontSize: 11, fontWeight: 600, color: "#B08040", background: "#FEF9EE", border: "1.5px solid #F0D98A", borderRadius: 8, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
                             onMouseEnter={e => e.currentTarget.style.background = "#FDF0C0"}
                             onMouseLeave={e => e.currentTarget.style.background = "#FEF9EE"}>
                             ✏️ Edit
@@ -3693,19 +3709,20 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         )}
                       </div>
                     </div>
+                    {/* Services */}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                       {txn.cart.map((item, i) => {
                         const color = getCatColor(item.service);
-                        const sty = item.stylist || txn.stylist || "";
+                        const sty = item.stylist || "";
                         return (
-                          <span key={i} className="badge" style={{ background: `${color}14`, color, border: `1px solid ${color}28`, padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                            {SERVICES[item.category]?.icon} {item.service}{item.qty > 1 ? ` ×${item.qty}` : ""} · {fmt(item.price * item.qty, true)}
-                            {sty && <span style={{ background: `${color}25`, borderRadius: 100, padding: "0 5px", fontSize: 9, fontWeight: 700 }}>✂️ {sty}</span>}
+                          <span key={i} style={{ background: `${color}12`, color, border: `1px solid ${color}25`, borderRadius: 8, padding: "4px 10px", fontSize: 12, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                            {SERVICES[item.category]?.icon} {item.service}{item.qty > 1 ? ` ×${item.qty}` : ""} <span style={{ color: "#9A9088", fontWeight: 400 }}>· {fmt(item.price * item.qty, true)}</span>
+                            {sty && <span style={{ background: `${color}20`, borderRadius: 100, padding: "1px 6px", fontSize: 10, fontWeight: 700, color }}>✂️ {sty}</span>}
                           </span>
                         );
                       })}
                     </div>
-                    {txn.discount > 0 && <div style={{ fontSize: 10, color: "#A0303F", marginTop: 8 }}>Discount {txn.discount}% applied — saved {fmt(txn.discountAmt)}</div>}
+                    {txn.discount > 0 && <div style={{ fontSize: 11, color: "#A0303F", marginTop: 8, background: "#FFF1F2", borderRadius: 6, padding: "4px 10px", display: "inline-block" }}>🏷️ {txn.discount}% discount · saved {fmt(txn.discountAmt)}</div>}
                   </div>
                   );
                 })
@@ -3868,46 +3885,40 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           )}
 
                           {/* Recent visits */}
-                          <div style={{
-                            fontSize: 11, fontWeight: 600, color: "#9A9088",
-                            textTransform: "uppercase", letterSpacing: .8, marginBottom: 8
-                          }}>📋 Recent Visits</div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 220, overflowY: "auto" }}>
-                            {cl.visits.slice(0, 8).map(t => {
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>📋 Recent Visits</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {cl.visits.slice(0, 6).map(t => {
                               const d = new Date(t.date);
-                              const mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+                              const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()];
+                              const uniqStys = [...new Set(t.cart.map(c => c.stylist).filter(Boolean))];
+                              const styLabel = uniqStys.length ? uniqStys.join(", ") : t.stylist || "Unassigned";
                               return (
-                                <div key={t.id} style={{
-                                  display: "flex", alignItems: "center", gap: 10,
-                                  background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 8, padding: "8px 12px"
-                                }}>
-                                  <div style={{ textAlign: "center", flexShrink: 0, minWidth: 28 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>{d.getDate()}</div>
-                                    <div style={{ fontSize: 9, color: "#B8AFA5", textTransform: "uppercase" }}>{mo}</div>
+                                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 10, padding: "10px 14px" }}>
+                                  <div style={{ textAlign: "center", flexShrink: 0, width: 34, background: "#F5F0E8", borderRadius: 8, padding: "4px 0" }}>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", lineHeight: 1 }}>{d.getDate()}</div>
+                                    <div style={{ fontSize: 9, color: "#B8AFA5", textTransform: "uppercase", fontWeight: 600 }}>{mo}</div>
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                      fontSize: 12, color: "#3D3028", fontWeight: 500,
-                                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
-                                    }}>
+                                    <div style={{ fontSize: 12, color: "#2A2118", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                       {t.cart.map(i => i.service).join(", ")}
                                     </div>
-                                    <div style={{ fontSize: 10, color: "#B8AFA5", marginTop: 1 }}>✂️ {t.stylist}</div>
+                                    <div style={{ fontSize: 10, color: "#B8AFA5", marginTop: 2 }}>✂️ {styLabel}</div>
                                   </div>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#B08040", flexShrink: 0 }}>{fmt(t.total, true)}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 800, color: "#2A2118", flexShrink: 0 }}>{fmt(t.total, true)}</div>
                                 </div>
                               );
                             })}
                           </div>
 
                           {/* Jump to transactions */}
-                          <button onClick={() => { setHTab("transactions"); setHQ(cl.phone || cl.name); }}
+                          <button onClick={() => { setView("history"); setHTab("transactions"); setHRange("all"); setHQ(cl.phone || cl.name); }}
                             style={{
                               marginTop: 12, width: "100%", fontFamily: "'Outfit',sans-serif",
-                              fontSize: 12, fontWeight: 600, color: "#B08040", background: "#FBF6EE",
-                              border: "1.5px solid #EDE6D8", borderRadius: 8, padding: "8px", cursor: "pointer"
+                              fontSize: 13, fontWeight: 700, color: "#FFF", background: "#2A2118",
+                              border: "none", borderRadius: 10, padding: "11px", cursor: "pointer",
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                             }}>
-                            View all {cl.visits.length} transactions →
+                            📋 View all {cl.visits.length} transactions →
                           </button>
                         </div>
                       )}
