@@ -1447,7 +1447,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
     let t = transactions;
     if (dashCFrom || dashCTo) t = t.filter(x => (!dashCFrom || x.date >= dashCFrom) && (!dashCTo || x.date <= dashCTo));
     else { const days = dashRange === "today" ? 1 : dashRange === "7d" ? 7 : dashRange === "30d" ? 30 : dashRange === "90d" ? 90 : 99999; const cut = new Date(); cut.setDate(cut.getDate() - days); t = t.filter(x => new Date(x.date) >= cut); }
-    if (fStylist) t = t.filter(x => x.stylist === fStylist);
+    if (fStylist) t = t.filter(x =>
+      x.cart.some(c => c.stylist === fStylist) ||
+      (!x.stylist?.includes(',') && x.stylist === fStylist)
+    );
     if (fPay) t = t.filter(x => x.payMode === fPay);
     if (fCat) t = t.filter(x => x.cart.some(c => c.category === fCat));
     return t;
@@ -1715,7 +1718,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     return t.filter(x =>
       (!q || x.customerName.toLowerCase().includes(q) || x.slip.toLowerCase().includes(q) || (x.customerPhone || "").includes(q)) &&
       (!hDate || x.date === hDate) &&
-      (!hSty || x.stylist.includes(hSty)) &&
+      (!hSty || x.cart.some(c => (c.stylist || "Unassigned") === hSty) || (!x.stylist?.includes(',') && x.stylist === hSty)) &&
       (!hCat || x.cart.some(c => c.category === hCat)) &&
       (!hPay || x.payMode === hPay)
     );
@@ -2843,7 +2846,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 <div className="filter-label">Stylist</div>
                 <select className="inp" value={fStylist} onChange={e => setFStylist(e.target.value)} style={{ width: 136, padding: "5px 10px", fontSize: 12 }}>
                   <option value="">All Stylists</option>
-                  {dbStylists.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                  {[...new Set([...dbStylists.map(s => s.name), ...Object.keys(S.styM)])].filter(n => n && n !== "Unassigned").sort().map(n => <option key={n} value={n}>{n}</option>)}
+                  <option value="Unassigned">Unassigned</option>
                 </select>
               </div>
               <div>
@@ -3043,7 +3047,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Revenue Leaderboard</div>
                   {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data], i) => {
                     const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
-                    const color = dbStylists.find(s => s.name === name)?.color || "#B08040";
+                    const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
                     const medals = ["🥇", "🥈", "🥉"];
                     return (
                       <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11, padding: "10px 12px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
@@ -3065,7 +3069,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 500 }}>
                   {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
-                    const color = dbStylists.find(s => s.name === name)?.color || "#B08040";
+                    const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
                     const topCat = Object.entries(data.cats).sort((a, b) => b[1] - a[1])[0];
                     const avg = data.cust ? Math.round(data.rev / data.cust) : 0;
                     return (
@@ -3098,7 +3102,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
                     const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
                     const h = Math.max(Math.round((data.rev / mx) * 96), 4);
-                    const color = dbStylists.find(s => s.name === name)?.color || "#B08040";
+                    const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
                     return (
                       <div key={name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                         <div style={{ fontSize: 11, color, fontWeight: 600 }}>{fmt(data.rev, true)}</div>
@@ -3446,7 +3450,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     <div className="filter-label">Stylist</div>
                     <select className="inp" value={hSty} onChange={e => setHSty(e.target.value)} style={{ width: 136, padding: "5px 10px", fontSize: 12 }}>
                       <option value="">All Stylists</option>
-                      {dbStylists.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                      {[...new Set([...dbStylists.map(s => s.name), ...transactions.flatMap(x => x.cart.map(c => c.stylist)).filter(Boolean)])].filter(n => n !== "Unassigned").sort().map(n => <option key={n} value={n}>{n}</option>)}
+                      <option value="Unassigned">Unassigned</option>
                     </select>
                   </div>
                   <div>
