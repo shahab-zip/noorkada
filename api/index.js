@@ -496,7 +496,7 @@ app.post('/api/users', requireRole('manager'), async (req, res) => {
   const full_name = sanitizeStr(req.body.full_name, 100);
   if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
   if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
-  if (!ROLE_RANK[role]) return res.status(400).json({ message: 'Invalid role' });
+  if (!(role in ROLE_RANK)) return res.status(400).json({ message: 'Invalid role' });
   const actorRank = ROLE_RANK[req.user.role] || 0;
   const targetRank = ROLE_RANK[role] || 1;
   if (targetRank >= actorRank) return res.status(403).json({ message: 'Cannot create a user with equal or higher role' });
