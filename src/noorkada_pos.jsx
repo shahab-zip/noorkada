@@ -3043,79 +3043,204 @@ export default function NoorKadaPOS({ user, onLogout }) {
           {/* ─ STYLISTS ─ */}
           {dashTab === "stylists" && (
             <div className="fade">
-              <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                <div className="card">
-                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Revenue Leaderboard</div>
-                  {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data], i) => {
-                    const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
-                    const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
-                    const medals = ["🥇", "🥈", "🥉"];
-                    return (
-                      <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11, padding: "10px 12px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
-                        <div style={{ fontSize: 17, width: 24, textAlign: "center" }}>{medals[i] || <span style={{ fontSize: 11, color: "#C4B9AB", fontFamily: "'Outfit',sans-serif" }}>#{i + 1}</span>}</div>
-                        <div style={{ width: 34, height: 34, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit',sans-serif", fontSize: 15, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118", marginBottom: 4 }}>{name}</div>
-                          <ProgBar pct={Math.round(data.rev / mx * 100)} color={color} h={4} />
+              {fStylist ? (() => {
+                // ── Stylist Profile View ──
+                const sData = S.styM[fStylist] || { rev: 0, cust: 0, svcs: 0, cats: {} };
+                const color = dbStylists.find(s => s.name === fStylist)?.color || (fStylist === "Unassigned" ? "#C4B9AB" : "#B08040");
+                const avg = sData.cust ? Math.round(sData.rev / sData.cust) : 0;
+                const topCat = Object.entries(sData.cats).sort((a, b) => b[1] - a[1])[0];
+                // Per-service breakdown for this stylist
+                const svcBreakdown = {};
+                ranged.forEach(x => {
+                  x.cart.forEach(c => {
+                    const sty = c.stylist || (x.stylist && !x.stylist.includes(',') ? x.stylist : "Unassigned");
+                    if (sty !== fStylist) return;
+                    if (!svcBreakdown[c.service]) svcBreakdown[c.service] = { rev: 0, qty: 0, category: c.category };
+                    svcBreakdown[c.service].rev += c.price * c.qty;
+                    svcBreakdown[c.service].qty += c.qty;
+                  });
+                });
+                // Transactions where this stylist did at least one service
+                const styTxns = ranged.filter(x =>
+                  x.cart.some(c => c.stylist === fStylist) ||
+                  (x.stylist || "").split(',').map(s => s.trim()).includes(fStylist)
+                ).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+
+                return (
+                  <div>
+                    {/* Profile header */}
+                    <div className="card" style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                        <div style={{ width: 56, height: 56, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#FFF", flexShrink: 0 }}>{fStylist[0]}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: "#2A2118" }}>{fStylist}</div>
+                          <div style={{ fontSize: 12, color: "#9A9088", marginTop: 2 }}>{sData.svcs} services performed · {sData.cust} clients served</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
-                          <div style={{ fontSize: 12, color: "#B8AFA5" }}>{data.cust} clients</div>
+                          <div style={{ fontSize: 24, fontWeight: 800, color: "#2A2118" }}>{fmt(sData.rev, true)}</div>
+                          <div style={{ fontSize: 12, color: "#9A9088" }}>Avg ticket: {fmt(avg, true)}</div>
                         </div>
                       </div>
-                    );
-                  })}
-                  {!Object.keys(S.styM).length && <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data yet</div>}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 500 }}>
-                  {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
-                    const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
-                    const topCat = Object.entries(data.cats).sort((a, b) => b[1] - a[1])[0];
-                    const avg = data.cust ? Math.round(data.rev / data.cust) : 0;
-                    return (
-                      <div key={name} className="card-sm" style={{ borderLeft: `3px solid ${color}` }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit',sans-serif", fontSize: 19, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14, color: "#2A2118", letterSpacing: .2 }}>{name}</div>
-                            <div style={{ fontSize: 11, color: "#B8AFA5" }}>{data.svcs} services</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginTop: 16 }}>
+                        {[["Total Revenue", fmt(sData.rev, true)], ["Clients", sData.cust], ["Services", sData.svcs], ["Specialty", topCat?.[0] || "—"]].map(([l, v]) => (
+                          <div key={l} style={{ background: "#FDFAF6", borderRadius: 10, padding: "12px 14px", border: "1px solid #EDE6D8" }}>
+                            <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 600 }}>{l}</div>
+                            <div style={{ fontSize: 15, color: "#2A2118", fontWeight: 700, marginTop: 5 }}>{v}</div>
                           </div>
-                          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
-                          {[["Clients", data.cust], ["Avg Ticket", fmt(avg, true)], ["Specialty", topCat?.[0] || "—"]].map(([l, v]) => (
-                            <div key={l} style={{ background: "#FDFAF6", borderRadius: 8, padding: "8px 9px", border: "1px solid #EDE6D8" }}>
-                              <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 500 }}>{l}</div>
-                              <div style={{ fontSize: 13, color: "#6B5030", fontWeight: 600, marginTop: 4 }}>{v}</div>
-                            </div>
-                          ))}
-                        </div>
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    </div>
 
-              <div className="card">
-                <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Performance Comparison</div>
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 110 }}>
-                  {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
-                    const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
-                    const h = Math.max(Math.round((data.rev / mx) * 96), 4);
-                    const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
-                    return (
-                      <div key={name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                        <div style={{ fontSize: 11, color, fontWeight: 600 }}>{fmt(data.rev, true)}</div>
-                        <div style={{ width: "100%", height: h, background: color, borderRadius: "5px 5px 0 0", opacity: .8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ fontSize: 11, color: "#FFF", fontWeight: 600 }}>{data.cust}</span>
-                        </div>
-                        <div style={{ fontSize: 10, color: "#9A9088" }}>{name.slice(0, 6)}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                      {/* Services breakdown */}
+                      <div className="card">
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>Services Breakdown</div>
+                        {Object.entries(svcBreakdown).sort((a, b) => b[1].rev - a[1].rev).length === 0
+                          ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 16 }}>No services found</div>
+                          : Object.entries(svcBreakdown).sort((a, b) => b[1].rev - a[1].rev).map(([svc, d]) => {
+                            const mxSvc = Math.max(...Object.values(svcBreakdown).map(s => s.rev), 1);
+                            const col = getCatColor(svc, d.category);
+                            return (
+                              <div key={svc} style={{ marginBottom: 10 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                                  <span style={{ color: "#2A2118", fontWeight: 600 }}>{svc}</span>
+                                  <span style={{ color: "#9A9088" }}>{d.qty}× · {fmt(d.rev, true)}</span>
+                                </div>
+                                <ProgBar pct={Math.round(d.rev / mxSvc * 100)} color={col} h={4} />
+                              </div>
+                            );
+                          })}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+
+                      {/* Category distribution */}
+                      <div className="card">
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>Category Distribution</div>
+                        {Object.entries(sData.cats).sort((a, b) => b[1] - a[1]).map(([cat, qty]) => {
+                          const mxCat = Math.max(...Object.values(sData.cats), 1);
+                          const catRev = Object.entries(svcBreakdown).filter(([, d]) => d.category === cat).reduce((s, [, d]) => s + d.rev, 0);
+                          const col = getCatColor("", cat);
+                          return (
+                            <div key={cat} style={{ marginBottom: 10 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                                <span style={{ color: "#2A2118", fontWeight: 600 }}>{cat}</span>
+                                <span style={{ color: "#9A9088" }}>{qty} services · {fmt(catRev, true)}</span>
+                              </div>
+                              <ProgBar pct={Math.round(qty / mxCat * 100)} color={col} h={4} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Full service history */}
+                    <div className="card">
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 14 }}>Service History <span style={{ fontSize: 12, color: "#9A9088", fontWeight: 400 }}>({styTxns.length} transactions)</span></div>
+                      {styTxns.length === 0
+                        ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 16 }}>No history found</div>
+                        : styTxns.map(txn => {
+                          const myItems = txn.cart.filter(c => c.stylist === fStylist || (!c.stylist && (txn.stylist || "").split(',').map(s => s.trim()).includes(fStylist)));
+                          const myRev = myItems.reduce((s, c) => s + c.price * c.qty, 0);
+                          return (
+                            <div key={txn.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 0", borderBottom: "1px solid #F0EAE0" }}>
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#F5F0E8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>👤</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>{txn.customerName}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>{fmt(myRev, true)}</span>
+                                </div>
+                                <div style={{ fontSize: 11, color: "#9A9088", marginBottom: 5 }}>#{txn.slip} · {txn.date} at {txn.time}</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                                  {myItems.map((c, i) => (
+                                    <span key={i} style={{ fontSize: 11, background: `${getCatColor(c.service, c.category)}14`, color: getCatColor(c.service, c.category), border: `1px solid ${getCatColor(c.service, c.category)}28`, borderRadius: 100, padding: "2px 9px", fontWeight: 600 }}>
+                                      {c.service}{c.qty > 1 ? ` ×${c.qty}` : ""} · {fmt(c.price * c.qty, true)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                );
+              })() : (
+                // ── All-Stylists Leaderboard ──
+                <>
+                  <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                    <div className="card">
+                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Revenue Leaderboard</div>
+                      {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data], i) => {
+                        const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
+                        const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
+                        const medals = ["🥇", "🥈", "🥉"];
+                        return (
+                          <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11, padding: "10px 12px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
+                            <div style={{ fontSize: 17, width: 24, textAlign: "center" }}>{medals[i] || <span style={{ fontSize: 11, color: "#C4B9AB" }}>#{i + 1}</span>}</div>
+                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118", marginBottom: 4 }}>{name}</div>
+                              <ProgBar pct={Math.round(data.rev / mx * 100)} color={color} h={4} />
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
+                              <div style={{ fontSize: 12, color: "#B8AFA5" }}>{data.cust} clients</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {!Object.keys(S.styM).length && <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data yet</div>}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 500 }}>
+                      {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
+                        const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
+                        const topCat = Object.entries(data.cats).sort((a, b) => b[1] - a[1])[0];
+                        const avg = data.cust ? Math.round(data.rev / data.cust) : 0;
+                        return (
+                          <div key={name} className="card-sm" style={{ borderLeft: `3px solid ${color}` }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                              <div style={{ width: 40, height: 40, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 14, color: "#2A2118" }}>{name}</div>
+                                <div style={{ fontSize: 11, color: "#B8AFA5" }}>{data.svcs} services</div>
+                              </div>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
+                              {[["Clients", data.cust], ["Avg Ticket", fmt(avg, true)], ["Specialty", topCat?.[0] || "—"]].map(([l, v]) => (
+                                <div key={l} style={{ background: "#FDFAF6", borderRadius: 8, padding: "8px 9px", border: "1px solid #EDE6D8" }}>
+                                  <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 500 }}>{l}</div>
+                                  <div style={{ fontSize: 13, color: "#6B5030", fontWeight: 600, marginTop: 4 }}>{v}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Performance Comparison</div>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 110 }}>
+                      {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
+                        const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
+                        const h = Math.max(Math.round((data.rev / mx) * 96), 4);
+                        const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
+                        return (
+                          <div key={name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                            <div style={{ fontSize: 11, color: "#2A2118", fontWeight: 600 }}>{fmt(data.rev, true)}</div>
+                            <div style={{ width: "100%", height: h, background: color, borderRadius: "5px 5px 0 0", opacity: .8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ fontSize: 11, color: "#FFF", fontWeight: 600 }}>{data.cust}</span>
+                            </div>
+                            <div style={{ fontSize: 10, color: "#9A9088" }}>{name.slice(0, 8)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
