@@ -3284,74 +3284,126 @@ export default function NoorKadaPOS({ user, onLogout }) {
           )}
 
           {/* ─ TIME ─ */}
-          {dashTab === "time" && (
-            <div className="fade">
-              <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                <div className="card">
-                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Daily Customers</div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80, marginBottom: 6 }}>
-                    {S.cstD.map((v, i) => {
-                      const mx = Math.max(...S.cstD, 1), h = Math.max(Math.round((v / mx) * 72), v > 0 ? 3 : 1);
-                      const isToday = i === S.cstD.length - 1;
-                      return (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 2 }}>
-                          {v > 0 && <div style={{ fontSize: 7, color: isToday ? "#B08040" : "#D4C4A8" }}>{v}</div>}
-                          <div style={{ width: "100%", height: h, background: isToday ? "#B08040" : v > 0 ? "#C4A870" : "#EEE6D8", borderRadius: "2px 2px 0 0", minHeight: 3 }} />
-                        </div>
-                      );
-                    })}
+          {dashTab === "time" && (() => {
+            const totalVisits = ranged.length;
+            const activeDays = S.cstD.filter(v => v > 0).length || 1;
+            const avgDaily = Math.round(totalVisits / activeDays);
+            const peakDay = DAYS[S.dR.indexOf(Math.max(...S.dR))];
+            const peakDayVisits = Math.max(...S.dR);
+            const dxMR = Math.max(...Object.values(S.mR), 1);
+            const monthEntries = Object.entries(S.mR).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
+            return (
+              <div className="fade">
+                {/* KPI strip */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
+                  {[
+                    { label: "Total Visits", value: totalVisits, sub: "in selected period", icon: "👥" },
+                    { label: "Avg Per Active Day", value: avgDaily, sub: "clients / day", icon: "📈" },
+                    { label: "Busiest Day", value: peakDay, sub: `${peakDayVisits} visits`, icon: "🔥" },
+                    { label: "Active Days", value: activeDays, sub: "days with visits", icon: "📅" },
+                  ].map(k => (
+                    <div key={k.label} className="card" style={{ padding: "14px 16px" }}>
+                      <div style={{ fontSize: 20, marginBottom: 6 }}>{k.icon}</div>
+                      <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 600, marginBottom: 4 }}>{k.label}</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: "#2A2118", lineHeight: 1 }}>{k.value}</div>
+                      <div style={{ fontSize: 11, color: "#9A9088", marginTop: 4 }}>{k.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Daily trend + Monthly Revenue */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  {/* Daily trend */}
+                  <div className="card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Daily Customers</div>
+                      <div style={{ fontSize: 11, color: "#9A9088" }}>Last {S.cstD.length} days</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 96, marginBottom: 8 }}>
+                      {S.cstD.map((v, i) => {
+                        const mx = Math.max(...S.cstD, 1);
+                        const h = Math.max(Math.round((v / mx) * 88), v > 0 ? 4 : 2);
+                        const isToday = i === S.cstD.length - 1;
+                        const isPeak = v === mx && mx > 0;
+                        return (
+                          <div key={i} title={`${v} visits`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
+                            {(isToday || isPeak) && v > 0 && <div style={{ fontSize: 8, fontWeight: 700, color: isToday ? "#B08040" : "#9A9088" }}>{v}</div>}
+                            <div style={{ width: "100%", height: h, background: isToday ? "#B08040" : isPeak ? "#C4903A" : v > 0 ? "#DDD0B0" : "#F0EAE0", borderRadius: "3px 3px 0 0", minHeight: 2 }} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#C4B9AB" }}>
+                      <span>Earlier</span>
+                      <span style={{ color: "#B08040", fontWeight: 700 }}>Today</span>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#B8AFA5" }}><span>Earlier</span><span style={{ color: "#B08040", fontWeight: 600 }}>Today</span></div>
-                </div>
-                <div className="card">
-                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Monthly Revenue</div>
-                  {Object.entries(S.mR).sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([month, rev]) => {
-                    const mx = Math.max(...Object.values(S.mR), 1);
-                    const [yr, mo] = month.split("-");
-                    return (
-                      <div key={month} style={{ marginBottom: 10 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-                          <span style={{ color: "#9A9088" }}>{MONTHS[parseInt(mo) - 1]} {yr}</span>
-                          <span style={{ color: "#B08040", fontWeight: 600 }}>{fmt(rev, true)}</span>
-                        </div>
-                        <ProgBar pct={Math.round(rev / mx * 100)} color="#B08040" />
-                      </div>
-                    );
-                  })}
-                  {!Object.keys(S.mR).length && <div style={{ fontSize: 12, color: "#C4B9AB", padding: 20 }}>No data</div>}
-                </div>
-              </div>
-              <div className="card" style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118" }}>Client Flow Analysis</div>
-                    <div style={{ fontSize: 12, color: "#B8AFA5", marginTop: 2 }}>Hourly and daily visit patterns</div>
+
+                  {/* Monthly Revenue */}
+                  <div className="card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Monthly Revenue</div>
+                      <div style={{ fontSize: 11, color: "#9A9088" }}>Last 6 months</div>
+                    </div>
+                    {!monthEntries.length
+                      ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data</div>
+                      : monthEntries.map(([month, rev], idx) => {
+                        const [yr, mo] = month.split("-");
+                        const isLatest = idx === monthEntries.length - 1;
+                        const pct = Math.round(rev / dxMR * 100);
+                        return (
+                          <div key={month} style={{ marginBottom: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                              <span style={{ fontSize: 12, color: isLatest ? "#2A2118" : "#9A9088", fontWeight: isLatest ? 700 : 400 }}>{MONTHS[parseInt(mo) - 1]} {yr}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: isLatest ? "#B08040" : "#9A9088" }}>{fmt(rev, true)}</span>
+                            </div>
+                            <ProgBar pct={pct} color={isLatest ? "#B08040" : "#D4C4A8"} h={6} />
+                          </div>
+                        );
+                      })}
                   </div>
-                  <div style={{ fontSize: 11, color: "#C4B9AB" }}>{ranged.length} total visits</div>
                 </div>
-                <ClientFlow data={S.hm} isMobile={isMobile} />
-              </div>
-              <div className="card">
-                <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Day-of-Week Breakdown</div>
-                <div className="catstrip" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: isMobile ? 8 : 0 }}>
+
+                {/* Day-of-Week — full-width horizontal bars */}
+                <div className="card" style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Busiest Days of the Week</div>
+                      <div style={{ fontSize: 12, color: "#B8AFA5", marginTop: 2 }}>Revenue & visits by weekday</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#B8AFA5" }}>{totalVisits} total visits</div>
+                  </div>
                   {DAYS.map((day, i) => {
-                    const mx = Math.max(...S.dR, 1), pct = Math.round(S.dR[i] / mx * 100) || 0;
-                    const best = S.dR[i] === Math.max(...S.dR);
+                    const mxR = Math.max(...S.dR, 1);
+                    const pct = Math.round(S.dR[i] / mxR * 100);
+                    const best = S.dR[i] === mxR;
                     return (
-                      <div key={day} style={{ background: "#FDFAF6", borderRadius: 10, padding: 12, border: `1.5px solid ${best ? "#C4A870" : "#EDE6D8"}`, textAlign: "center", flexShrink: 0, minWidth: isMobile ? 100 : "auto" }}>
-                        <div style={{ fontSize: 10, color: best ? "#B08040" : "#9A9088", fontWeight: best ? 600 : 400, marginBottom: 8 }}>{day}</div>
-                        <div style={{ height: 48, display: "flex", alignItems: "flex-end", justifyContent: "center", marginBottom: 7 }}>
-                          <div style={{ width: 20, height: `${pct || 2}%`, background: best ? "#B08040" : "#D4C4A8", borderRadius: "3px 3px 0 0", minHeight: 3 }} />
+                      <div key={day} style={{ display: "grid", gridTemplateColumns: "52px 1fr 90px 60px", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: best ? 700 : 500, color: best ? "#2A2118" : "#9A9088" }}>{day}{best ? " 🔥" : ""}</div>
+                        <div style={{ position: "relative", height: 10, background: "#F0EAE0", borderRadius: 100, overflow: "hidden" }}>
+                          <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct || 1}%`, background: best ? "#B08040" : "#D4C4A8", borderRadius: 100, transition: "width .4s ease" }} />
                         </div>
-                        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600, color: best ? "#2A2118" : "#9A9088" }}>{fmt(S.dR[i], true)}</div>
-                        <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 3 }}>{S.dC[i]} visits</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: best ? "#2A2118" : "#9A9088", textAlign: "right" }}>{fmt(S.dR[i], true)}</div>
+                        <div style={{ fontSize: 11, color: "#B8AFA5", textAlign: "right" }}>{S.dC[i]} visits</div>
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Client Flow Analysis */}
+                <div className="card">
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Client Flow Analysis</div>
+                      <div style={{ fontSize: 12, color: "#B8AFA5", marginTop: 2 }}>Hourly visit patterns across the day</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#C4B9AB" }}>{totalVisits} total visits</div>
+                  </div>
+                  <ClientFlow data={S.hm} isMobile={isMobile} />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ─ DISCOUNTS ─ */}
           {dashTab === "discounts" && (() => {
