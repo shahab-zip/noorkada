@@ -60,8 +60,8 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 }
 
 // ── Role hierarchy ─────────────────────────────────────────────────────────────
-// receptionist(1) < manager(2) < admin(3) < superadmin(4)
-const ROLE_RANK = { receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
+// staff(0) < receptionist(1) < manager(2) < admin(3) < superadmin(4)
+const ROLE_RANK = { staff: 0, receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
 
 // ── In-memory rate limiter (login brute-force protection) ──────────────────────
 // Stores { attempts, resetAt } per IP. Resets after WINDOW_MS.
@@ -119,6 +119,24 @@ const requireRole = (minRole) => (req, res, next) =>
       return res.status(403).json({ message: 'Insufficient permissions' });
     }
     next();
+  });
+
+// ── Staff-only rate limiter (100 req/min per user) ────────────────────────────
+const STAFF_RATE_MAP = new Map();
+const staffApiRateLimit = (userId, res, next) => {
+  const now = Date.now();
+  let e = STAFF_RATE_MAP.get(userId);
+  if (!e || now > e.resetAt) { e = { count: 0, resetAt: now + 60000 }; STAFF_RATE_MAP.set(userId, e); }
+  e.count++;
+  if (e.count > 100) return res.status(429).json({ message: 'Rate limit exceeded. Try again shortly.' });
+  next();
+};
+
+// ── Staff-only middleware (role must be exactly 'staff') ──────────────────────
+const requireStaff = (req, res, next) =>
+  auth(req, res, () => {
+    if (req.user?.role !== 'staff') return res.status(403).json({ message: 'Access denied. Staff only.' });
+    staffApiRateLimit(req.user.id, res, next);
   });
 
 // ── Input helpers ──────────────────────────────────────────────────────────────
@@ -581,6 +599,235 @@ app.post('/api/settings/branding', requireRole('manager'), async (req, res) => {
   await supabase.from('settings').upsert({ key: 'branding', value: { salonName, salonLogo, salonAddress, showSalonName } });
   log(req.user, 'UPDATE_BRANDING', 'settings', 'branding', null);
   res.json({ success: true });
+});
+
+// ── Staff Dashboard Endpoints (role === 'staff' only) ─────────────────────────
+
+// Helper: parse & validate date string YYYY-MM-DD
+const parseDate = (d) => {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  const dt = new Date(d + 'T00:00:00Z');
+  return isNaN(dt.getTime()) ? null : d;
+};
+
+// Compute summary stats from transactions for a staff member's name
+const buildSummary = (txns, staffName) => {
+  let totalServices = 0, totalRevenue = 0;
+  const clientSet = new Set();
+  const serviceBreakdown = {};
+  const dailyMap = {};
+  for (const txn of (txns || [])) {
+    let txnHasStaff = false;
+    for (const item of (txn.cart || [])) {
+      if (item.stylist !== staffName) continue;
+      txnHasStaff = true;
+      const qty = item.qty || 1;
+      const rev = (item.price || 0) * qty;
+      totalServices += qty;
+      totalRevenue += rev;
+      const svc = item.service || 'Unknown';
+      if (!serviceBreakdown[svc]) serviceBreakdown[svc] = { count: 0, revenue: 0 };
+      serviceBreakdown[svc].count += qty;
+      serviceBreakdown[svc].revenue += rev;
+      const day = txn.created_at ? txn.created_at.slice(0, 10) : 'unknown';
+      if (!dailyMap[day]) dailyMap[day] = { revenue: 0, services: 0 };
+      dailyMap[day].revenue += rev;
+      dailyMap[day].services += qty;
+    }
+    if (txnHasStaff) {
+      clientSet.add((txn.cust_phone || '') + '|' + (txn.cust_name || '') + '|' + txn.id);
+    }
+  }
+  return {
+    totalServices, totalRevenue,
+    totalClients: clientSet.size,
+    serviceBreakdown: Object.entries(serviceBreakdown)
+      .map(([name, v]) => ({ service_name: name, count: v.count, revenue: v.revenue }))
+      .sort((a, b) => b.revenue - a.revenue),
+    dailyMap,
+  };
+};
+
+// GET /api/staff/me/summary?date=YYYY-MM-DD or ?range=today|week|month
+app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
+  const staffName = req.user.full_name;
+  if (!staffName) return res.status(400).json({ message: 'Staff profile incomplete — full_name required' });
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let dateStart, dateEnd, dateLabel;
+
+  const range = sanitizeStr(req.query.range, 10);
+  if (range === 'week') {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - 6);
+    dateStart = d.toISOString().slice(0, 10);
+    dateEnd = todayStr;
+    dateLabel = 'week';
+  } else if (range === 'month') {
+    dateStart = todayStr.slice(0, 7) + '-01';
+    dateEnd = todayStr;
+    dateLabel = 'month';
+  } else {
+    const rawDate = sanitizeStr(req.query.date, 10) || todayStr;
+    dateStart = parseDate(rawDate);
+    if (!dateStart) return res.status(400).json({ message: 'Invalid date. Use YYYY-MM-DD' });
+    dateEnd = dateStart;
+    dateLabel = dateStart;
+  }
+
+  try {
+    const { data: txns, error } = await supabase
+      .from('transactions')
+      .select('id, cart, cust_name, cust_phone, created_at')
+      .gte('created_at', dateStart + 'T00:00:00.000Z')
+      .lte('created_at', dateEnd + 'T23:59:59.999Z')
+      .order('created_at', { ascending: false })
+      .limit(2000);
+    if (error) throw error;
+
+    const { totalServices, totalRevenue, totalClients, serviceBreakdown, dailyMap } = buildSummary(txns, staffName);
+
+    // Build daily breakdown for week/month view (for bar chart)
+    const dailyBreakdown = [];
+    if (dateStart !== dateEnd) {
+      const cur = new Date(dateStart + 'T00:00:00Z');
+      const end = new Date(dateEnd + 'T00:00:00Z');
+      while (cur <= end) {
+        const d = cur.toISOString().slice(0, 10);
+        dailyBreakdown.push({ date: d, revenue: dailyMap[d]?.revenue || 0, services: dailyMap[d]?.services || 0 });
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+    }
+
+    res.json({
+      staff_id: req.user.id,
+      staff_name: staffName,
+      date: dateLabel,
+      date_start: dateStart,
+      date_end: dateEnd,
+      total_services: totalServices,
+      total_clients_served: totalClients,
+      total_revenue_generated: totalRevenue,
+      currency: 'PKR',
+      services_breakdown: serviceBreakdown,
+      daily_breakdown: dailyBreakdown,
+    });
+  } catch (err) {
+    console.error('Staff summary error:', err);
+    res.status(500).json({ message: 'Failed to load summary. Please try again.' });
+  }
+});
+
+// GET /api/staff/me/services?date=YYYY-MM-DD&page=1&limit=50
+app.get('/api/staff/me/services', requireStaff, async (req, res) => {
+  const staffName = req.user.full_name;
+  if (!staffName) return res.status(400).json({ message: 'Staff profile incomplete' });
+
+  const rawDate = sanitizeStr(req.query.date, 10) || new Date().toISOString().slice(0, 10);
+  const date = parseDate(rawDate);
+  if (!date) return res.status(400).json({ message: 'Invalid date. Use YYYY-MM-DD' });
+
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 50));
+  const offset = (page - 1) * limit;
+
+  try {
+    const { data: txns, error } = await supabase
+      .from('transactions')
+      .select('id, slip, cart, cust_name, cust_phone, pay_mode, total, created_at')
+      .gte('created_at', date + 'T00:00:00.000Z')
+      .lte('created_at', date + 'T23:59:59.999Z')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+
+    const rows = [];
+    for (const txn of (txns || [])) {
+      for (const item of (txn.cart || [])) {
+        if (item.stylist !== staffName) continue;
+        rows.push({
+          txn_id: txn.id,
+          slip: txn.slip || '',
+          service: item.service || 'Unknown',
+          category: item.category || '',
+          qty: item.qty || 1,
+          price: item.price || 0,
+          revenue: (item.price || 0) * (item.qty || 1),
+          customer: txn.cust_name || 'Walk-in',
+          time: txn.created_at,
+        });
+      }
+    }
+
+    res.json({
+      data: rows.slice(offset, offset + limit),
+      pagination: { page, limit, total: rows.length, pages: Math.ceil(rows.length / limit) || 1 },
+    });
+  } catch (err) {
+    console.error('Staff services error:', err);
+    res.status(500).json({ message: 'Failed to load services. Please try again.' });
+  }
+});
+
+// GET /api/staff/admin/:staffId/summary (manager+ can view any staff member's summary)
+app.get('/api/staff/admin/:staffId/summary', requireRole('manager'), async (req, res) => {
+  const staffUserId = parseInt(req.params.staffId);
+  if (!Number.isInteger(staffUserId)) return res.status(400).json({ message: 'Invalid staff ID' });
+
+  const { data: staffUser } = await supabase.from('users').select('id, full_name, role').eq('id', staffUserId).single();
+  if (!staffUser) return res.status(404).json({ message: 'Staff member not found' });
+  if (staffUser.role !== 'staff') return res.status(400).json({ message: 'User is not a staff member' });
+
+  const staffName = staffUser.full_name;
+  if (!staffName) return res.status(400).json({ message: 'Staff profile incomplete' });
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const range = sanitizeStr(req.query.range, 10);
+  let dateStart, dateEnd, dateLabel;
+
+  if (range === 'week') {
+    const d = new Date(); d.setUTCDate(d.getUTCDate() - 6);
+    dateStart = d.toISOString().slice(0, 10); dateEnd = todayStr; dateLabel = 'week';
+  } else if (range === 'month') {
+    dateStart = todayStr.slice(0, 7) + '-01'; dateEnd = todayStr; dateLabel = 'month';
+  } else {
+    const rawDate = sanitizeStr(req.query.date, 10) || todayStr;
+    dateStart = parseDate(rawDate);
+    if (!dateStart) return res.status(400).json({ message: 'Invalid date' });
+    dateEnd = dateStart; dateLabel = dateStart;
+  }
+
+  try {
+    const { data: txns, error } = await supabase
+      .from('transactions')
+      .select('id, cart, cust_name, cust_phone, created_at')
+      .gte('created_at', dateStart + 'T00:00:00.000Z')
+      .lte('created_at', dateEnd + 'T23:59:59.999Z')
+      .order('created_at', { ascending: false })
+      .limit(2000);
+    if (error) throw error;
+
+    const { totalServices, totalRevenue, totalClients, serviceBreakdown, dailyMap } = buildSummary(txns, staffName);
+    const dailyBreakdown = [];
+    if (dateStart !== dateEnd) {
+      const cur = new Date(dateStart + 'T00:00:00Z');
+      const end = new Date(dateEnd + 'T00:00:00Z');
+      while (cur <= end) {
+        const d = cur.toISOString().slice(0, 10);
+        dailyBreakdown.push({ date: d, revenue: dailyMap[d]?.revenue || 0, services: dailyMap[d]?.services || 0 });
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+    }
+    res.json({
+      staff_id: staffUser.id, staff_name: staffName,
+      date: dateLabel, date_start: dateStart, date_end: dateEnd,
+      total_services: totalServices, total_clients_served: totalClients,
+      total_revenue_generated: totalRevenue, currency: 'PKR',
+      services_breakdown: serviceBreakdown, daily_breakdown: dailyBreakdown,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load summary' });
+  }
 });
 
 // ── 404 catch-all ──────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import NoorKadaPOS from './noorkada_pos'
 import Login from './components/Login'
+import StaffDashboard from './components/StaffDashboard'
 
 // Decode JWT payload without verifying signature (verification happens server-side)
 const getTokenExpiry = (token) => {
@@ -43,6 +44,17 @@ function App() {
 
   if (!user) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // Staff members get their own read-only dashboard — no access to POS
+  if (user.role === 'staff') {
+    return (
+      <StaffDashboard
+        user={user}
+        token={localStorage.getItem('noorkada_token')}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   return <NoorKadaPOS user={user} onLogout={handleLogout} />;

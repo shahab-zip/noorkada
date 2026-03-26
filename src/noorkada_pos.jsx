@@ -410,26 +410,35 @@ function EmojiPickerDropdown({ value, onChange, defaultEmoji = "✨" }) {
 }
 
 // ── RBAC Helpers ───────────────────────────────────────────────────────────────
-const ROLE_RANK = { receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
+// staff(0) < receptionist(1) < manager(2) < admin(3) < superadmin(4)
+const ROLE_RANK = { staff: 0, receptionist: 1, manager: 2, admin: 3, superadmin: 4 };
 const hasNavAccess = (role, v) => {
+  if (role === 'staff') return false; // staff use StaffDashboard, not POS
   if (v === 'pos') return true;
-  if (v === 'history') return true; // all roles can access history to view/edit transactions
+  if (v === 'history') return true;
   if (v === 'settings') return (ROLE_RANK[role] || 0) >= 2;
   return (ROLE_RANK[role] || 0) >= 3; // dashboard requires admin+
 };
 const creatableRoles = (role) => {
-  if (role === 'superadmin') return [['receptionist','Receptionist'],['manager','Manager'],['admin','Admin']];
-  if (role === 'admin')      return [['receptionist','Receptionist'],['manager','Manager']];
-  if (role === 'manager')    return [['receptionist','Receptionist']];
+  if (role === 'superadmin') return [['receptionist','Receptionist'],['staff','Staff'],['manager','Manager'],['admin','Admin']];
+  if (role === 'admin')      return [['receptionist','Receptionist'],['staff','Staff'],['manager','Manager']];
+  if (role === 'manager')    return [['receptionist','Receptionist'],['staff','Staff']];
   return [];
 };
 const canDeleteUser = (actorRole, targetRole) => {
   if (actorRole === 'superadmin') return true;
   if (actorRole === 'admin') return (ROLE_RANK[targetRole] || 0) < 3;
+  if (actorRole === 'manager') return targetRole === 'staff';
   return false;
 };
 const roleBadgeStyle = (role) => {
-  const map = { superadmin: ['#FEE2E2','#991B1B'], admin: ['#D1FAE5','#065F46'], manager: ['#FEF3C7','#92400E'], receptionist: ['#DBEAFE','#1E40AF'] };
+  const map = {
+    superadmin:   ['#FEE2E2','#991B1B'],
+    admin:        ['#D1FAE5','#065F46'],
+    manager:      ['#FEF3C7','#92400E'],
+    receptionist: ['#DBEAFE','#1E40AF'],
+    staff:        ['#F3E8FF','#6B21A8'],
+  };
   const [bg, col] = map[role] || map.receptionist;
   return { background: bg, color: col };
 };
@@ -1232,6 +1241,20 @@ export default function NoorKadaPOS({ user, onLogout }) {
     localStorage.setItem('noorkada_courtesy_persons', JSON.stringify(courtesyPersons));
   }, [courtesyPersons]);
 
+  // Fetch staff summary when admin opens the staff summary modal
+  React.useEffect(() => {
+    if (!viewingStaffSummary?.userId || !viewingStaffSummary.loading) return;
+    const { userId, date, range: vRange } = viewingStaffSummary;
+    let url = `/api/staff/admin/${userId}/summary`;
+    if (vRange === 'week')  url += '?range=week';
+    else if (vRange === 'month') url += '?range=month';
+    else url += `?date=${date}`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.json().then(d => r.ok ? d : Promise.reject(d)))
+      .then(data => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, data, error: null } : null))
+      .catch(err => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, error: err?.message || 'Failed to load' } : null));
+  }, [viewingStaffSummary?.userId, viewingStaffSummary?.loading, viewingStaffSummary?.date, viewingStaffSummary?.range]);
+
   // Auto-synced names: stylists + manager/admin users only (receptionists excluded)
   const autoCourtesyNames = useMemo(() => {
     const names = new Set();
@@ -1397,6 +1420,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [clientQ, setClientQ] = useState("");
   const [tierFilter, setTierFilter] = useState("");
   const [viewingAmendment, setViewingAmendment] = useState(null); // txn to show in amendment comparison modal
+  const [viewingStaffSummary, setViewingStaffSummary] = useState(null); // admin viewing a staff member's summary
 
   const [salonName, setSalonName] = useState(() => {
     try { return localStorage.getItem('noorkada_salonName') || "Noorkada POS"; } catch (e) { return "Noorkada POS"; }
@@ -1923,13 +1947,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
       if (showCatLabelModal) { setShowCatLabelModal(false); return; }
       if (showAddModal) { setShowAddModal(false); return; }
       if (staffSlipPreview) { setStaffSlipPreview(null); return; }
+      if (viewingStaffSummary) { setViewingStaffSummary(null); return; }
       if (viewingAmendment) { setViewingAmendment(null); return; }
       if (editingBill) { closeEditBill(); return; }
       if (doneSlip) { setDoneSlip(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [doneSlip, showAddModal, stylistWarningOpen, confirmClose, delCatConfirmId, delSvcConfirmId, delStylistConfirmId, delUserConfirmId, showCatLabelModal, staffSlipPreview, viewingAmendment, editingBill]);
+  }, [doneSlip, showAddModal, stylistWarningOpen, confirmClose, delCatConfirmId, delSvcConfirmId, delStylistConfirmId, delUserConfirmId, showCatLabelModal, staffSlipPreview, viewingAmendment, editingBill, viewingStaffSummary]);
 
   return (
     <div style={{ fontFamily: "'Outfit','Helvetica Neue',sans-serif", background: "#FDFAF6", minHeight: "100vh", color: "#2A2118" }}>
@@ -4704,7 +4729,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                     }}>{u.role}</span>
                                   </td>
                                   <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", textAlign: "right" }}>
-                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10 }}>
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10, flexWrap: "wrap" }}>
+                                      {u.role === 'staff' && (ROLE_RANK[user.role] || 0) >= 2 && (
+                                        <button
+                                          onClick={() => setViewingStaffSummary({ userId: u.id, name: u.full_name || u.username, date: new Date().toISOString().slice(0, 10), range: 'today', loading: true, data: null, error: null })}
+                                          style={{ background: "#F3E8FF", border: "1px solid #E9D5FF", color: "#6B21A8", fontWeight: 700, fontSize: 11, cursor: "pointer", borderRadius: 6, padding: "4px 10px" }}
+                                        >📊 Dashboard</button>
+                                      )}
                                       {(user.role === 'superadmin' || (ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0)) && (
                                         <button
                                           onClick={() => setEditingUser({ id: u.id, username: u.username, full_name: u.full_name || '', role: u.role, password: '' })}
@@ -6235,6 +6266,93 @@ export default function NoorKadaPOS({ user, onLogout }) {
           </div>
         )
       }
+
+      {/* ── Admin: View Staff Member Dashboard Modal ───────────────────── */}
+      {viewingStaffSummary && (
+        <div className="modal-overlay" style={{ position:"fixed",inset:0,zIndex:9500,background:"rgba(42,33,24,.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"20px 16px" }}
+          onClick={() => setViewingStaffSummary(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#FAF7F3",borderRadius:20,width:"100%",maxWidth:560,boxShadow:"0 20px 60px rgba(42,33,24,.3)",fontFamily:"'Outfit',sans-serif",overflow:"hidden",marginTop:20 }}>
+            {/* Modal header */}
+            <div style={{ background:"#2A2118",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+              <div>
+                <div style={{ fontSize:11,color:"#C4A882",fontWeight:600,letterSpacing:.5 }}>STAFF DASHBOARD</div>
+                <div style={{ fontSize:15,fontWeight:800,color:"#fff",marginTop:2 }}>{viewingStaffSummary.name}</div>
+              </div>
+              <button onClick={() => setViewingStaffSummary(null)} style={{ background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#FAF7F3",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif" }}>✕ Close</button>
+            </div>
+            <div style={{ padding:"16px" }}>
+              {/* Range / date selector */}
+              <div style={{ display:"flex",gap:6,marginBottom:10,flexWrap:"wrap" }}>
+                {[['today','Today'],['week','Week'],['month','Month']].map(([v,l]) => (
+                  <button key={v} onClick={() => setViewingStaffSummary(prev => ({ ...prev, range:v, date:new Date().toISOString().slice(0,10), loading:true, data:null, error:null }))}
+                    style={{ flex:1,padding:"7px 10px",borderRadius:10,fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",
+                      background: viewingStaffSummary.range===v ? '#2A2118' : '#fff',
+                      color: viewingStaffSummary.range===v ? '#fff' : '#6B5030',
+                      border: viewingStaffSummary.range===v ? '1.5px solid #2A2118' : '1.5px solid #E8DECE' }}>
+                    {l}
+                  </button>
+                ))}
+                <input type="date" max={new Date().toISOString().slice(0,10)}
+                  value={viewingStaffSummary.date}
+                  onChange={e => setViewingStaffSummary(prev => ({ ...prev, range:'custom', date:e.target.value, loading:true, data:null, error:null }))}
+                  style={{ padding:"7px 10px",borderRadius:10,border:"1.5px solid #E8DECE",fontFamily:"'Outfit',sans-serif",fontSize:12,color:"#2A2118",background:"#fff",outline:"none",cursor:"pointer" }} />
+              </div>
+              {/* Loading */}
+              {viewingStaffSummary.loading && (
+                <div style={{ display:"flex",gap:10,marginBottom:14 }}>
+                  {[1,2,3].map(i => <div key={i} style={{ flex:1,height:80,borderRadius:12,background:"linear-gradient(90deg,#f0ebe3 25%,#e8e0d4 50%,#f0ebe3 75%)",backgroundSize:"200% 100%",animation:"sk-pulse 1.4s ease-in-out infinite" }} />)}
+                </div>
+              )}
+              {/* Error */}
+              {viewingStaffSummary.error && !viewingStaffSummary.loading && (
+                <div style={{ background:"#FFF1F2",border:"1px solid #FECDD3",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8 }}>
+                  <span>⚠️</span>
+                  <div style={{ flex:1,fontSize:12,color:"#991B1B" }}>{viewingStaffSummary.error}</div>
+                  <button onClick={() => setViewingStaffSummary(prev => ({ ...prev, loading:true, error:null }))} style={{ background:"#2A2118",color:"#fff",border:"none",borderRadius:6,padding:"4px 12px",fontFamily:"'Outfit',sans-serif",fontSize:11,fontWeight:700,cursor:"pointer" }}>↺ Retry</button>
+                </div>
+              )}
+              {/* Summary cards */}
+              {!viewingStaffSummary.loading && viewingStaffSummary.data && (() => {
+                const d = viewingStaffSummary.data;
+                return (
+                  <>
+                    <div style={{ display:"flex",gap:8,marginBottom:14 }}>
+                      {[['✂️','Services',d.total_services,''],['👤','Clients',d.total_clients_served,''],['💰','Revenue','PKR '+(d.total_revenue_generated||0).toLocaleString('en-PK'),'']].map(([icon,label,val]) => (
+                        <div key={label} style={{ flex:1,background:"#fff",borderRadius:12,padding:"12px 14px",border:"1px solid #EDE6D8",textAlign:"center" }}>
+                          <div style={{ fontSize:18,marginBottom:4 }}>{icon}</div>
+                          <div style={{ fontSize:9,color:"#9A9088",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2 }}>{label}</div>
+                          <div style={{ fontSize:16,fontWeight:800,color:"#2A2118" }}>{val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Services breakdown */}
+                    {d.services_breakdown?.length > 0 && (
+                      <div style={{ background:"#fff",borderRadius:12,border:"1px solid #EDE6D8",overflow:"hidden",marginBottom:10 }}>
+                        <div style={{ padding:"10px 14px",borderBottom:"1px solid #f5f0e8",fontSize:12,fontWeight:700,color:"#2A2118" }}>Services Breakdown</div>
+                        <div style={{ maxHeight:220,overflowY:"auto" }}>
+                          {d.services_breakdown.map((svc, i) => (
+                            <div key={i} style={{ display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,padding:"9px 14px",borderBottom:"1px solid #f9f5f0",background:i%2===0?"#fff":"#fdfaf7",alignItems:"center" }}>
+                              <div style={{ fontSize:12,fontWeight:600,color:"#2A2118",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{svc.service_name}</div>
+                              <div style={{ fontSize:11,color:"#9A9088",textAlign:"center",minWidth:36 }}>×{svc.count}</div>
+                              <div style={{ fontSize:12,fontWeight:700,color:"#065F46",textAlign:"right",minWidth:76 }}>PKR {svc.revenue.toLocaleString('en-PK')}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {d.total_services === 0 && (
+                      <div style={{ textAlign:"center",padding:"24px 16px",color:"#9A9088",fontSize:13 }}>
+                        <div style={{ fontSize:28,marginBottom:6 }}>✨</div>
+                        No services logged for this period.
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div >
   );
