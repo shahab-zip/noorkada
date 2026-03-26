@@ -1724,8 +1724,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
       (!hPay || x.payMode === hPay)
     );
   }, [transactions, hQ, hDate, hSty, hCat, hPay, hRange, hFrom, hTo]);
-  const [fMetric, setFMetric] = useState("revenue");
-  const resetF = () => { setDashRange("30d"); setDashCFrom(""); setDashCTo(""); setFStylist(""); setFCat(""); setFPay(""); setFMetric("revenue"); };
+  const fMetric = "revenue";
+  const resetF = () => { setDashRange("30d"); setDashCFrom(""); setDashCTo(""); setFStylist(""); setFCat(""); setFPay(""); };
   const hasF = fStylist || fCat || fPay || dashCFrom || dashCTo;
 
   const exportCSV = () => {
@@ -2866,14 +2866,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: isMobile ? 4 : 0 }} className="catstrip">
                   {[["", "All"], ["CASH", "Cash"], ["ONLINE", "Online"], ["CARD", "Card"], ["SPLIT", "Split"]].map(([v, l]) => (
                     <button key={l} className={`rbtn ${fPay === v ? "on" : ""}`} onClick={() => setFPay(v)}>{l}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="filter-label">Metric</div>
-                <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: isMobile ? 4 : 0 }} className="catstrip">
-                  {[["revenue", "Revenue"], ["visits", "Visits"], ["avg", "Avg Ticket"], ["discount", "Discounts"]].map(([v, l]) => (
-                    <button key={v} className={`rbtn ${fMetric === v ? "on" : ""}`} onClick={() => setFMetric(v)}>{l}</button>
                   ))}
                 </div>
               </div>
