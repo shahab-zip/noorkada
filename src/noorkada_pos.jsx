@@ -3575,21 +3575,39 @@ export default function NoorKadaPOS({ user, onLogout }) {
             {/* ── TRANSACTIONS sub-tab ── */}
             {hTab === "transactions" && (<div className="fade">
 
-              {/* Back to client breadcrumb */}
-              {hNavFromClient && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 14px", background: "#FBF6EE", border: "1px solid #EDE6D8", borderRadius: 10 }}>
-                  <button onClick={() => {
-                    setHTab("clients");
-                    setHQ("");
-                    setHNavFromClient(null);
-                    setExpandedClient(hNavFromClient.key);
-                  }} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#2A2118", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600, color: "#FFF", cursor: "pointer", fontFamily: "'Outfit',sans-serif" }}>
-                    ← Back
-                  </button>
-                  <span style={{ fontSize: 13, color: "#6B5030" }}>Showing all transactions for <strong>{hNavFromClient.name}</strong></span>
-                  <button onClick={() => { setHQ(""); setHNavFromClient(null); }} style={{ marginLeft: "auto", fontSize: 11, color: "#B8AFA5", background: "none", border: "none", cursor: "pointer", padding: "4px 8px" }}>✕ Clear</button>
-                </div>
-              )}
+              {/* Active search breadcrumb — always shows when hQ is set */}
+              {hQ.trim() && (() => {
+                // Find matching client for display name
+                const matchedClient = clients.find(c =>
+                  c.phone === hQ.trim() ||
+                  c.name.toLowerCase() === hQ.trim().toLowerCase() ||
+                  (hNavFromClient && c.key === hNavFromClient.key)
+                );
+                const displayLabel = matchedClient?.name || hNavFromClient?.name || hQ.trim();
+                const clientKey = matchedClient?.key || hNavFromClient?.key || null;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 16px", background: "#FBF6EE", border: "1px solid #E8DECE", borderRadius: 10 }}>
+                    <span style={{ fontSize: 18 }}>🔍</span>
+                    <span style={{ fontSize: 13, color: "#6B5030", flex: 1 }}>
+                      Showing transactions for <strong style={{ color: "#2A2118" }}>{displayLabel}</strong>
+                    </span>
+                    {ROLE_RANK[user.role] >= 3 && clientKey && (
+                      <button onClick={() => {
+                        setHTab("clients");
+                        setHQ("");
+                        setHNavFromClient(null);
+                        setExpandedClient(clientKey);
+                      }} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#2A2118", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#FFF", cursor: "pointer", fontFamily: "'Outfit',sans-serif", whiteSpace: "nowrap" }}>
+                        ← Client Profile
+                      </button>
+                    )}
+                    <button onClick={() => { setHQ(""); setHNavFromClient(null); }}
+                      style={{ background: "none", border: "1px solid #D4C4A8", borderRadius: 6, padding: "5px 10px", fontSize: 12, color: "#8A7060", cursor: "pointer", fontFamily: "'Outfit',sans-serif", whiteSpace: "nowrap" }}>
+                      ✕ Clear
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* History filter bar */}
               <div style={{ background: "#FFFFFF", border: "1px solid #EDE6D8", borderRadius: 14, padding: "16px 18px", marginBottom: 18, boxShadow: "0 1px 6px rgba(44,33,24,.04)" }}>
