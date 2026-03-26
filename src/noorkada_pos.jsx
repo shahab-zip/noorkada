@@ -3060,9 +3060,15 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                 return (
                   <div>
+                    {/* Back nav */}
+                    <button onClick={() => setFStylist("")}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "1.5px solid #E8E0D4", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "#6B5030", cursor: "pointer", marginBottom: 14, fontFamily: "'Outfit',sans-serif" }}>
+                      ← All Stylists
+                    </button>
+
                     {/* Profile header */}
-                    <div className="card" style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                    <div className="card" style={{ marginBottom: 14, borderLeft: `4px solid ${color}` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
                         <div style={{ width: 56, height: 56, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#FFF", flexShrink: 0 }}>{fStylist[0]}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 22, fontWeight: 800, color: "#2A2118" }}>{fStylist}</div>
@@ -3073,7 +3079,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           <div style={{ fontSize: 12, color: "#9A9088" }}>Avg ticket: {fmt(avg, true)}</div>
                         </div>
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginTop: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 10 }}>
                         {[["Total Revenue", fmt(sData.rev, true)], ["Clients", sData.cust], ["Services", sData.svcs], ["Specialty", topCat?.[0] || "—"]].map(([l, v]) => (
                           <div key={l} style={{ background: "#FDFAF6", borderRadius: 10, padding: "12px 14px", border: "1px solid #EDE6D8" }}>
                             <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 600 }}>{l}</div>
