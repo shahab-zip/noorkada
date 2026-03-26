@@ -3157,81 +3157,61 @@ export default function NoorKadaPOS({ user, onLogout }) {
                 );
               })() : (
                 // ── All-Stylists Leaderboard ──
-                <>
-                  <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                    <div className="card">
-                      <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Revenue Leaderboard</div>
-                      {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data], i) => {
-                        const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
-                        const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
-                        const medals = ["🥇", "🥈", "🥉"];
-                        return (
-                          <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11, padding: "10px 12px", background: "#FDFAF6", borderRadius: 10, border: "1px solid #EDE6D8" }}>
-                            <div style={{ fontSize: 17, width: 24, textAlign: "center" }}>{medals[i] || <span style={{ fontSize: 11, color: "#C4B9AB" }}>#{i + 1}</span>}</div>
-                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118", marginBottom: 4 }}>{name}</div>
-                              <ProgBar pct={Math.round(data.rev / mx * 100)} color={color} h={4} />
-                            </div>
-                            <div style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
-                              <div style={{ fontSize: 12, color: "#B8AFA5" }}>{data.cust} clients</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {!Object.keys(S.styM).length && <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data yet</div>}
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 500 }}>
-                      {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
+                (() => {
+                  const entries = Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev);
+                  const mx = Math.max(...entries.map(([, d]) => d.rev), 1);
+                  const medals = ["🥇", "🥈", "🥉"];
+                  if (!entries.length) return <div style={{ textAlign: "center", padding: 48, color: "#C4B9AB", fontSize: 13 }}>No data for this period</div>;
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {entries.map(([name, data], i) => {
                         const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
                         const topCat = Object.entries(data.cats).sort((a, b) => b[1] - a[1])[0];
                         const avg = data.cust ? Math.round(data.rev / data.cust) : 0;
+                        const pct = Math.round(data.rev / mx * 100);
                         return (
-                          <div key={name} className="card-sm" style={{ borderLeft: `3px solid ${color}` }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                              <div style={{ width: 40, height: 40, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, color: "#FFF", flexShrink: 0 }}>{name[0]}</div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 14, color: "#2A2118" }}>{name}</div>
-                                <div style={{ fontSize: 11, color: "#B8AFA5" }}>{data.svcs} services</div>
+                          <div key={name} className="card" style={{ borderLeft: `4px solid ${color}`, padding: "14px 18px", cursor: "pointer" }}
+                            onClick={() => setFStylist(name)}>
+                            {/* Top row: rank + avatar + name + revenue */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                              <div style={{ fontSize: 18, width: 26, textAlign: "center", flexShrink: 0 }}>
+                                {medals[i] || <span style={{ fontSize: 12, color: "#C4B9AB", fontWeight: 700 }}>#{i + 1}</span>}
                               </div>
-                              <div style={{ fontSize: 15, fontWeight: 600, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
+                              <div style={{ width: 42, height: 42, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#FFF", fontWeight: 700, flexShrink: 0 }}>{name[0]}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 1 }}>{name}</div>
+                                <div style={{ fontSize: 11, color: "#B8AFA5" }}>{data.svcs} services · {data.cust} clients</div>
+                              </div>
+                              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                <div style={{ fontSize: 17, fontWeight: 800, color: "#2A2118" }}>{fmt(data.rev, true)}</div>
+                                <div style={{ fontSize: 11, color: "#B8AFA5" }}>avg {fmt(avg, true)}</div>
+                              </div>
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
-                              {[["Clients", data.cust], ["Avg Ticket", fmt(avg, true)], ["Specialty", topCat?.[0] || "—"]].map(([l, v]) => (
-                                <div key={l} style={{ background: "#FDFAF6", borderRadius: 8, padding: "8px 9px", border: "1px solid #EDE6D8" }}>
-                                  <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 500 }}>{l}</div>
-                                  <div style={{ fontSize: 13, color: "#6B5030", fontWeight: 600, marginTop: 4 }}>{v}</div>
+                            {/* Progress bar */}
+                            <div style={{ marginBottom: 12 }}>
+                              <ProgBar pct={pct} color={color} h={5} />
+                            </div>
+                            {/* Stats row */}
+                            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 8 }}>
+                              {[
+                                ["Clients", data.cust],
+                                ["Services", data.svcs],
+                                ["Avg Ticket", fmt(avg, true)],
+                                ["Specialty", topCat?.[0] || "—"],
+                              ].map(([l, v]) => (
+                                <div key={l} style={{ background: "#FDFAF6", borderRadius: 8, padding: "8px 10px", border: "1px solid #EDE6D8" }}>
+                                  <div style={{ fontSize: 10, color: "#B8AFA5", textTransform: "uppercase", letterSpacing: .8, fontWeight: 600, marginBottom: 3 }}>{l}</div>
+                                  <div style={{ fontSize: 13, color: "#3D3028", fontWeight: 700 }}>{v}</div>
                                 </div>
                               ))}
                             </div>
+                            <div style={{ marginTop: 8, fontSize: 11, color: "#C4B9AB", textAlign: "right" }}>Click to view full profile →</div>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-
-                  <div className="card">
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#2A2118", marginBottom: 14 }}>Performance Comparison</div>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 110 }}>
-                      {Object.entries(S.styM).sort((a, b) => b[1].rev - a[1].rev).map(([name, data]) => {
-                        const mx = Math.max(...Object.values(S.styM).map(d => d.rev), 1);
-                        const h = Math.max(Math.round((data.rev / mx) * 96), 4);
-                        const color = dbStylists.find(s => s.name === name)?.color || (name === "Unassigned" ? "#C4B9AB" : "#B08040");
-                        return (
-                          <div key={name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                            <div style={{ fontSize: 11, color: "#2A2118", fontWeight: 600 }}>{fmt(data.rev, true)}</div>
-                            <div style={{ width: "100%", height: h, background: color, borderRadius: "5px 5px 0 0", opacity: .8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ fontSize: 11, color: "#FFF", fontWeight: 600 }}>{data.cust}</span>
-                            </div>
-                            <div style={{ fontSize: 10, color: "#9A9088" }}>{name.slice(0, 8)}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
+                  );
+                })()
               )}
             </div>
           )}
