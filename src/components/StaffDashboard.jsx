@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error Boundary
@@ -315,6 +315,275 @@ function DateRangePicker({ from, to, maxDate, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Account Settings — bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+function AccountSettings({ user, token, onClose, onLogout }) {
+  const [cur,     setCur]     = useState('');
+  const [next,    setNext]    = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving,  setSaving]  = useState(false);
+  const [msg,     setMsg]     = useState(null); // { type: 'ok'|'err', text }
+  const [showCur,  setShowCur]  = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showConf, setShowConf] = useState(false);
+  const [visible,  setVisible]  = useState(false);
+
+  // Slide-in on mount
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  const close = () => {
+    setVisible(false);
+    setTimeout(onClose, 280);
+  };
+
+  const validate = () => {
+    if (!cur)           return 'Please enter your current password.';
+    if (next.length < 8) return 'New password must be at least 8 characters.';
+    if (next !== confirm) return 'Passwords do not match.';
+    return null;
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const err = validate();
+    if (err) { setMsg({ type: 'err', text: err }); return; }
+    setSaving(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ currentPassword: cur, password: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update password.');
+      setMsg({ type: 'ok', text: 'Password updated successfully! Please sign in again.' });
+      setCur(''); setNext(''); setConfirm('');
+      setTimeout(() => onLogout(), 2200);
+    } catch (err) {
+      setMsg({ type: 'err', text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const initials = (user.full_name || user.username || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const inputStyle = {
+    width: '100%', padding: '11px 38px 11px 12px',
+    border: '1.5px solid #E8DECE', borderRadius: 10,
+    fontFamily: "'Outfit', sans-serif", fontSize: 14,
+    color: '#2A2118', background: '#FAF7F3', outline: 'none',
+  };
+
+  const eyeBtn = (show, toggle) => (
+    <button type="button" onClick={toggle} style={{
+      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+      background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+      color: '#9A9088', fontSize: 16, lineHeight: 1,
+    }}>{show ? '🙈' : '👁️'}</button>
+  );
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={close}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(42,33,24,0.45)',
+          zIndex: 200, opacity: visible ? 1 : 0,
+          transition: 'opacity 0.28s ease',
+        }}
+      />
+
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed', left: 0, right: 0, bottom: 0,
+        zIndex: 201, maxWidth: 640, margin: '0 auto',
+        background: '#fff',
+        borderRadius: '20px 20px 0 0',
+        boxShadow: '0 -8px 40px rgba(42,33,24,0.18)',
+        transform: visible ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
+        fontFamily: "'Outfit', sans-serif",
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+      }}>
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E8DECE' }} />
+        </div>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px 16px' }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: '#2A2118' }}>Account Settings</div>
+          <button onClick={close} style={{
+            background: '#F5F0E8', border: 'none', borderRadius: '50%',
+            width: 32, height: 32, cursor: 'pointer', fontSize: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>×</button>
+        </div>
+
+        <div style={{ padding: '0 20px 32px' }}>
+
+          {/* Profile card */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            background: 'linear-gradient(135deg,#F5EFE6,#EDE6D8)',
+            borderRadius: 14, padding: '14px 16px', marginBottom: 24,
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: '50%',
+              background: 'linear-gradient(135deg,#C4A882,#8B6940)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{initials}</span>
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#2A2118' }}>{user.full_name || user.username}</div>
+              <div style={{ fontSize: 12, color: '#9A9088', marginTop: 2 }}>@{user.username} · Staff</div>
+            </div>
+          </div>
+
+          {/* Change password form */}
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#6B5030', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 14 }}>
+            Change Password
+          </div>
+
+          {/* Status message */}
+          {msg && (
+            <div style={{
+              background: msg.type === 'ok' ? '#ECFDF5' : '#FFF1F2',
+              border: `1px solid ${msg.type === 'ok' ? '#6EE7B7' : '#FECDD3'}`,
+              borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>{msg.type === 'ok' ? '✅' : '⚠️'}</span>
+              <span style={{ fontSize: 13, color: msg.type === 'ok' ? '#065F46' : '#991B1B', fontWeight: 600, lineHeight: 1.4 }}>{msg.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSave} autoComplete="off">
+            {/* Current password */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#6B5030', display: 'block', marginBottom: 5 }}>
+                Current Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showCur ? 'text' : 'password'}
+                  value={cur}
+                  onChange={e => setCur(e.target.value)}
+                  placeholder="Enter current password"
+                  autoComplete="current-password"
+                  style={inputStyle}
+                  disabled={saving || msg?.type === 'ok'}
+                />
+                {eyeBtn(showCur, () => setShowCur(v => !v))}
+              </div>
+            </div>
+
+            {/* New password */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#6B5030', display: 'block', marginBottom: 5 }}>
+                New Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showNext ? 'text' : 'password'}
+                  value={next}
+                  onChange={e => setNext(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  autoComplete="new-password"
+                  style={inputStyle}
+                  disabled={saving || msg?.type === 'ok'}
+                />
+                {eyeBtn(showNext, () => setShowNext(v => !v))}
+              </div>
+              {/* Strength bar */}
+              {next.length > 0 && (
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                    {[1,2,3,4].map(n => {
+                      const strength = next.length >= 12 && /[A-Z]/.test(next) && /[0-9]/.test(next) ? 4
+                        : next.length >= 10 && /[0-9A-Z]/.test(next) ? 3
+                        : next.length >= 8 ? 2 : 1;
+                      const colors = ['#EF4444','#F97316','#EAB308','#22C55E'];
+                      return <div key={n} style={{ flex: 1, height: 3, borderRadius: 2, background: n <= strength ? colors[strength - 1] : '#E8DECE', transition: 'background 0.2s' }} />;
+                    })}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#9A9088' }}>
+                    {next.length < 8 ? 'Too short' : next.length < 10 ? 'Acceptable' : next.length >= 12 && /[A-Z]/.test(next) && /[0-9]/.test(next) ? 'Strong' : 'Good'}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm password */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#6B5030', display: 'block', marginBottom: 5 }}>
+                Confirm New Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showConf ? 'text' : 'password'}
+                  value={confirm}
+                  onChange={e => setConfirm(e.target.value)}
+                  placeholder="Re-enter new password"
+                  autoComplete="new-password"
+                  style={{
+                    ...inputStyle,
+                    borderColor: confirm && confirm !== next ? '#FECDD3' : confirm && confirm === next ? '#6EE7B7' : '#E8DECE',
+                  }}
+                  disabled={saving || msg?.type === 'ok'}
+                />
+                {eyeBtn(showConf, () => setShowConf(v => !v))}
+              </div>
+              {confirm && confirm !== next && (
+                <div style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>Passwords don't match</div>
+              )}
+            </div>
+
+            {/* Save button */}
+            <button
+              type="submit"
+              disabled={saving || msg?.type === 'ok'}
+              style={{
+                width: '100%', padding: '13px',
+                background: saving || msg?.type === 'ok' ? '#9A9088' : '#2A2118',
+                color: '#fff', border: 'none', borderRadius: 12,
+                fontFamily: "'Outfit', sans-serif", fontSize: 14, fontWeight: 800,
+                cursor: saving || msg?.type === 'ok' ? 'default' : 'pointer',
+                transition: 'background 0.15s',
+                letterSpacing: .3,
+              }}
+            >
+              {saving ? 'Updating…' : msg?.type === 'ok' ? '✓ Signing you out…' : 'Update Password'}
+            </button>
+          </form>
+
+          {/* Divider + Sign out */}
+          <div style={{ borderTop: '1px solid #EDE6D8', marginTop: 24, paddingTop: 20 }}>
+            <button
+              onClick={onLogout}
+              style={{
+                width: '100%', padding: '12px',
+                background: '#FFF1F2', color: '#DC2626',
+                border: '1.5px solid #FECDD3', borderRadius: 12,
+                fontFamily: "'Outfit', sans-serif", fontSize: 14, fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >Sign Out of Account</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main StaffDashboard
 // ─────────────────────────────────────────────────────────────────────────────
 function StaffDashboardInner({ user, token, onLogout }) {
@@ -336,6 +605,7 @@ function StaffDashboardInner({ user, token, onLogout }) {
   const [svcsError, setSvcsError]   = useState(null);
 
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [showSettings, setShowSettings] = useState(false);
 
   // 8-hour inactivity logout
   useEffect(() => {
@@ -466,10 +736,17 @@ function StaffDashboardInner({ user, token, onLogout }) {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{ background: 'linear-gradient(135deg, #2A2118 0%, #3D3020 100%)', padding: '14px 20px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 640, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Avatar */}
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#C4A882,#8B6940)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{initials}</span>
+          {/* Avatar + name — tapping opens settings */}
+          <button
+            onClick={() => setShowSettings(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#C4A882,#8B6940)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{initials}</span>
+              {/* Settings dot indicator */}
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: '#C4A882', border: '2px solid #2A2118', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 7, color: '#fff', lineHeight: 1 }}>⚙</span>
+              </div>
             </div>
             <div>
               <div style={{ fontSize: 11, color: '#C4A882', fontWeight: 600, letterSpacing: .8 }}>NOOR KADA · STAFF</div>
@@ -477,13 +754,32 @@ function StaffDashboardInner({ user, token, onLogout }) {
                 {user.full_name || user.username}
               </div>
             </div>
+          </button>
+
+          {/* Settings + Sign out */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              onClick={() => setShowSettings(true)}
+              title="Account settings"
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FAF7F3', fontSize: 16, cursor: 'pointer' }}
+            >⚙️</button>
+            <button
+              onClick={onLogout}
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, padding: '6px 14px', color: '#FAF7F3', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Outfit', sans-serif", letterSpacing: .3 }}
+            >Sign Out</button>
           </div>
-          <button
-            onClick={onLogout}
-            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, padding: '6px 14px', color: '#FAF7F3', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Outfit', sans-serif', letterSpacing: .3" }}
-          >Sign Out</button>
         </div>
       </div>
+
+      {/* ── Account Settings Sheet ──────────────────────────────────────────── */}
+      {showSettings && (
+        <AccountSettings
+          user={user}
+          token={token}
+          onClose={() => setShowSettings(false)}
+          onLogout={onLogout}
+        />
+      )}
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 16px 80px' }}>
 
