@@ -4358,24 +4358,9 @@ export default function NoorKadaPOS({ user, onLogout }) {
               {/* 2. Staff Tab */}
               {adminTab === "staff" && (
                 <div className="fade">
-                  <div style={{ marginBottom: isMobile ? 16 : 24, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 8 }}>Staff Registry</h1>
-                      <div style={{ display: "flex", background: "#F5F0E8", padding: 4, borderRadius: 10, gap: 2, width: "fit-content", marginBottom: 12 }}>
-                        {[["stylists", "👥 Staff"], ["users", "💻 System Access"]].map(([t, l]) => (
-                          <button key={t} className={`nav-tab ${staffSubTab === t ? "on" : "off"}`}
-                            onClick={() => { setStaffSubTab(t); setEditingUser(null); setEditingStylist(null); }} style={{ padding: "6px 14px", fontSize: 13, height: 32, whiteSpace: "nowrap" }}>{l}</button>
-                        ))}
-                      </div>
-                      <p style={{ fontSize: 13, color: "#9A9088", marginTop: 4 }}>Manage salon members and POS access roles.</p>
-                    </div>
-                    {(staffSubTab === 'stylists' || creatableRoles(user.role).length > 0) && (
-                      <button
-                        onClick={() => staffSubTab === 'stylists' ? setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '', position: '' }) : setEditingUser({ id: 'new', username: '', full_name: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
-                        className="btn-gold"
-                        style={{ padding: "8px 16px", fontSize: 12, borderRadius: 8, width: "auto" }}
-                      >{staffSubTab === 'stylists' ? '+ Add Staff Member' : '+ Add Member'}</button>
-                    )}
+                  <div style={{ marginBottom: isMobile ? 16 : 24 }}>
+                    <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 4 }}>Staff Registry</h1>
+                    <p style={{ fontSize: 13, color: "#9A9088" }}>Manage salon members and POS access roles.</p>
                   </div>
 
                   {/* Add User Form */}
@@ -4439,9 +4424,23 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </div>
                   )}
 
-                  {/* Sub Tab: Stylists */}
-                  {staffSubTab === "stylists" && (
-                    <div className="fade">
+                  {/* ── Section: Salon Team ───────────────────────────────────── */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👥</div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#2A2118" }}>Salon Team</div>
+                          <div style={{ fontSize: 11, color: "#9A9088" }}>Staff members who perform services</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '', position: '' })}
+                        className="btn-gold"
+                        style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, width: "auto" }}
+                      >+ Add Member</button>
+                    </div>
+
                       {/* Add Staff Form (Top) */}
                       {editingStylist && editingStylist.id === 'new' && (
                         <div className="card" style={{ marginBottom: 20, padding: 20 }}>
@@ -4682,12 +4681,25 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         </div>
                         );
                       })()}
-                    </div>
-                  )}
+                  </div>
 
-                  {/* Sub Tab: System Access (Users) */}
-                  {staffSubTab === "users" && (
-                    <div className="fade">
+                  {/* ── Section: System Access ───────────────────────────────── */}
+                  {creatableRoles(user.role).length > 0 && (
+                    <div style={{ marginTop: 32 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#DBEAFE,#BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💻</div>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "#2A2118" }}>System Access</div>
+                            <div style={{ fontSize: 11, color: "#9A9088" }}>POS login accounts &amp; roles</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setEditingUser({ id: 'new', username: '', full_name: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
+                          className="btn-gold"
+                          style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, width: "auto" }}
+                        >+ Add User</button>
+                      </div>
                       <div className="card" style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
                         <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
                           <input
