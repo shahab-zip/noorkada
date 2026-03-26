@@ -1635,6 +1635,85 @@ export default function NoorKadaPOS({ user, onLogout }) {
     }, 500);
   };
 
+  // ── Reprint any saved transaction receipt ────────────────────────────────────
+  const printReceipt = (s) => {
+    printHTML(`<!DOCTYPE html><html><head>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}
+      .center{text-align:center;}
+      .logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;letter-spacing:0.5px;margin-bottom:4px;color:#000;}
+      .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:400;color:#000;}
+      .header-info{font-size:12px;color:#000;margin-bottom:14px;text-align:center;}
+      .header-line{margin-bottom:3px;font-weight:400;color:#000;}
+      .cust-name{font-weight:400;text-transform:uppercase;letter-spacing:0.5px;color:#000;}
+      .divider{border:none;border-top:1.5px solid #000;margin:10px 0;}
+      .tbl-head{display:flex;justify-content:space-between;font-weight:400;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}
+      .svc-row{display:flex;justify-content:space-between;margin-bottom:10px;align-items:flex-start;font-size:12px;}
+      .svc-info{flex:1;padding-right:8px;}
+      .svc-name{font-weight:400;color:#000;}
+      .svc-stylist{font-size:11px;color:#000;margin-top:2px;font-weight:400;}
+      .svc-qty{width:30px;text-align:center;font-weight:400;color:#000;}
+      .svc-amt{width:75px;text-align:right;font-weight:400;color:#000;}
+      .disc-line{font-size:11px;color:#000;font-weight:400;margin-top:2px;}
+      .summary{padding:0 2px;margin-bottom:16px;}
+      .sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:400;color:#000;}
+      .total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:400;margin-top:10px;padding-top:10px;border-top:2px solid #000;align-items:center;color:#000;}
+      .footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:400;}
+      .stars{font-size:14px;letter-spacing:4px;}
+      .reprint-badge{text-align:center;font-size:10px;color:#000;font-weight:400;margin-bottom:10px;border:1px solid #000;padding:3px 8px;display:inline-block;}
+      @page{size:79mm auto;margin:2mm;}
+      @media print{body{padding:4px;width:75mm;}}
+    </style>
+    </head><body>
+      <div class="center">
+        <img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />
+        <div class="sub">Noor Kada</div>
+        <div style="margin-bottom:8px;"><span class="reprint-badge">** REPRINT **</span></div>
+        <div class="header-info">
+          <div class="header-line">Receipt #: ${esc(s.slip)}</div>
+          <div class="header-line">Date: ${esc(s.date)} | Time: ${esc(s.time || "")}</div>
+          <div class="header-line">Customer: <span class="cust-name">${esc(s.customerName || 'Walk-in')}</span></div>
+          <div class="header-line">Payment: ${esc(s.payMode || 'CASH')}</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tbl-head">
+        <div style="flex:1;">Service / Stylist</div>
+        <div style="width:30px;text-align:center;">Qty</div>
+        <div style="width:75px;text-align:right;">Amount</div>
+      </div>
+      ${(s.cart || []).map(item => `
+        <div class="svc-row">
+          <div class="svc-info">
+            <div class="svc-name">${esc(item.service)}</div>
+            <div class="svc-stylist">Stylist: ${esc(item.stylist || "Unassigned")}</div>
+            ${item.category === 'Deal' && item.included_services?.length > 0 ? `<div style="font-size:10px;color:#000;font-weight:400;margin-top:2px;">${item.included_services.join(', ')}</div>` : ""}
+          </div>
+          <div class="svc-qty">${item.qty}</div>
+          <div class="svc-amt">
+            PKR ${(item.price * item.qty).toLocaleString("en-PK")}
+            ${item.discountValue > 0 ? `<div class="disc-line">-${item.discountMode === 'pct' ? `${item.discountValue}%` : `PKR ${item.discountValue}`}</div>` : ""}
+          </div>
+        </div>`).join("")}
+      <div class="divider"></div>
+      <div class="summary">
+        <div class="sum-row"><span>Subtotal</span><span>PKR ${(s.subtotal || (s.cart||[]).reduce((a,i)=>a+(i.price||0)*(i.qty||1),0)).toLocaleString("en-PK")}</span></div>
+        ${s.discountAmt > 0 ? `<div class="sum-row"><span>Discount ${s.discReason ? `(${s.discReason})` : (s.discMode === 'pct' ? `(${s.discount}%)` : '')}</span><span>-PKR ${s.discountAmt.toLocaleString("en-PK")}</span></div>` : ""}
+        <div class="total-row">
+          <span>Total Amount</span>
+          <span>PKR ${s.total.toLocaleString("en-PK")}</span>
+        </div>
+      </div>
+      <div class="footer">
+        Thank you for choosing Noorkada!<br/>
+        We look forward to seeing you again.<br/>
+        <span class="stars">★ ★ ★ ★ ★</span>
+      </div>
+    </body></html>`);
+  };
+
   const printStaffSlip = () => {
     if (!cart.length) return;
     const s = {
@@ -3764,6 +3843,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, background: pc.bg, color: pc.color, padding: "3px 10px", borderRadius: 100 }}>{txn.payMode}</span>
                         <span style={{ fontSize: 16, fontWeight: 800, color: "#2A2118" }}>{fmt(txn.total)}</span>
+                        <button onClick={() => printReceipt(txn)}
+                          style={{ fontSize: 11, fontWeight: 600, color: "#6B5040", background: "#F5F0E8", border: "1.5px solid #E0D4C0", borderRadius: 8, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#EDE4D4"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#F5F0E8"}
+                          title="Reprint receipt">
+                          🖨️ Print
+                        </button>
                         {ROLE_RANK[user.role] >= 1 && (
                           <button onClick={() => openEditBill(txn)}
                             style={{ fontSize: 11, fontWeight: 600, color: "#B08040", background: "#FEF9EE", border: "1.5px solid #F0D98A", borderRadius: 8, padding: "5px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
