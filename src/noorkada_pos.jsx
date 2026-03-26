@@ -13,6 +13,8 @@ const devLog = isDev ? console.error.bind(console) : () => {};
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// Noorkada brand logo — baked in, device-independent
+const NOORKADA_LOGO = "data:image/jpeg;base64,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";
 const fmt = (n, compact = false) => { const v = Number(n) || 0; if (compact && v >= 1000) return `PKR ${(v / 1000).toFixed(1)}k`; return `PKR ${v.toLocaleString("en-PK")}`; };
 const esc = (str) => String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -1670,7 +1672,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     </head><body>
       <div class="header-tag">Staff Service Slip</div>
       <div class="center">
-        ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:55px;max-width:140px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
+        <img src="${NOORKADA_LOGO}" style="max-height:55px;max-width:140px;margin:0 auto 8px;display:block;object-fit:contain;" />
         <div class="sub">Noor Kada</div>
       </div>
       <div class="divider"></div>
@@ -1905,12 +1907,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
       <header style={{ background: "#FFFFFF", borderBottom: "1px solid #EDE6D8", minHeight: 64, display: "flex", alignItems: "center", padding: "0 16px", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 16px rgba(44,33,24,.07)", gap: 8, flexWrap: "nowrap", overflow: "hidden" }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: salonLogo === "default" ? 38 : "auto", maxWidth: 120, height: 38, borderRadius: salonLogo === "default" ? "50%" : "8px", background: salonLogo === "default" ? "linear-gradient(145deg,#2A2118,#5A4030)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: salonLogo === "default" ? "0 2px 10px rgba(42,33,24,.25)" : "none", overflow: "hidden", flexShrink: 0 }}>
-            {salonLogo === "default" ? (
-              <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 17, fontWeight: 700, color: "#F5E6C8", lineHeight: 1 }}>{salonName ? salonName[0].toUpperCase() : "N"}</span>
-            ) : (
-              <img src={salonLogo} alt="Logo" style={{ width: "auto", height: "100%", maxWidth: "100%", objectFit: "contain" }} />
-            )}
+          <div style={{ width: 38, height: 38, borderRadius: "8px", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+            <img src={NOORKADA_LOGO} alt="Noorkada Logo" style={{ width: "auto", height: "100%", maxWidth: "100%", objectFit: "contain" }} />
           </div>
           <div style={{ maxWidth: 180, flex: "0 0 180px", overflow: "hidden" }}>
             <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 700, color: "#2A2118", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{salonName.split(' ')[0] || salonName}</div>
@@ -4951,12 +4949,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "#fdfaf6", borderRadius: 8, border: "1px solid #EDE6D8" }}>
-                        <div style={{ width: salonLogo === "default" ? 32 : "auto", maxWidth: 100, height: 32, borderRadius: salonLogo === "default" ? "50%" : "6px", background: "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                          {salonLogo === 'default' ? (
-                            <span style={{ color: "#F5E6C8", fontSize: 16, fontWeight: 800 }}>{(salonName || "N")[0]}</span>
-                          ) : (
-                            <img src={salonLogo} style={{ width: "auto", height: "100%", maxWidth: "100%", objectFit: "contain" }} alt="Logo" />
-                          )}
+                        <div style={{ width: "auto", maxWidth: 100, height: 32, borderRadius: "6px", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                          <img src={NOORKADA_LOGO} style={{ width: "auto", height: "100%", maxWidth: "100%", objectFit: "contain" }} alt="Noorkada Logo" />
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "#2A2118" }}>Preview</div>
                       </div>
@@ -5468,7 +5462,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   printHTML(`<!DOCTYPE html><html><head>
                   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
                   <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;padding:6px;color:#000;background:#fff;font-size:13px;line-height:1.5;width:75mm;}.center{text-align:center;}.logo{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:4px;color:#000;}.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:700;}.divider{border:none;border-top:1.5px solid #000;margin:10px 0;}.tbl-head{display:flex;justify-content:space-between;font-weight:800;margin-bottom:8px;font-size:12px;border-bottom:1.5px solid #000;padding-bottom:6px;}.svc-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;align-items:flex-start;}.svc-info{flex:1;padding-right:8px;}.svc-name{font-weight:800;color:#000;}.svc-staff{font-size:11px;font-weight:700;color:#000;margin-top:2px;}.svc-amt{width:75px;text-align:right;font-weight:700;color:#000;}.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;font-weight:700;color:#000;}.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:10px;padding-top:10px;border-top:2px solid #000;color:#000;}.footer{text-align:center;font-size:11px;color:#000;margin-top:18px;border-top:1px dashed #000;padding-top:12px;font-weight:700;}.stars{font-size:14px;letter-spacing:4px;}@page{size:79mm auto;margin:2mm;}@media print{body{padding:4px;width:75mm;}}</style></head><body>
-                  <div class="center">${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}<div class="sub">Noor Kada</div>
+                  <div class="center"><img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" /><div class="sub">Noor Kada</div>
                   <div style="font-size:12px;color:#000;margin-bottom:14px;font-weight:700;">
                     <div>Receipt #: ${esc(s.slip)}</div>
                     <div>Date: ${esc(s.date)} | Time: ${esc(s.time)}</div>
@@ -5591,7 +5585,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       @media print{body{padding:4px;width:75mm;}}
                     </style></head><body>
                     <div class="center">
-                      ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
+                      <img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />
                       <div class="sub">Noor Kada</div>
                       <div class="header-info">
                         <div class="header-line">Receipt #: ${esc(s.slip)}</div>
@@ -5908,10 +5902,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
             {/* Header */}
             <div style={{ textAlign: "center", marginBottom: 24 }}>
-              {salonLogo && salonLogo !== 'default'
-                ? <img src={salonLogo} style={{ maxHeight: 60, maxWidth: 140, margin: "0 auto 10px", display: "block", objectFit: "contain" }} />
-                : <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: "#2A2118", marginBottom: 6 }}>{salonName || "Noorkada"}</div>
-              }
+              <img src={NOORKADA_LOGO} style={{ maxHeight: 60, maxWidth: 140, margin: "0 auto 10px", display: "block", objectFit: "contain" }} />
               <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 10 }}>Noor Kada</div>
               <div style={{ display: "inline-block", background: "#2A2118", color: "#FFF", padding: "4px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>Staff Service Slip</div>
               <div style={{ fontSize: 13, color: "#2A2118", fontWeight: 700, marginBottom: 2 }}>Order #: {staffSlipPreview.slip}</div>
@@ -5981,13 +5972,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </button>
 
               <div style={{ textAlign: "center", marginBottom: 24, color: "#2A2118" }}>
-                {salonLogo && salonLogo !== 'default' ? (
-                  <img src={salonLogo} style={{ maxHeight: 70, maxWidth: 160, margin: "0 auto 12px", display: "block", objectFit: "contain" }} alt="Salon Logo" />
-                ) : (
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8, color: "#2A2118" }}>
-                    {salonName || 'Noorkada'}
-                  </div>
-                )}
+                <img src={NOORKADA_LOGO} style={{ maxHeight: 70, maxWidth: 160, margin: "0 auto 12px", display: "block", objectFit: "contain" }} alt="Noorkada Logo" />
                 <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, color: "#6B5540", marginBottom: 16 }}>Noor Kada</div>
 
                 <div style={{ fontSize: 13, color: "#2A2118", marginBottom: 2, fontWeight: 700 }}>Receipt #: {doneSlip.slip}</div>
@@ -6085,7 +6070,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   </style>
                 </head><body>
                   <div class="center">
-                    ${salonLogo && salonLogo !== 'default' ? `<img src="${salonLogo}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />` : `<div class="logo">${esc(salonName || 'Noorkada')}</div>`}
+                    <img src="${NOORKADA_LOGO}" style="max-height:60px;max-width:150px;margin:0 auto 8px;display:block;object-fit:contain;" />
                     <div class="sub">Noor Kada</div>
                     <div class="header-info">
                       <div class="header-line">Receipt #: ${esc(s.slip)}</div>
