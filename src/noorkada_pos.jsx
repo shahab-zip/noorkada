@@ -1199,6 +1199,21 @@ export default function NoorKadaPOS({ user, onLogout }) {
           if (data && !data.error) setSmtpSettings(data);
         })
         .catch(err => devLog('Fetch SMTP settings error:', err));
+
+      // Load branding from Supabase — syncs logo/name across all devices
+      fetch('/api/settings/branding', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) {
+            if (data.salonName) { setSalonName(data.salonName); localStorage.setItem('noorkada_salonName', data.salonName); }
+            if (data.salonLogo) { setSalonLogo(data.salonLogo); localStorage.setItem('noorkada_salonLogo', data.salonLogo); }
+            if (data.salonAddress !== undefined) { setSalonAddress(data.salonAddress || ""); localStorage.setItem('noorkada_salonAddress', data.salonAddress || ""); }
+            if (data.showSalonName !== undefined) { setShowSalonName(data.showSalonName); localStorage.setItem('noorkada_showSalonName', String(data.showSalonName)); }
+          }
+        })
+        .catch(err => devLog('Fetch branding error:', err));
     }
   }, [user.role, token]);
   const [dashTab, setDashTab] = useState(() => localStorage.getItem('noorkada_dashTab') || "overview");
@@ -1418,6 +1433,15 @@ export default function NoorKadaPOS({ user, onLogout }) {
       localStorage.setItem('noorkada_salonAddress', salonAddress);
     } catch (e) { devLog('Failed to save name/logo', e); }
 
+    // Sync branding to Supabase so all devices get the same logo/name
+    if (token && ROLE_RANK[user?.role] >= 2) {
+      fetch('/api/settings/branding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ salonName, salonLogo, salonAddress, showSalonName })
+      }).catch(err => devLog('Branding sync error:', err));
+    }
+
     try {
       // Update browser tab title
       document.title = salonName || "Noorkada POS";
@@ -1438,7 +1462,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     } catch (e) {
       devLog('Failed to update favicon', e);
     }
-  }, [salonName, salonLogo, salonAddress]);
+  }, [salonName, salonLogo, salonAddress, showSalonName, token, user?.role]);
 
   React.useEffect(() => {
     localStorage.setItem('noorkada_cartWidth', cartWidth.toString());

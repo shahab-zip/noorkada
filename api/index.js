@@ -570,6 +570,19 @@ app.post('/api/settings/smtp', requireRole('admin'), async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Branding settings (readable by all authenticated, writable by manager+) ───
+app.get('/api/settings/branding', requireRole('receptionist'), async (_req, res) => {
+  const { data } = await supabase.from('settings').select('value').eq('key', 'branding').single();
+  res.json(data?.value || {});
+});
+
+app.post('/api/settings/branding', requireRole('manager'), async (req, res) => {
+  const { salonName, salonLogo, salonAddress, showSalonName } = req.body;
+  await supabase.from('settings').upsert({ key: 'branding', value: { salonName, salonLogo, salonAddress, showSalonName } });
+  log(req.user, 'UPDATE_BRANDING', 'settings', 'branding', null);
+  res.json({ success: true });
+});
+
 // ── 404 catch-all ──────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Not found' }));
 
