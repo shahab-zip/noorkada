@@ -1241,19 +1241,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
     localStorage.setItem('noorkada_courtesy_persons', JSON.stringify(courtesyPersons));
   }, [courtesyPersons]);
 
-  // Fetch staff summary when admin opens the staff summary modal
-  React.useEffect(() => {
-    if (!viewingStaffSummary?.userId || !viewingStaffSummary.loading) return;
-    const { userId, date, range: vRange } = viewingStaffSummary;
-    let url = `/api/staff/admin/${userId}/summary`;
-    if (vRange === 'week')  url += '?range=week';
-    else if (vRange === 'month') url += '?range=month';
-    else url += `?date=${date}`;
-    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-      .then(r => r.json().then(d => r.ok ? d : Promise.reject(d)))
-      .then(data => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, data, error: null } : null))
-      .catch(err => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, error: err?.message || 'Failed to load' } : null));
-  }, [viewingStaffSummary?.userId, viewingStaffSummary?.loading, viewingStaffSummary?.date, viewingStaffSummary?.range]);
 
   // Auto-synced names: stylists + manager/admin users only (receptionists excluded)
   const autoCourtesyNames = useMemo(() => {
@@ -1421,6 +1408,21 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [tierFilter, setTierFilter] = useState("");
   const [viewingAmendment, setViewingAmendment] = useState(null); // txn to show in amendment comparison modal
   const [viewingStaffSummary, setViewingStaffSummary] = useState(null); // admin viewing a staff member's summary
+
+  // Fetch staff summary when admin opens the staff summary modal
+  // NOTE: this effect MUST stay after the viewingStaffSummary useState above (TDZ guard)
+  React.useEffect(() => {
+    if (!viewingStaffSummary?.userId || !viewingStaffSummary?.loading) return;
+    const { userId, date, range: vRange } = viewingStaffSummary;
+    let url = `/api/staff/admin/${userId}/summary`;
+    if (vRange === 'week')  url += '?range=week';
+    else if (vRange === 'month') url += '?range=month';
+    else url += `?date=${date}`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.json().then(d => r.ok ? d : Promise.reject(d)))
+      .then(data => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, data, error: null } : null))
+      .catch(err => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, error: err?.message || 'Failed to load' } : null));
+  }, [viewingStaffSummary?.userId, viewingStaffSummary?.loading, viewingStaffSummary?.date, viewingStaffSummary?.range]);
 
   const [salonName, setSalonName] = useState(() => {
     try { return localStorage.getItem('noorkada_salonName') || "Noorkada POS"; } catch (e) { return "Noorkada POS"; }
