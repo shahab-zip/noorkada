@@ -2773,8 +2773,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                         {/* Action Buttons (Now inside collapsible) */}
                         <div style={{ padding: "8px 14px 16px", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
-                          <input className="inp" placeholder="📝 Note (optional)" value={note} onChange={e => setNote(e.target.value)} style={{ fontSize: 12 }} />
-
                           {/* Two print options */}
                           <div style={{ display: "flex", gap: 8 }}>
                             <button
@@ -5835,12 +5833,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     <input className="inp" value={editDiscReason} onChange={e => setEditDiscReason(e.target.value)} placeholder="Reason (optional)" style={{ flex: 1 }} />
                   </div>
                 )}
-              </div>
-
-              {/* Note */}
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", marginBottom: 8 }}>📝 Note</div>
-                <input className="inp" value={editNote} onChange={e => setEditNote(e.target.value)} placeholder="Bill note (optional)" style={{ width: "100%", boxSizing: "border-box" }} />
               </div>
 
               {/* Edit reason */}
