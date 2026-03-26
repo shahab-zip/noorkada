@@ -3214,60 +3214,71 @@ export default function NoorKadaPOS({ user, onLogout }) {
           {/* ─ SERVICES ─ */}
           {dashTab === "services" && (
             <div className="fade">
-              {/* Category strip */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10, marginBottom: 16 }}>
-                {Object.entries(S.cR).sort((a, b) => b[1] - a[1]).map(([cat, rev]) => {
-                  const { icon, color } = SERVICES[cat] || { icon: "•", color: "#B08040" };
-                  return (
-                    <div key={cat} style={{ background: "#FFFFFF", borderRadius: 12, padding: "12px 14px", border: "1px solid #EDE6D8", borderLeft: `4px solid ${color}`, display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ fontSize: 24, lineHeight: 1 }}>{icon}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "#9A9088", fontWeight: 500, marginBottom: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cat}</div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>{fmt(rev, true)}</div>
-                        <div style={{ fontSize: 10, color: "#B8AFA5" }}>{S.cC[cat] || 0} services</div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!Object.keys(S.cR).length && <div style={{ fontSize: 12, color: "#C4B9AB", padding: 20 }}>No data</div>}
-              </div>
-
-              {/* Unified service table */}
-              <div className="card">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118" }}>All Services</div>
-                  <div style={{ fontSize: 11, color: "#9A9088" }}>{Object.keys(S.sR).length} services</div>
-                </div>
-                {/* Header */}
-                <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 60px 80px 90px", gap: 8, padding: "0 4px 10px", borderBottom: "1px solid #F0EAE0", marginBottom: 4 }}>
-                  {["#", "Service", "Times", "Revenue", ""].map((h, i) => (
-                    <div key={i} style={{ fontSize: 10, color: "#B8AFA5", fontWeight: 600, textTransform: "uppercase", letterSpacing: .7, textAlign: i >= 2 ? "right" : "left" }}>{h}</div>
-                  ))}
-                </div>
-                {!Object.keys(S.sR).length
-                  ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 32 }}>No data for this period</div>
-                  : (() => {
-                    const sorted = Object.entries(S.sR).sort((a, b) => b[1] - a[1]);
-                    const mx = Math.max(...sorted.map(([, r]) => r), 1);
-                    return sorted.map(([svc, rev], i) => {
-                      const cnt = S.sC[svc] || 0;
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                {/* Top by Revenue */}
+                <div className="card">
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>Top by Revenue</div>
+                  {!Object.keys(S.sR).length
+                    ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data</div>
+                    : Object.entries(S.sR).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([svc, rev], i) => {
+                      const mx = Math.max(...Object.values(S.sR), 1);
                       const color = getCatColor(svc);
                       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
                       return (
-                        <div key={svc} style={{ display: "grid", gridTemplateColumns: "28px 1fr 60px 80px 90px", gap: 8, padding: "9px 4px", borderBottom: "1px solid #F8F4EE", alignItems: "center" }}>
-                          <div style={{ fontSize: i < 3 ? 15 : 11, color: "#B8AFA5", fontWeight: 600, textAlign: "center" }}>{medal || `${i + 1}`}</div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#2A2118", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{svc}</div>
-                            <div style={{ marginTop: 4 }}><ProgBar pct={Math.round(rev / mx * 100)} color={color} h={3} /></div>
+                        <div key={svc} style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, color: i < 3 ? "#2A2118" : "#5A4838", fontWeight: i < 3 ? 700 : 500 }}>
+                              {medal ? <span style={{ marginRight: 5 }}>{medal}</span> : <span style={{ marginRight: 5, color: "#C4B9AB" }}>#{i + 1}</span>}{svc}
+                            </span>
+                            <span style={{ fontSize: 12, color: "#2A2118", fontWeight: 700, whiteSpace: "nowrap", marginLeft: 8 }}>{fmt(rev, true)} <span style={{ color: "#B8AFA5", fontWeight: 400 }}>· {S.sC[svc]}×</span></span>
                           </div>
-                          <div style={{ fontSize: 12, color: "#9A9088", fontWeight: 500, textAlign: "right" }}>{cnt}×</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", textAlign: "right" }}>{fmt(rev, true)}</div>
-                          <div style={{ fontSize: 10, color, fontWeight: 600, textAlign: "right", whiteSpace: "nowrap" }}>{Math.round(rev / mx * 100)}%</div>
+                          <ProgBar pct={Math.round(rev / mx * 100)} color={color} h={5} />
                         </div>
                       );
-                    });
-                  })()
-                }
+                    })}
+                </div>
+
+                {/* Most Requested */}
+                <div className="card">
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 16 }}>Most Requested</div>
+                  {!Object.keys(S.sC).length
+                    ? <div style={{ fontSize: 12, color: "#C4B9AB", textAlign: "center", padding: 24 }}>No data</div>
+                    : Object.entries(S.sC).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([svc, cnt], i) => {
+                      const mx = Math.max(...Object.values(S.sC), 1);
+                      const color = getCatColor(svc);
+                      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+                      return (
+                        <div key={svc} style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, color: i < 3 ? "#2A2118" : "#5A4838", fontWeight: i < 3 ? 700 : 500 }}>
+                              {medal ? <span style={{ marginRight: 5 }}>{medal}</span> : <span style={{ marginRight: 5, color: "#C4B9AB" }}>#{i + 1}</span>}{svc}
+                            </span>
+                            <span style={{ fontSize: 12, color: "#2A2118", fontWeight: 700, whiteSpace: "nowrap", marginLeft: 8 }}>{cnt}× <span style={{ color: "#B8AFA5", fontWeight: 400 }}>· {fmt(S.sR[svc] || 0, true)}</span></span>
+                          </div>
+                          <ProgBar pct={Math.round(cnt / mx * 100)} color={color} h={5} />
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Category Overview */}
+              <div className="card">
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#2A2118", marginBottom: 14 }}>Category Overview</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10 }}>
+                  {Object.entries(S.cR).sort((a, b) => b[1] - a[1]).map(([cat, rev]) => {
+                    const { icon, color } = SERVICES[cat] || { icon: "•", color: "#B08040" };
+                    return (
+                      <div key={cat} style={{ background: "#FDFAF6", borderRadius: 10, padding: 14, border: "1px solid #EDE6D8", borderTop: `3px solid ${color}` }}>
+                        <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", marginBottom: 2 }}>{cat}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color }}>{fmt(rev, true)}</div>
+                        <div style={{ fontSize: 11, color: "#B8AFA5", marginTop: 5 }}>{S.cC[cat] || 0} services</div>
+                      </div>
+                    );
+                  })}
+                  {!Object.keys(S.cR).length && <div style={{ fontSize: 12, color: "#C4B9AB", padding: 20 }}>No data</div>}
+                </div>
               </div>
             </div>
           )}
