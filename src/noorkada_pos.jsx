@@ -1616,8 +1616,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
         setDoneSlip(slipData);
         updTab({ staffSlipPrinted: false });
         doCloseTab(activeTab, false);
-        // Auto-print receipt immediately — no need to click Print separately
-        printReceipt(slipData);
       })
       .catch(err => {
         setCheckoutLoading(false);
