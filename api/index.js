@@ -734,7 +734,7 @@ app.get('/api/staff/me/services', requireStaff, async (req, res) => {
   try {
     const { data: txns, error } = await supabase
       .from('transactions')
-      .select('id, slip, cart, cust_name, cust_phone, pay_mode, total, created_at')
+      .select('id, cart, cust_name, cust_phone, pay_mode, total, created_at')
       .gte('created_at', date + 'T00:00:00.000Z')
       .lte('created_at', date + 'T23:59:59.999Z')
       .order('created_at', { ascending: false })
@@ -745,9 +745,10 @@ app.get('/api/staff/me/services', requireStaff, async (req, res) => {
     for (const txn of (txns || [])) {
       for (const item of (txn.cart || [])) {
         if (item.stylist !== staffName) continue;
+        const slip = `NK${String(txn.id || '').slice(-6)}`;
         rows.push({
           txn_id: txn.id,
-          slip: txn.slip || '',
+          slip,
           service: item.service || 'Unknown',
           category: item.category || '',
           qty: item.qty || 1,

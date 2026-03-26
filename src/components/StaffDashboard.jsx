@@ -85,10 +85,10 @@ function VirtualList({ items, renderRow, emptyMessage = 'No data', containerHeig
 
   if (!items.length) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9A9088', fontFamily: "'Outfit', sans-serif" }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#6B5030', marginBottom: 4 }}>No services logged</div>
-        <div style={{ fontSize: 12 }}>{emptyMessage}</div>
+      <div style={{ textAlign: 'center', padding: '36px 20px', fontFamily: "'Outfit', sans-serif" }}>
+        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#F5F0E8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 22 }}>✂️</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#2A2118', marginBottom: 4 }}>No services recorded</div>
+        <div style={{ fontSize: 12, color: '#9A9088', lineHeight: 1.5 }}>{emptyMessage}</div>
       </div>
     );
   }
