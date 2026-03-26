@@ -1232,13 +1232,16 @@ export default function NoorKadaPOS({ user, onLogout }) {
     localStorage.setItem('noorkada_courtesy_persons', JSON.stringify(courtesyPersons));
   }, [courtesyPersons]);
 
-  // Auto-synced names from stylists + system users (always included, not deletable)
+  // Auto-synced names: stylists + manager/admin users only (receptionists excluded)
   const autoCourtesyNames = useMemo(() => {
     const names = new Set();
     dbStylists.forEach(s => { if (s.name && s.name.trim()) names.add(s.name.trim()); });
     dbUsers.forEach(u => {
-      const n = (u.full_name || u.username || "").trim();
-      if (n) names.add(n);
+      // Only include manager-level and above — not receptionists
+      if ((ROLE_RANK[u.role] || 0) >= 2) {
+        const n = (u.full_name || u.username || "").trim();
+        if (n) names.add(n);
+      }
     });
     return [...names].sort();
   }, [dbStylists, dbUsers]);
