@@ -648,6 +648,60 @@ const buildSummary = (txns, staffName) => {
   };
 };
 
+// POST /api/staff/create — unified: creates stylist profile + optional login account atomically
+app.post('/api/staff/create', requireRole('manager'), async (req, res) => {
+  const full_name = sanitizeStr(req.body.full_name, 100);
+  const phone     = sanitizeStr(req.body.phone, 20);
+  const email     = sanitizeStr(req.body.email, 200);
+  const address   = sanitizeStr(req.body.address, 300);
+  const position  = sanitizeStr(req.body.position, 100);
+  const username  = sanitizeStr(req.body.username, 50) ? sanitizeStr(req.body.username, 50).toLowerCase().replace(/\s/g, '') : '';
+  const password  = typeof req.body.password === 'string' ? req.body.password : '';
+  const role      = sanitizeStr(req.body.role, 20) || 'staff';
+
+  if (!full_name) return res.status(400).json({ message: 'Full name is required' });
+
+  const actorRank  = ROLE_RANK[req.user.role] || 0;
+  const hasLogin   = !!(username && password);
+
+  if (hasLogin) {
+    if (!(role in ROLE_RANK)) return res.status(400).json({ message: 'Invalid role' });
+    if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    const targetRank = ROLE_RANK[role];
+    if (targetRank >= actorRank) return res.status(403).json({ message: 'Cannot assign equal or higher role' });
+  }
+
+  let stylistRecord = null;
+  try {
+    const joined_date = new Date().toISOString().split('T')[0];
+    const { data: s, error: sErr } = await supabase
+      .from('stylists')
+      .insert({ name: full_name, phone: phone || '', email: email || '', address: address || '', position: position || '', joined_date, color: '#B08040' })
+      .select().single();
+    if (sErr) throw new Error(sErr.message || 'Failed to create staff profile');
+    stylistRecord = s;
+
+    let userRecord = null;
+    if (hasLogin) {
+      const password_hash = await bcrypt.hash(password, 12);
+      const { data: u, error: uErr } = await supabase
+        .from('users')
+        .insert({ username, full_name, password_hash, role, email: email || '' })
+        .select('id, username, full_name, email, role, created_at').single();
+      if (uErr) {
+        await supabase.from('stylists').delete().eq('id', stylistRecord.id);
+        throw new Error(uErr.code === '23505' ? 'Username already exists' : (uErr.message || 'Failed to create login account'));
+      }
+      userRecord = u;
+    }
+
+    log(req.user, 'CREATE_STAFF_UNIFIED', 'staff', stylistRecord.id, { name: full_name, username: username || null, role: hasLogin ? role : null, position });
+    res.json({ stylist: stylistRecord, user: userRecord });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // GET /api/staff/me/summary?date=YYYY-MM-DD | ?range=week|month | ?from=YYYY-MM-DD&to=YYYY-MM-DD
 app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
   const staffName = req.user.full_name;

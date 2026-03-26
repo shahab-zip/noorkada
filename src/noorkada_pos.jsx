@@ -895,10 +895,12 @@ export default function NoorKadaPOS({ user, onLogout }) {
   });
   const [newCourtesyName, setNewCourtesyName] = useState("");
   const [staffSubTab, setStaffSubTab] = useState(() => localStorage.getItem('noorkada_staffSubTab') || "stylists"); // users, stylists
+  const [addingUnified, setAddingUnified] = useState(null); // unified add-staff form state
   // Search states for admin tables
   const [svcSearch, setSvcSearch] = useState("");
   const [catSearch, setCatSearch] = useState("");
-  const [stylistSearch, setStylistSearch] = useState("");
+  const [stylistSearch, setStylistSearch] = useState('');
+  const [staffUnifiedSearch, setStaffUnifiedSearch] = useState('');
   const [userSearch, setUserSearch] = useState("");
   const [courtesySearch, setCourtesySearch] = useState("");
   const [editingUser, setEditingUser] = useState(null); // { id, username, role, password }
@@ -4358,18 +4360,19 @@ export default function NoorKadaPOS({ user, onLogout }) {
               {/* 2. Staff Tab */}
               {adminTab === "staff" && (
                 <div className="fade">
+                  {/* ── Page header ── */}
                   <div style={{ marginBottom: isMobile ? 20 : 28 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                       <div>
                         <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#2A2118", marginBottom: 4 }}>Staff Registry</h1>
-                        <p style={{ fontSize: 13, color: "#9A9088" }}>Manage your salon team and system access roles.</p>
+                        <p style={{ fontSize: 13, color: "#9A9088" }}>Manage your salon team and system access in one place.</p>
                       </div>
                       <div style={{ display: "flex", gap: 10 }}>
-                        <div style={{ background: "#FEF3C7", borderRadius: 10, padding: "8px 14px", textAlign: "center", minWidth: 64 }}>
+                        <div style={{ background: "#FEF3C7", borderRadius: 10, padding: "8px 14px", textAlign: "center", minWidth: 60 }}>
                           <div style={{ fontSize: 18, fontWeight: 800, color: "#92400E" }}>{dbStylists.length}</div>
                           <div style={{ fontSize: 10, color: "#B45309", fontWeight: 600, textTransform: "uppercase" }}>Team</div>
                         </div>
-                        <div style={{ background: "#DBEAFE", borderRadius: 10, padding: "8px 14px", textAlign: "center", minWidth: 64 }}>
+                        <div style={{ background: "#DBEAFE", borderRadius: 10, padding: "8px 14px", textAlign: "center", minWidth: 60 }}>
                           <div style={{ fontSize: 18, fontWeight: 800, color: "#1D4ED8" }}>{dbUsers.length}</div>
                           <div style={{ fontSize: 10, color: "#2563EB", fontWeight: 600, textTransform: "uppercase" }}>Logins</div>
                         </div>
@@ -4377,478 +4380,472 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </div>
                   </div>
 
-                  {/* ── Section: Salon Team ───────────────────────────────────── */}
+                  {/* ── Unified Staff Table ── */}
                   <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", marginBottom: 20, overflow: "hidden" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: editingStylist?.id === 'new' ? "1px solid #EDE6D8" : "none" }}>
+
+                    {/* Section header */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: addingUnified ? "1px solid #EDE6D8" : "none" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👥</div>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
                         <div>
-                          <div style={{ fontSize: 15, fontWeight: 800, color: "#2A2118" }}>Salon Team</div>
-                          <div style={{ fontSize: 11, color: "#9A9088" }}>Staff members who perform services</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#2A2118" }}>Team Members</div>
+                          <div style={{ fontSize: 11, color: "#9A9088" }}>Staff profiles and login access in one place</div>
                         </div>
                       </div>
                       <button
-                        onClick={() => setEditingStylist({ id: 'new', name: '', phone: '', address: '', email: '', position: '' })}
-                        style={{ padding: "7px 16px", fontSize: 12, borderRadius: 8, width: "auto", background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                      >+ Add Member</button>
+                        onClick={() => { setAddingUnified({ full_name: '', position: '', phone: '', email: '', address: '', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'staff', hasLogin: false }); setEditingUser(null); setEditingStylist(null); }}
+                        style={{ padding: "8px 18px", fontSize: 12, borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                      >+ Add Staff Member</button>
                     </div>
 
-                      {/* Add Staff Form (Top) */}
-                      {editingStylist && editingStylist.id === 'new' && (
-                        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New Staff Member</div>
-                          <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
-                              <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} placeholder="e.g. Sana" />
+                    {/* ── Unified Add Form ── */}
+                    {addingUnified && (
+                      <div style={{ padding: "20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New Staff Member</div>
+                        <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
+                        <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+
+                        {/* Profile fields */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Profile</div>
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name *</label>
+                            <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Position</label>
+                            <select className="inp" value={addingUnified.position} onChange={e => setAddingUnified(p => ({ ...p, position: e.target.value }))}>
+                              <option value="">— Select position —</option>
+                              {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Phone</label>
+                            <input className="inp" autoComplete="off" value={addingUnified.phone} onChange={e => setAddingUnified(p => ({ ...p, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
+                            <input className="inp" type="email" autoComplete="off" value={addingUnified.email} onChange={e => setAddingUnified(p => ({ ...p, email: e.target.value }))} placeholder="staff@example.com" />
+                          </div>
+                          <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Address</label>
+                            <input className="inp" autoComplete="off" value={addingUnified.address} onChange={e => setAddingUnified(p => ({ ...p, address: e.target.value }))} placeholder="Residential address" />
+                          </div>
+                        </div>
+
+                        {/* Login access toggle */}
+                        <div style={{ borderTop: "1px solid #EDE6D8", paddingTop: 14, marginBottom: addingUnified.hasLogin ? 14 : 0 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+                            <div
+                              onClick={() => setAddingUnified(p => ({ ...p, hasLogin: !p.hasLogin }))}
+                              style={{ width: 38, height: 22, borderRadius: 11, background: addingUnified.hasLogin ? "#2A2118" : "#E8DECE", position: "relative", transition: "background .2s", cursor: "pointer", flexShrink: 0 }}
+                            >
+                              <div style={{ position: "absolute", top: 3, left: addingUnified.hasLogin ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
                             </div>
                             <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role / Position</label>
-                              <select className="inp" value={editingStylist.position || ''} onChange={e => setEditingStylist(prev => ({ ...prev, position: e.target.value }))}>
-                                <option value="">— Select position —</option>
-                                {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>Enable System Login</div>
+                              <div style={{ fontSize: 11, color: "#9A9088" }}>Allow this person to log into the POS</div>
+                            </div>
+                          </label>
+                        </div>
+
+                        {addingUnified.hasLogin && (
+                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 14, padding: "14px 16px", background: "#F5F0E8", borderRadius: 10 }}>
+                            <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B5030", textTransform: "uppercase", letterSpacing: .5 }}>Login Credentials</div>
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username *</label>
+                              <input className="inp" autoComplete="off" value={addingUnified.username} onChange={e => setAddingUnified(p => ({ ...p, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="No spaces" />
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role *</label>
+                              <select className="inp" value={addingUnified.role} onChange={e => setAddingUnified(p => ({ ...p, role: e.target.value }))}>
+                                {creatableRoles(user.role).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
                               </select>
                             </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Phone Number</label>
-                              <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
-                              <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} placeholder="sana@example.com" />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Address</label>
-                              <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} placeholder="Full residential address" />
+                            <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password * (min 8 characters)</label>
+                              <input className="inp" type="password" autoComplete="new-password" value={addingUnified.password} onChange={e => setAddingUnified(p => ({ ...p, password: e.target.value }))} placeholder="Enter password" />
                             </div>
                           </div>
-                          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                            <button
-                              onClick={async () => {
-                                if (!editingStylist.name) return showToast('Name is required', 'error');
-                                const res = await fetch('/api/stylists', {
+                        )}
+
+                        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                          <button
+                            onClick={async () => {
+                              try {
+                                if (!addingUnified.full_name.trim()) return showToast('Full name is required', 'error');
+                                if (addingUnified.hasLogin && (!addingUnified.username || !addingUnified.password)) return showToast('Username and password are required for login', 'error');
+                                const body = {
+                                  full_name: addingUnified.full_name,
+                                  position: addingUnified.position,
+                                  phone: addingUnified.phone,
+                                  email: addingUnified.email,
+                                  address: addingUnified.address,
+                                };
+                                if (addingUnified.hasLogin) {
+                                  body.username = addingUnified.username;
+                                  body.password = addingUnified.password;
+                                  body.role = addingUnified.role;
+                                }
+                                const res = await fetch('/api/staff/create', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email, position: editingStylist.position })
+                                  body: JSON.stringify(body),
                                 });
-                                if (res.ok) fetchStylists();
-                                setEditingStylist(null);
-                              }}
-                              className="btn-gold" style={{ width: "auto", padding: "10px 24px", borderRadius: 8 }}
-                            >Add Staff Member</button>
-                            <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px" }}>Cancel</button>
-                          </div>
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.message || 'Error creating staff member');
+                                if (data.stylist) setDbStylists(prev => [...prev, data.stylist]);
+                                if (data.user) setDbUsers(prev => [...prev, data.user]);
+                                setAddingUnified(null);
+                                showToast('Staff member added successfully!');
+                              } catch (err) {
+                                showToast(err.message, 'error');
+                              }
+                            }}
+                            style={{ padding: "10px 24px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                          >Create Staff Member</button>
+                          <button onClick={() => setAddingUnified(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px", fontSize: 13 }}>Cancel</button>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Staff Table */}
-                      <div style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
-                        <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
-                          <input
-                            className="inp"
-                            placeholder="🔍 Search staff..."
-                            value={stylistSearch}
-                            onChange={e => setStylistSearch(e.target.value)}
-                            style={{ fontSize: 12, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}
-                          />
-                        </div>
-                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 600 : "auto" }}>
-                          <thead style={{ background: "#f8f5f0", borderBottom: "1px solid #EDE6D8" }}>
-                            <tr>
-                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Staff Member</th>
-                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Position</th>
-                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Contact</th>
-                              <th style={{ textAlign: "right", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {dbStylists.filter(s => !stylistSearch || s.name.toLowerCase().includes(stylistSearch.toLowerCase()) || (s.phone || '').includes(stylistSearch) || (s.email || '').toLowerCase().includes(stylistSearch.toLowerCase()) || (s.position || '').toLowerCase().includes(stylistSearch.toLowerCase())).map(s => (
-                              <React.Fragment key={s.id}>
-                                <tr style={{ borderBottom: "1px solid #f0eae0", background: editingStylist?.id === s.id ? "#FBF6EE" : "transparent" }}>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: s.color || "#F5F0E8", color: s.color ? "#FFF" : "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18 }}>{s.name[0]}</div>
-                                      <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 14 }}>{s.name}</div>
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
-                                    {s.position ? (
-                                      <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E" }}>{s.position}</span>
-                                    ) : (
-                                      <span style={{ fontSize: 11, color: "#C4B9AB" }}>—</span>
-                                    )}
-                                  </td>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
-                                    <div style={{ fontSize: 12, color: "#2A2118", marginBottom: 2 }}>{s.phone || 'No phone'}</div>
-                                    <div style={{ fontSize: 11, color: "#9A9088" }}>{s.email || 'No email'}</div>
-                                  </td>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", textAlign: "right" }}>
-                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10 }}>
-                                      <button onClick={() => setEditingStylist({ id: s.id, name: s.name, phone: s.phone || '', address: s.address || '', email: s.email || '', position: s.position || '' })} style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Edit</button>
-                                      <button onClick={() => setDelStylistConfirmId(s.id)} style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Remove</button>
-                                    </div>
-                                  </td>
-                                </tr>
-                                {editingStylist?.id === s.id && (
-                                  <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
-                                    <td colSpan={4} style={{ padding: 16 }}>
-                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingStylist.name}</div>
-                                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
-                                          <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} />
+                    {/* Search */}
+                    <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
+                      <input
+                        className="inp"
+                        placeholder="🔍 Search by name, position, role, phone…"
+                        value={staffUnifiedSearch}
+                        onChange={e => setStaffUnifiedSearch(e.target.value)}
+                        style={{ fontSize: 12, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </div>
+
+                    {/* Unified Table */}
+                    {(() => {
+                      // Build merged rows: stylists as primary, then unlinked users
+                      const matchedUserIds = new Set();
+                      const rows = [];
+                      dbStylists.forEach(s => {
+                        const linkedUser = dbUsers.find(u => u.full_name === s.name);
+                        if (linkedUser) matchedUserIds.add(linkedUser.id);
+                        rows.push({ key: `s${s.id}`, stylist: s, user: linkedUser || null, name: s.name });
+                      });
+                      dbUsers.forEach(u => {
+                        if (!matchedUserIds.has(u.id)) {
+                          rows.push({ key: `u${u.id}`, stylist: null, user: u, name: u.full_name || u.username });
+                        }
+                      });
+
+                      const q = staffUnifiedSearch.toLowerCase();
+                      const filtered = q ? rows.filter(r =>
+                        r.name.toLowerCase().includes(q) ||
+                        (r.stylist?.position || '').toLowerCase().includes(q) ||
+                        (r.user?.role || '').toLowerCase().includes(q) ||
+                        (r.user?.username || '').toLowerCase().includes(q) ||
+                        (r.stylist?.phone || '').includes(q) ||
+                        (r.stylist?.email || r.user?.email || '').toLowerCase().includes(q)
+                      ) : rows;
+
+                      return (
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 600 : "auto" }}>
+                            <thead style={{ background: "#f8f5f0", borderBottom: "1px solid #EDE6D8" }}>
+                              <tr>
+                                <th style={{ textAlign: "left", padding: isMobile ? "10px 10px" : "12px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700 }}>Member</th>
+                                <th style={{ textAlign: "left", padding: isMobile ? "10px 10px" : "12px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700 }}>Position</th>
+                                <th style={{ textAlign: "left", padding: isMobile ? "10px 10px" : "12px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700 }}>Access</th>
+                                <th style={{ textAlign: "left", padding: isMobile ? "10px 10px" : "12px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700 }}>Contact</th>
+                                <th style={{ textAlign: "right", padding: isMobile ? "10px 10px" : "12px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase", fontWeight: 700 }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filtered.length === 0 && (
+                                <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#9A9088", fontSize: 13 }}>
+                                  {staffUnifiedSearch ? 'No results found.' : 'No staff members yet. Click "+ Add Staff Member" to get started.'}
+                                </td></tr>
+                              )}
+                              {filtered.map(row => (
+                                <React.Fragment key={row.key}>
+                                  <tr style={{ borderBottom: "1px solid #f0eae0", background: (editingStylist?.id === row.stylist?.id || editingUser?.id === row.user?.id) ? "#FBF6EE" : "transparent" }}>
+                                    {/* Member */}
+                                    <td style={{ padding: isMobile ? "10px 10px" : "14px 20px" }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: row.stylist?.color || "#F5F0E8", color: row.stylist?.color ? "#FFF" : "#2A2118", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+                                          {row.name[0]?.toUpperCase()}
                                         </div>
                                         <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Role / Position</label>
-                                          <select className="inp" value={editingStylist.position || ''} onChange={e => setEditingStylist(prev => ({ ...prev, position: e.target.value }))}>
-                                            <option value="">— Select position —</option>
-                                            {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                                          </select>
-                                        </div>
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Phone Number</label>
-                                          <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} />
-                                        </div>
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Email</label>
-                                          <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} />
-                                        </div>
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Address</label>
-                                          <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} />
+                                          <div style={{ fontWeight: 700, fontSize: isMobile ? 12 : 14, color: "#2A2118" }}>{row.name}</div>
+                                          {row.user?.username && <div style={{ fontSize: 10, color: "#9A9088" }}>@{row.user.username}</div>}
                                         </div>
                                       </div>
-                                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                                        <button
-                                          onClick={async () => {
-                                            if (!editingStylist.name) return showToast('Name is required', 'error');
-                                            await fetch(`/api/stylists/${editingStylist.id}`, {
-                                              method: 'PUT',
-                                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                              body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email, position: editingStylist.position })
-                                            });
-                                            fetchStylists();
-                                            setEditingStylist(null);
-                                            showToast('Staff member updated!');
-                                          }}
-                                          className="btn-gold" style={{ width: "auto", padding: "8px 20px", borderRadius: 8, fontSize: 12 }}
-                                        >Save Changes</button>
-                                        <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
+                                    </td>
+                                    {/* Position */}
+                                    <td style={{ padding: isMobile ? "10px 10px" : "14px 20px" }}>
+                                      {row.stylist?.position ? (
+                                        <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E" }}>{row.stylist.position}</span>
+                                      ) : <span style={{ fontSize: 11, color: "#C4B9AB" }}>—</span>}
+                                    </td>
+                                    {/* Access / Role */}
+                                    <td style={{ padding: isMobile ? "10px 10px" : "14px 20px" }}>
+                                      {row.user ? (
+                                        <span style={{ padding: "4px 10px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase", ...roleBadgeStyle(row.user.role) }}>{row.user.role}</span>
+                                      ) : (
+                                        <span style={{ fontSize: 11, color: "#C4B9AB", fontStyle: "italic" }}>No login</span>
+                                      )}
+                                    </td>
+                                    {/* Contact */}
+                                    <td style={{ padding: isMobile ? "10px 10px" : "14px 20px" }}>
+                                      <div style={{ fontSize: 12, color: "#2A2118" }}>{row.stylist?.phone || row.user?.email || '—'}</div>
+                                      {row.stylist?.email && <div style={{ fontSize: 11, color: "#9A9088" }}>{row.stylist.email}</div>}
+                                    </td>
+                                    {/* Actions */}
+                                    <td style={{ padding: isMobile ? "10px 10px" : "14px 20px", textAlign: "right" }}>
+                                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                                        {row.user?.role === 'staff' && (ROLE_RANK[user.role] || 0) >= 2 && (
+                                          <button
+                                            onClick={() => setViewingStaffSummary({ userId: row.user.id, name: row.user.full_name || row.user.username, date: new Date().toISOString().slice(0, 10), range: 'today', loading: true, data: null, error: null })}
+                                            style={{ background: "#F3E8FF", border: "1px solid #E9D5FF", color: "#6B21A8", fontWeight: 700, fontSize: 11, cursor: "pointer", borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap" }}
+                                          >📊 Dashboard</button>
+                                        )}
+                                        {row.stylist && (
+                                          <button
+                                            onClick={() => { setEditingStylist({ id: row.stylist.id, name: row.stylist.name, phone: row.stylist.phone || '', address: row.stylist.address || '', email: row.stylist.email || '', position: row.stylist.position || '' }); setEditingUser(null); }}
+                                            style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                          >Edit Profile</button>
+                                        )}
+                                        {row.user && (user.role === 'superadmin' || (ROLE_RANK[row.user.role] || 0) < (ROLE_RANK[user.role] || 0)) && (
+                                          <button
+                                            onClick={() => { setEditingUser({ id: row.user.id, username: row.user.username, full_name: row.user.full_name || '', role: row.user.role, password: '' }); setEditingStylist(null); }}
+                                            style={{ background: "none", border: "none", color: "#4A7CB8", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                          >Edit Login</button>
+                                        )}
+                                        {row.stylist && (
+                                          <button
+                                            onClick={() => setDelStylistConfirmId(row.stylist.id)}
+                                            style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                          >Remove</button>
+                                        )}
+                                        {row.user && !row.stylist && user.username !== row.user.username && canDeleteUser(user.role, row.user.role) && (
+                                          <button
+                                            onClick={() => setDelUserConfirmId(row.user.id)}
+                                            style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+                                          >Remove</button>
+                                        )}
                                       </div>
                                     </td>
                                   </tr>
-                                )}
-                              </React.Fragment>
-                            ))}
-                            {dbStylists.length === 0 && (
-                              <tr><td colSpan={4} style={{ padding: 40, textAlign: "center", color: "#9A9088", fontSize: 13 }}>No staff members added yet.</td></tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
 
-                      {/* Manage Positions */}
-                      {(() => {
-                        const autoEmoji = (name) => {
-                          const n = name.toLowerCase();
-                          if (n.includes("barber") || n.includes("hair cut")) return "💈";
-                          if (n.includes("color") || n.includes("colour")) return "🎨";
-                          if (n.includes("hair")) return "✂️";
-                          if (n.includes("makeup") || n.includes("make up")) return "💄";
-                          if (n.includes("nail")) return "💅";
-                          if (n.includes("massage") || n.includes("therapist")) return "💆";
-                          if (n.includes("esthet") || n.includes("facial") || n.includes("skin")) return "✨";
-                          if (n.includes("recept") || n.includes("front")) return "📋";
-                          if (n.includes("manager") || n.includes("manage")) return "👔";
-                          if (n.includes("lash") || n.includes("brow")) return "👁️";
-                          if (n.includes("wax")) return "🌸";
-                          if (n.includes("stylist")) return "💇";
-                          return null;
-                        };
-                        const addPosition = async () => {
-                          if (!newPositionName.trim()) return;
-                          const emoji = newPositionEmoji || autoEmoji(newPositionName) || "👤";
-                          const res = await fetch('/api/staff-positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: newPositionName.trim(), emoji }) });
-                          if (res.ok) { fetchStaffPositions(); setNewPositionName(""); setNewPositionEmoji("👤"); setShowEmojiPicker(false); showToast('Position added!'); }
-                          else { const d = await res.json(); showToast(d.message || 'Error adding position', 'error'); }
-                        };
-                        return (
-                        <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", padding: 20, marginTop: 16 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🪪</div>
-                            <div>
-                              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Manage Positions</div>
-                              <div style={{ fontSize: 11, color: "#9A9088" }}>Job titles shown on staff profiles</div>
-                            </div>
-                          </div>
-                          {/* Add new position row */}
-                          <div style={{ display: "flex", gap: 8, marginTop: 16, marginBottom: 20, alignItems: "center" }}>
-                            {/* Emoji picker */}
-                            <EmojiPickerDropdown value={newPositionEmoji} onChange={v => setNewPositionEmoji(v)} defaultEmoji="👤" />
-                            <input
-                              className="inp"
-                              placeholder="Position name (e.g. Hair Stylist)…"
-                              value={newPositionName}
-                              style={{ flex: 1 }}
-                              onChange={e => {
-                                setNewPositionName(e.target.value);
-                                const auto = autoEmoji(e.target.value);
-                                if (auto) setNewPositionEmoji(auto);
-                              }}
-                              onKeyDown={e => { if (e.key === 'Enter') addPosition(); }}
-                            />
-                            <button
-                              className="btn-gold"
-                              style={{ width: "auto", padding: "10px 18px", fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}
-                              disabled={!newPositionName.trim()}
-                              onClick={addPosition}
-                            >+ Add</button>
-                          </div>
-                          {/* Positions grid */}
-                          {staffPositions.length === 0
-                            ? <div style={{ textAlign: "center", padding: "24px 0", color: "#C4B9AB", fontSize: 13 }}>No positions yet — add one above</div>
-                            : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-                              {staffPositions.map(p => (
-                                <div key={p.id} style={{ background: "#FDFBF7", border: "1.5px solid #EDE6D8", borderRadius: 14, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", transition: "box-shadow .15s" }}
-                                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,33,24,.1)"}
-                                  onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}>
-                                  <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#FEF9EE,#FEF3C7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: "0 2px 8px rgba(176,128,64,.15)" }}>
-                                    {p.emoji || "👤"}
-                                  </div>
-                                  <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, color: "#2A2118", textAlign: "center", lineHeight: 1.3 }}>{p.name}</div>
-                                  <button
-                                    onClick={async () => {
-                                      if (!confirm(`Remove "${p.name}"?`)) return;
-                                      const res = await fetch(`/api/staff-positions/${p.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                                      if (res.ok) { fetchStaffPositions(); showToast('Position removed'); }
-                                    }}
-                                    style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#C4B9AB", fontSize: 15, lineHeight: 1, padding: "2px 4px", borderRadius: 6, transition: "color .15s, background .15s" }}
-                                    onMouseEnter={e => { e.currentTarget.style.color = "#E53E3E"; e.currentTarget.style.background = "#FFF0F0"; }}
-                                    onMouseLeave={e => { e.currentTarget.style.color = "#C4B9AB"; e.currentTarget.style.background = "none"; }}
-                                  >×</button>
-                                </div>
-                              ))}
-                            </div>
-                          }
-                        </div>
-                        );
-                      })()}
-                  </div>
-
-                  {/* ── Section: System Access ───────────────────────────────── */}
-                  {creatableRoles(user.role).length > 0 && (
-                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", marginBottom: 20, overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: editingUser?.id === 'new' ? "1px solid #EDE6D8" : "none" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#DBEAFE,#BFDBFE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💻</div>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#2A2118" }}>System Access</div>
-                            <div style={{ fontSize: 11, color: "#9A9088" }}>POS login accounts &amp; roles</div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setEditingUser({ id: 'new', username: '', full_name: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'receptionist', email: '' })}
-                          style={{ padding: "7px 16px", fontSize: 12, borderRadius: 8, width: "auto", background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                        >+ Add User</button>
-                      </div>
-
-                      {/* Add User Form */}
-                      {editingUser && editingUser.id === 'new' && (
-                        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New System User</div>
-                          {/* hidden inputs to trick browser autofill */}
-                          <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
-                          <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
-
-                          <div className="grid-2-mobile-1" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name</label>
-                              <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Enter full name" />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username</label>
-                              <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username (no spaces)" />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
-                              <input className="inp" type="email" autoComplete="off" value={editingUser.email || ''} onChange={e => setEditingUser(prev => ({ ...prev, email: e.target.value }))} placeholder="Enter email" />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role</label>
-                              <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
-                                {creatableRoles(user.role).map(([val, label]) => (
-                                  <option key={val} value={val}>{label}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password</label>
-                              <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Enter password" />
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  if (!editingUser.username || !editingUser.password) return showToast('Username and password are required', 'error');
-                                  const res = await fetch('/api/users', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify({ username: editingUser.username, full_name: editingUser.full_name || '', password: editingUser.password, role: editingUser.role, email: editingUser.email })
-                                  });
-                                  const data = await res.json();
-                                  if (!res.ok) throw new Error(data.message || 'Error creating user');
-                                  setDbUsers(prev => [...prev, data]);
-                                  setEditingUser(null);
-                                } catch (err) {
-                                  showToast(err.message, 'error');
-                                }
-                              }}
-                              className="btn-gold" style={{ width: "auto", padding: "10px 24px", borderRadius: 8 }}
-                            >Create User</button>
-                            <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px" }}>Cancel</button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div style={{ padding: 0, overflowX: "auto", width: "100%", maxWidth: "100%" }}>
-                        <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
-                          <input
-                            className="inp"
-                            placeholder="🔍 Search users..."
-                            value={userSearch}
-                            onChange={e => setUserSearch(e.target.value)}
-                            style={{ fontSize: 12, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}
-                          />
-                        </div>
-                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 550 : "auto" }}>
-                          <thead style={{ background: "#f8f5f0", borderBottom: "1px solid #EDE6D8" }}>
-                            <tr>
-                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>User</th>
-                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Email</th>
-                              <th style={{ textAlign: "left", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Role</th>
-                              <th style={{ textAlign: "right", padding: isMobile ? "12px 10px" : "14px 20px", fontSize: 11, color: "#9A9088", textTransform: "uppercase" }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {dbUsers.filter(u => !userSearch || u.username.toLowerCase().includes(userSearch.toLowerCase()) || (u.email || '').toLowerCase().includes(userSearch.toLowerCase()) || u.role.includes(userSearch.toLowerCase())).map(u => (
-                              <React.Fragment key={u.id}>
-                                <tr style={{ borderBottom: "1px solid #f0eae0", background: editingUser?.id === u.id ? "#FBF6EE" : "transparent" }}>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                      <div style={{
-                                        width: 36, height: 36, borderRadius: "50%", background: "#F5F0E8",
-                                        display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700
-                                      }}>{(u.full_name || u.username)[0].toUpperCase()}</div>
-                                      <div>
-                                        <div style={{ fontWeight: 600, fontSize: isMobile ? 12 : 14 }}>{u.full_name || u.username}</div>
-                                        {u.full_name && <div style={{ fontSize: 10, color: "#9A9088" }}>@{u.username}</div>}
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", fontSize: isMobile ? 11 : 12, color: "#9A9088" }}>{u.email || '—'}</td>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px" }}>
-                                    <span style={{
-                                      padding: "4px 12px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase",
-                                      ...roleBadgeStyle(u.role)
-                                    }}>{u.role}</span>
-                                  </td>
-                                  <td style={{ padding: isMobile ? "10px 8px" : "16px 20px", textAlign: "right" }}>
-                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: isMobile ? 6 : 10, flexWrap: "wrap" }}>
-                                      {u.role === 'staff' && (ROLE_RANK[user.role] || 0) >= 2 && (
-                                        <button
-                                          onClick={() => setViewingStaffSummary({ userId: u.id, name: u.full_name || u.username, date: new Date().toISOString().slice(0, 10), range: 'today', loading: true, data: null, error: null })}
-                                          style={{ background: "#F3E8FF", border: "1px solid #E9D5FF", color: "#6B21A8", fontWeight: 700, fontSize: 11, cursor: "pointer", borderRadius: 6, padding: "4px 10px" }}
-                                        >📊 Dashboard</button>
-                                      )}
-                                      {(user.role === 'superadmin' || (ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0)) && (
-                                        <button
-                                          onClick={() => setEditingUser({ id: u.id, username: u.username, full_name: u.full_name || '', role: u.role, password: '' })}
-                                          style={{ background: "none", border: "none", color: "#B08040", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
-                                        >Edit</button>
-                                      )}
-                                      {user.username !== u.username && canDeleteUser(user.role, u.role) && (
-                                        <button
-                                          onClick={() => setDelUserConfirmId(u.id)}
-                                          style={{ background: "none", border: "none", color: "#A0303F", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
-                                        >Remove</button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                                {editingUser?.id === u.id && (
-                                  <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
-                                    <td colSpan={4} style={{ padding: 16 }}>
-                                      <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit — {editingUser.full_name || editingUser.username}</div>
-                                      <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
-                                      <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
-                                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
-                                          <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Enter full name" />
-                                        </div>
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Username</label>
-                                          <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="Enter username" />
-                                        </div>
-                                        {(ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0) ? (
+                                  {/* Inline edit — profile */}
+                                  {editingStylist?.id === row.stylist?.id && editingStylist?.id !== 'new' && (
+                                    <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
+                                      <td colSpan={5} style={{ padding: 16 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Profile — {editingStylist.name}</div>
+                                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
                                           <div>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Role</label>
-                                            <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
-                                              {creatableRoles(user.role).map(([val, label]) => (
-                                                <option key={val} value={val}>{label}</option>
-                                              ))}
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
+                                            <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} />
+                                          </div>
+                                          <div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Position</label>
+                                            <select className="inp" value={editingStylist.position || ''} onChange={e => setEditingStylist(prev => ({ ...prev, position: e.target.value }))}>
+                                              <option value="">— Select position —</option>
+                                              {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                                             </select>
                                           </div>
-                                        ) : (
                                           <div>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Role</label>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8, height: 42 }}>
-                                              <span style={{ padding: "4px 12px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase", ...roleBadgeStyle(u.role) }}>{u.role}</span>
-                                              <span style={{ fontSize: 11, color: "#9A9088" }}>cannot change own role</span>
-                                            </div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Phone</label>
+                                            <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} />
                                           </div>
-                                        )}
-                                        <div>
-                                          <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>New Password (optional)</label>
-                                          <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Leave empty to keep" />
+                                          <div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Email</label>
+                                            <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} />
+                                          </div>
+                                          <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Address</label>
+                                            <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} />
+                                          </div>
                                         </div>
-                                      </div>
-                                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                                        <button
-                                          onClick={async () => {
-                                            try {
-                                              const body = { username: editingUser.username, full_name: editingUser.full_name || '' };
-                                              if ((ROLE_RANK[u.role] || 0) < (ROLE_RANK[user.role] || 0)) body.role = editingUser.role;
-                                              if (editingUser.password) body.password = editingUser.password;
-                                              const res = await fetch(`/api/users/${editingUser.id}`, {
+                                        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                                          <button
+                                            onClick={async () => {
+                                              if (!editingStylist.name) return showToast('Name is required', 'error');
+                                              await fetch(`/api/stylists/${editingStylist.id}`, {
                                                 method: 'PUT',
                                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                                body: JSON.stringify(body)
+                                                body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email, position: editingStylist.position })
                                               });
-                                              const data = await res.json();
-                                              if (!res.ok) throw new Error(data.message || 'Error updating user');
-                                              setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, username: data.username || editingUser.username, full_name: data.full_name ?? editingUser.full_name, role: data.role || x.role } : x));
-                                              setEditingUser(null);
-                                              showToast('User updated successfully!');
-                                            } catch (err) {
-                                              showToast(err.message, 'error');
-                                            }
-                                          }}
-                                          className="btn-gold" style={{ width: "auto", padding: "8px 20px", borderRadius: 8, fontSize: 12 }}
-                                        >Save Changes</button>
-                                        <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
-                              </React.Fragment>
+                                              fetchStylists();
+                                              setEditingStylist(null);
+                                              showToast('Profile updated!');
+                                            }}
+                                            style={{ padding: "8px 20px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                          >Save Changes</button>
+                                          <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+
+                                  {/* Inline edit — login */}
+                                  {editingUser?.id === row.user?.id && editingUser?.id !== 'new' && (
+                                    <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
+                                      <td colSpan={5} style={{ padding: 16 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Login — {editingUser.full_name || editingUser.username}</div>
+                                        <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
+                                        <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+                                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
+                                          <div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
+                                            <input className="inp" autoComplete="off" value={editingUser.full_name || ''} onChange={e => setEditingUser(prev => ({ ...prev, full_name: e.target.value }))} />
+                                          </div>
+                                          <div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Username</label>
+                                            <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} />
+                                          </div>
+                                          {(() => {
+                                            const targetUser = dbUsers.find(u => u.id === editingUser.id);
+                                            return (ROLE_RANK[targetUser?.role] || 0) < (ROLE_RANK[user.role] || 0) ? (
+                                              <div>
+                                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Role</label>
+                                                <select className="inp" value={editingUser.role} onChange={e => setEditingUser(prev => ({ ...prev, role: e.target.value }))}>
+                                                  {creatableRoles(user.role).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                                                </select>
+                                              </div>
+                                            ) : (
+                                              <div>
+                                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Role</label>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, height: 42 }}>
+                                                  <span style={{ padding: "4px 12px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase", ...roleBadgeStyle(targetUser?.role) }}>{targetUser?.role}</span>
+                                                  <span style={{ fontSize: 11, color: "#9A9088" }}>cannot change own role</span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })()}
+                                          <div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>New Password (optional)</label>
+                                            <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Leave blank to keep" />
+                                          </div>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                                          <button
+                                            onClick={async () => {
+                                              try {
+                                                const targetUser = dbUsers.find(u => u.id === editingUser.id);
+                                                const body = { username: editingUser.username, full_name: editingUser.full_name || '' };
+                                                if ((ROLE_RANK[targetUser?.role] || 0) < (ROLE_RANK[user.role] || 0)) body.role = editingUser.role;
+                                                if (editingUser.password) body.password = editingUser.password;
+                                                const res = await fetch(`/api/users/${editingUser.id}`, {
+                                                  method: 'PUT',
+                                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                  body: JSON.stringify(body)
+                                                });
+                                                const data = await res.json();
+                                                if (!res.ok) throw new Error(data.message || 'Error updating login');
+                                                setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, username: data.username || editingUser.username, full_name: data.full_name ?? editingUser.full_name, role: data.role || x.role } : x));
+                                                setEditingUser(null);
+                                                showToast('Login updated!');
+                                              } catch (err) {
+                                                showToast(err.message, 'error');
+                                              }
+                                            }}
+                                            style={{ padding: "8px 20px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                          >Save Changes</button>
+                                          <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* ── Manage Positions ── */}
+                  {(() => {
+                    const autoEmoji = (name) => {
+                      const n = name.toLowerCase();
+                      if (n.includes("barber") || n.includes("hair cut")) return "💈";
+                      if (n.includes("color") || n.includes("colour")) return "🎨";
+                      if (n.includes("hair")) return "✂️";
+                      if (n.includes("makeup") || n.includes("make up")) return "💄";
+                      if (n.includes("nail")) return "💅";
+                      if (n.includes("massage") || n.includes("therapist")) return "💆";
+                      if (n.includes("esthet") || n.includes("facial") || n.includes("skin")) return "✨";
+                      if (n.includes("recept") || n.includes("front")) return "📋";
+                      if (n.includes("manager") || n.includes("manage")) return "👔";
+                      if (n.includes("lash") || n.includes("brow")) return "👁️";
+                      if (n.includes("wax")) return "🌸";
+                      if (n.includes("stylist")) return "💇";
+                      return null;
+                    };
+                    const addPosition = async () => {
+                      if (!newPositionName.trim()) return;
+                      const emoji = newPositionEmoji || autoEmoji(newPositionName) || "👤";
+                      const res = await fetch('/api/staff-positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: newPositionName.trim(), emoji }) });
+                      if (res.ok) { fetchStaffPositions(); setNewPositionName(""); setNewPositionEmoji("👤"); setShowEmojiPicker(false); showToast('Position added!'); }
+                      else { const d = await res.json(); showToast(d.message || 'Error adding position', 'error'); }
+                    };
+                    return (
+                      <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #EDE6D8", padding: 20 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#FEF3C7,#FDE68A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🪪</div>
+                          <div>
+                            <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 700, color: "#2A2118" }}>Manage Positions</div>
+                            <div style={{ fontSize: 11, color: "#9A9088" }}>Job titles shown on staff profiles</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 16, marginBottom: 20, alignItems: "center" }}>
+                          <EmojiPickerDropdown value={newPositionEmoji} onChange={v => setNewPositionEmoji(v)} defaultEmoji="👤" />
+                          <input
+                            className="inp"
+                            placeholder="Position name (e.g. Hair Stylist)…"
+                            value={newPositionName}
+                            style={{ flex: 1 }}
+                            onChange={e => {
+                              setNewPositionName(e.target.value);
+                              const auto = autoEmoji(e.target.value);
+                              if (auto) setNewPositionEmoji(auto);
+                            }}
+                            onKeyDown={e => { if (e.key === 'Enter') addPosition(); }}
+                          />
+                          <button
+                            style={{ padding: "10px 18px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                            disabled={!newPositionName.trim()}
+                            onClick={addPosition}
+                          >+ Add</button>
+                        </div>
+                        {staffPositions.length === 0
+                          ? <div style={{ textAlign: "center", padding: "24px 0", color: "#C4B9AB", fontSize: 13 }}>No positions yet — add one above</div>
+                          : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 }}>
+                            {staffPositions.map(p => (
+                              <div key={p.id} style={{ background: "#FDFBF7", border: "1.5px solid #EDE6D8", borderRadius: 14, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", transition: "box-shadow .15s" }}
+                                onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,33,24,.1)"}
+                                onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}>
+                                <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#FEF9EE,#FEF3C7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{p.emoji || "👤"}</div>
+                                <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, color: "#2A2118", textAlign: "center", lineHeight: 1.3 }}>{p.name}</div>
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm(`Remove "${p.name}"?`)) return;
+                                    const res = await fetch(`/api/staff-positions/${p.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                                    if (res.ok) { fetchStaffPositions(); showToast('Position removed'); }
+                                  }}
+                                  style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#C4B9AB", fontSize: 15, lineHeight: 1, padding: "2px 4px", borderRadius: 6, transition: "color .15s, background .15s" }}
+                                  onMouseEnter={e => { e.currentTarget.style.color = "#E53E3E"; e.currentTarget.style.background = "#FFF0F0"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.color = "#C4B9AB"; e.currentTarget.style.background = "none"; }}
+                                >×</button>
+                              </div>
                             ))}
-                          </tbody>
-                        </table>
+                          </div>
+                        }
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
 
