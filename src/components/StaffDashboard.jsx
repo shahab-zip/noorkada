@@ -614,10 +614,11 @@ function StaffDashboardInner({ user, token, onLogout }) {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
 
-  const [svcsPage, setSvcsPage]   = useState(1);
   const [svcs, setSvcs]           = useState({ data: [], pagination: { total: 0, pages: 1 } });
   const [svcsLoading, setSvcsLoading] = useState(false);
   const [svcsError, setSvcsError]   = useState(null);
+  const [showAllBreakdown, setShowAllBreakdown] = useState(false);
+  const [showAllLog, setShowAllLog] = useState(false);
 
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [showSettings, setShowSettings] = useState(false);
@@ -707,15 +708,11 @@ function StaffDashboardInner({ user, token, onLogout }) {
   const svcsTo   = (range === 'week' || range === 'month' || range === 'custom') ? TODAY : null;
 
   useEffect(() => {
-    setSvcsPage(1);
+    setShowAllBreakdown(false);
+    setShowAllLog(false);
     if (svcsFrom && svcsTo) fetchSvcs(1, svcsFrom, svcsTo, null);
     else fetchSvcs(1, null, null, TODAY);
   }, [range, customFrom, customTo]);
-
-  useEffect(() => {
-    if (svcsFrom && svcsTo) fetchSvcs(svcsPage, svcsFrom, svcsTo, null);
-    else fetchSvcs(svcsPage, null, null, TODAY);
-  }, [svcsPage]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const dateDisplay = () => {
@@ -921,22 +918,23 @@ function StaffDashboardInner({ user, token, onLogout }) {
               <div style={{ fontSize: 9, color: '#9A9088', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center', minWidth: 40 }}>Count</div>
               <div style={{ fontSize: 9, color: '#9A9088', fontWeight: 700, textTransform: 'uppercase', textAlign: 'right', minWidth: 80 }}>Revenue</div>
             </div>
-            <VirtualList
-              items={summary.services_breakdown}
-              containerHeight={Math.min(280, summary.services_breakdown.length * 50 + 10)}
-              rowHeight={50}
-              renderRow={(item, idx) => (
-                <div key={idx} style={{
-                  display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
-                  padding: '11px 16px', borderBottom: '1px solid #f9f5f0',
-                  background: idx % 2 === 0 ? '#fff' : '#fdfaf7', alignItems: 'center', height: 50,
-                }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2118', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.service_name}</div>
-                  <div style={{ fontSize: 12, color: '#9A9088', textAlign: 'center', minWidth: 40 }}>×{item.count}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46', textAlign: 'right', minWidth: 80 }}>PKR {item.revenue.toLocaleString('en-PK')}</div>
-                </div>
-              )}
-            />
+            {(showAllBreakdown ? summary.services_breakdown : summary.services_breakdown.slice(0, 5)).map((item, idx) => (
+              <div key={idx} style={{
+                display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
+                padding: '12px 16px', borderBottom: '1px solid #f9f5f0',
+                background: idx % 2 === 0 ? '#fff' : '#fdfaf7', alignItems: 'center',
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2118', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.service_name}</div>
+                <div style={{ fontSize: 12, color: '#9A9088', textAlign: 'center', minWidth: 40 }}>×{item.count}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46', textAlign: 'right', minWidth: 80 }}>PKR {item.revenue.toLocaleString('en-PK')}</div>
+              </div>
+            ))}
+            {summary.services_breakdown.length > 5 && (
+              <button onClick={() => setShowAllBreakdown(p => !p)}
+                style={{ width: '100%', padding: '11px 16px', border: 'none', borderBottom: '2px solid #EDE6D8', background: '#F7F3EE', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 700, color: '#6B5030', cursor: 'pointer', textAlign: 'center' }}>
+                {showAllBreakdown ? '▲ Show less' : `▼ View all ${summary.services_breakdown.length} services`}
+              </button>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, padding: '11px 16px', borderTop: '2px solid #EDE6D8', background: '#faf7f2' }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#2A2118' }}>Total</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#2A2118', textAlign: 'center', minWidth: 40 }}>×{summary.total_services}</div>
@@ -971,45 +969,44 @@ function StaffDashboardInner({ user, token, onLogout }) {
                   }}
                   style={{ background: '#2A2118', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>↺ Retry</button>
               </div>
-            ) : (
-              <VirtualList
-                items={svcs.data || []}
-                containerHeight={Math.min(400, Math.max(60, (svcs.data?.length || 1) * ROW_H + 10))}
-                rowHeight={ROW_H}
-                emptyMessage="No services logged for this period."
-                renderRow={(item, idx) => (
-                  <div key={idx} style={{
-                    display: 'grid', gridTemplateColumns: '1fr 54px 82px', gap: 8,
-                    padding: '10px 16px', borderBottom: '1px solid #f9f5f0',
-                    background: idx % 2 === 0 ? '#fff' : '#fdfaf7', alignItems: 'center', height: ROW_H,
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2118', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.service}</div>
-                      <div style={{ fontSize: 11, color: '#9A9088', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.customer}
-                        {item.time ? ' · ' + new Date(item.time).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }) : ''}
-                        {item.time ? ' ' + new Date(item.time).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) : ''}
+            ) : (() => {
+              const allRows = svcs.data || [];
+              const visible = showAllLog ? allRows : allRows.slice(0, 5);
+              if (!allRows.length) return (
+                <div style={{ textAlign: 'center', padding: '32px 20px', fontFamily: "'Outfit', sans-serif" }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>✂️</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2A2118', marginBottom: 4 }}>No services recorded</div>
+                  <div style={{ fontSize: 12, color: '#9A9088' }}>No services were logged for this period.</div>
+                </div>
+              );
+              return (
+                <>
+                  {visible.map((item, idx) => (
+                    <div key={idx} style={{
+                      display: 'grid', gridTemplateColumns: '1fr 54px 82px', gap: 8,
+                      padding: '11px 16px', borderBottom: '1px solid #f9f5f0',
+                      background: idx % 2 === 0 ? '#fff' : '#fdfaf7', alignItems: 'center',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2118', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.service}</div>
+                        <div style={{ fontSize: 11, color: '#9A9088', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.customer}
+                          {item.time ? ' · ' + new Date(item.time).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }) + ' ' + new Date(item.time).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </div>
                       </div>
+                      <div style={{ fontSize: 12, color: '#9A9088', textAlign: 'center' }}>×{item.qty}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46', textAlign: 'right' }}>PKR {item.revenue.toLocaleString('en-PK')}</div>
                     </div>
-                    <div style={{ fontSize: 12, color: '#9A9088', textAlign: 'center' }}>×{item.qty}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46', textAlign: 'right' }}>PKR {item.revenue.toLocaleString('en-PK')}</div>
-                  </div>
-                )}
-              />
-            )}
-            {svcs.pagination?.pages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, padding: '12px 16px', borderTop: '1px solid #f0ebe3' }}>
-                <button disabled={svcsPage <= 1} onClick={() => setSvcsPage(p => p - 1)}
-                  style={{ background: svcsPage <= 1 ? '#f5f0e8' : '#2A2118', color: svcsPage <= 1 ? '#C4B9AB' : '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 700, cursor: svcsPage <= 1 ? 'default' : 'pointer' }}>
-                  ← Prev
-                </button>
-                <span style={{ fontSize: 12, color: '#9A9088' }}>Page {svcsPage} of {svcs.pagination.pages}</span>
-                <button disabled={svcsPage >= svcs.pagination.pages} onClick={() => setSvcsPage(p => p + 1)}
-                  style={{ background: svcsPage >= svcs.pagination.pages ? '#f5f0e8' : '#2A2118', color: svcsPage >= svcs.pagination.pages ? '#C4B9AB' : '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 700, cursor: svcsPage >= svcs.pagination.pages ? 'default' : 'pointer' }}>
-                  Next →
-                </button>
-              </div>
-            )}
+                  ))}
+                  {allRows.length > 5 && (
+                    <button onClick={() => setShowAllLog(p => !p)}
+                      style={{ width: '100%', padding: '11px 16px', border: 'none', background: '#F7F3EE', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 700, color: '#6B5030', cursor: 'pointer', textAlign: 'center' }}>
+                      {showAllLog ? '▲ Show less' : `▼ View all ${allRows.length} entries`}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

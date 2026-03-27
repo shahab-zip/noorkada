@@ -851,7 +851,7 @@ app.get('/api/staff/me/services', requireStaff, async (req, res) => {
   }
 
   const page  = Math.max(1, parseInt(req.query.page)  || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 50));
+  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 500));
   const offset = (page - 1) * limit;
 
   try {
