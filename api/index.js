@@ -795,6 +795,20 @@ app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
       }
     }
 
+    // Build individual service log entries
+    const serviceLog = [];
+    for (const txn of (txns || [])) {
+      for (const item of (txn.cart || [])) {
+        if (item.stylist !== staffName) continue;
+        const qty = item.qty || 1;
+        const rev = (item.price || 0) * qty;
+        const slip = `NK${String(txn.id || '').slice(-6)}`;
+        const custLabel = txn.cust_name || 'Walk-in';
+        const timeStr = txn.created_at ? new Date(txn.created_at).toLocaleString('en-PK', { timeZone: 'Asia/Karachi', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+        serviceLog.push({ slip, service_name: item.service || 'Unknown', customer: custLabel, qty, revenue: rev, time: timeStr });
+      }
+    }
+
     res.json({
       staff_id: req.user.id,
       staff_name: staffName,
@@ -807,6 +821,7 @@ app.get('/api/staff/me/summary', requireStaff, async (req, res) => {
       currency: 'PKR',
       services_breakdown: serviceBreakdown,
       daily_breakdown: dailyBreakdown,
+      service_log: serviceLog,
     });
   } catch (err) {
     console.error('Staff summary error:', err);

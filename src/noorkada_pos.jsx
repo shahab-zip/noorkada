@@ -1415,16 +1415,17 @@ export default function NoorKadaPOS({ user, onLogout }) {
   // NOTE: this effect MUST stay after the viewingStaffSummary useState above (TDZ guard)
   React.useEffect(() => {
     if (!viewingStaffSummary?.userId || !viewingStaffSummary?.loading) return;
-    const { userId, date, range: vRange } = viewingStaffSummary;
+    const { userId, date, range: vRange, from: vFrom, to: vTo } = viewingStaffSummary;
     let url = `/api/staff/admin/${userId}/summary`;
-    if (vRange === 'week')  url += '?range=week';
-    else if (vRange === 'month') url += '?range=month';
+    if (vRange === 'week')        url += '?range=week';
+    else if (vRange === 'month')  url += '?range=month';
+    else if (vRange === 'range' && vFrom && vTo) url += `?from=${vFrom}&to=${vTo}`;
     else url += `?date=${date}`;
     fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(r => r.json().then(d => r.ok ? d : Promise.reject(d)))
       .then(data => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, data, error: null } : null))
       .catch(err => setViewingStaffSummary(prev => prev ? { ...prev, loading: false, error: err?.message || 'Failed to load' } : null));
-  }, [viewingStaffSummary?.userId, viewingStaffSummary?.loading, viewingStaffSummary?.date, viewingStaffSummary?.range]);
+  }, [viewingStaffSummary?.userId, viewingStaffSummary?.loading, viewingStaffSummary?.date, viewingStaffSummary?.range, viewingStaffSummary?.from, viewingStaffSummary?.to]);
 
   const [salonName, setSalonName] = useState(() => {
     try { return localStorage.getItem('noorkada_salonName') || "Noorkada POS"; } catch (e) { return "Noorkada POS"; }
@@ -4613,7 +4614,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                                         {row.user?.role === 'staff' && (ROLE_RANK[user.role] || 0) >= 2 && (
                                           <button
-                                            onClick={() => setViewingStaffSummary({ userId: row.user.id, name: row.user.full_name || row.user.username, date: new Date().toISOString().slice(0, 10), range: 'today', loading: true, data: null, error: null })}
+                                            onClick={() => setViewingStaffSummary({ userId: row.user.id, name: row.user.full_name || row.user.username, date: new Date().toISOString().slice(0, 10), range: 'today', from: '', to: '', loading: true, data: null, error: null })}
                                             style={{ background: "#F3E8FF", border: "1px solid #E9D5FF", color: "#6B21A8", fontWeight: 700, fontSize: 11, cursor: "pointer", borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap" }}
                                           >📊 Dashboard</button>
                                         )}
@@ -6327,91 +6328,261 @@ export default function NoorKadaPOS({ user, onLogout }) {
       }
 
       {/* ── Admin: View Staff Member Dashboard Modal ───────────────────── */}
-      {viewingStaffSummary && (
-        <div className="modal-overlay" style={{ position:"fixed",inset:0,zIndex:9500,background:"rgba(42,33,24,.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"20px 16px" }}
+      {viewingStaffSummary && (() => {
+        const today = new Date().toISOString().slice(0,10);
+        const vss = viewingStaffSummary;
+        const isRange = vss.range === 'range';
+        return (
+        <div className="modal-overlay" style={{ position:"fixed",inset:0,zIndex:9500,background:"rgba(42,33,24,.52)",backdropFilter:"blur(5px)",display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"24px 16px 40px" }}
           onClick={() => setViewingStaffSummary(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background:"#FAF7F3",borderRadius:20,width:"100%",maxWidth:560,boxShadow:"0 20px 60px rgba(42,33,24,.3)",fontFamily:"'Outfit',sans-serif",overflow:"hidden",marginTop:20 }}>
-            {/* Modal header */}
-            <div style={{ background:"#2A2118",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#FAF7F3",borderRadius:22,width:"100%",maxWidth:920,boxShadow:"0 24px 80px rgba(42,33,24,.28)",fontFamily:"'Outfit',sans-serif",overflow:"hidden",marginTop:16 }}>
+
+            {/* ── Header ── */}
+            <div style={{ background:"#2A2118",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
               <div>
-                <div style={{ fontSize:11,color:"#C4A882",fontWeight:600,letterSpacing:.5 }}>STAFF DASHBOARD</div>
-                <div style={{ fontSize:15,fontWeight:800,color:"#fff",marginTop:2 }}>{viewingStaffSummary.name}</div>
+                <div style={{ fontSize:10,color:"#C4A882",fontWeight:700,letterSpacing:1,textTransform:"uppercase" }}>Staff Dashboard</div>
+                <div style={{ fontSize:17,fontWeight:800,color:"#fff",marginTop:3 }}>{vss.name}</div>
               </div>
-              <button onClick={() => setViewingStaffSummary(null)} style={{ background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#FAF7F3",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif" }}>✕ Close</button>
+              <button onClick={() => setViewingStaffSummary(null)}
+                style={{ background:"rgba(255,255,255,0.1)",border:"1.5px solid rgba(255,255,255,0.18)",borderRadius:10,padding:"7px 18px",color:"#FAF7F3",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"background .15s" }}
+                onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.18)"}
+                onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"}>✕ Close</button>
             </div>
-            <div style={{ padding:"16px" }}>
-              {/* Range / date selector */}
-              <div style={{ display:"flex",gap:6,marginBottom:10,flexWrap:"wrap" }}>
-                {[['today','Today'],['week','Week'],['month','Month']].map(([v,l]) => (
-                  <button key={v} onClick={() => setViewingStaffSummary(prev => ({ ...prev, range:v, date:new Date().toISOString().slice(0,10), loading:true, data:null, error:null }))}
-                    style={{ flex:1,padding:"7px 10px",borderRadius:10,fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",
-                      background: viewingStaffSummary.range===v ? '#2A2118' : '#fff',
-                      color: viewingStaffSummary.range===v ? '#fff' : '#6B5030',
-                      border: viewingStaffSummary.range===v ? '1.5px solid #2A2118' : '1.5px solid #E8DECE' }}>
+
+            <div style={{ padding:"20px 24px 24px" }}>
+
+              {/* ── Range tabs ── */}
+              <div style={{ display:"flex",gap:6,marginBottom: isRange ? 10 : 16,flexWrap:"wrap",alignItems:"center" }}>
+                {[['today','Today'],['week','This Week'],['month','This Month']].map(([v,l]) => (
+                  <button key={v}
+                    onClick={() => setViewingStaffSummary(prev => ({ ...prev, range:v, date:today, from:'', to:'', loading:true, data:null, error:null }))}
+                    style={{ padding:"8px 18px",borderRadius:50,fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s",
+                      background: vss.range===v ? '#2A2118' : '#fff',
+                      color: vss.range===v ? '#fff' : '#6B5030',
+                      border: vss.range===v ? '2px solid #2A2118' : '2px solid #E8DECE',
+                      boxShadow: vss.range===v ? '0 2px 8px rgba(42,33,24,.18)' : 'none' }}>
                     {l}
                   </button>
                 ))}
-                <input type="date" max={new Date().toISOString().slice(0,10)}
-                  value={viewingStaffSummary.date}
-                  onChange={e => setViewingStaffSummary(prev => ({ ...prev, range:'custom', date:e.target.value, loading:true, data:null, error:null }))}
-                  style={{ padding:"7px 10px",borderRadius:10,border:"1.5px solid #E8DECE",fontFamily:"'Outfit',sans-serif",fontSize:12,color:"#2A2118",background:"#fff",outline:"none",cursor:"pointer" }} />
+                <button
+                  onClick={() => setViewingStaffSummary(prev => ({ ...prev, range:'range', loading: !!(prev.from && prev.to), data: !!(prev.from && prev.to) ? null : prev.data, error:null }))}
+                  style={{ padding:"8px 18px",borderRadius:50,fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,transition:"all .15s",
+                    background: isRange ? '#2A2118' : '#fff',
+                    color: isRange ? '#fff' : '#6B5030',
+                    border: isRange ? '2px solid #2A2118' : '2px solid #E8DECE',
+                    boxShadow: isRange ? '0 2px 8px rgba(42,33,24,.18)' : 'none' }}>
+                  <span style={{ fontSize:14 }}>⊞</span> Range
+                </button>
               </div>
-              {/* Loading */}
-              {viewingStaffSummary.loading && (
-                <div style={{ display:"flex",gap:10,marginBottom:14 }}>
-                  {[1,2,3].map(i => <div key={i} style={{ flex:1,height:80,borderRadius:12,background:"linear-gradient(90deg,#f0ebe3 25%,#e8e0d4 50%,#f0ebe3 75%)",backgroundSize:"200% 100%",animation:"sk-pulse 1.4s ease-in-out infinite" }} />)}
+
+              {/* ── Range date pickers ── */}
+              {isRange && (
+                <div style={{ display:"flex",gap:10,marginBottom:16,alignItems:"center",flexWrap:"wrap" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:12,border:"1.5px solid #E8DECE",padding:"8px 14px",flex:1,minWidth:180 }}>
+                    <span style={{ fontSize:11,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap" }}>From</span>
+                    <input type="date" max={vss.to || today}
+                      value={vss.from}
+                      onChange={e => {
+                        const nf = e.target.value;
+                        setViewingStaffSummary(prev => ({ ...prev, from: nf, loading: !!(nf && prev.to), data: !!(nf && prev.to) ? null : prev.data, error: null }));
+                      }}
+                      style={{ border:"none",outline:"none",fontFamily:"'Outfit',sans-serif",fontSize:13,color:"#2A2118",background:"transparent",flex:1,minWidth:0 }} />
+                  </div>
+                  <div style={{ fontSize:13,color:"#9A8070",fontWeight:600 }}>→</div>
+                  <div style={{ display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:12,border:"1.5px solid #E8DECE",padding:"8px 14px",flex:1,minWidth:180 }}>
+                    <span style={{ fontSize:11,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap" }}>To</span>
+                    <input type="date" min={vss.from || undefined} max={today}
+                      value={vss.to}
+                      onChange={e => {
+                        const nt = e.target.value;
+                        setViewingStaffSummary(prev => ({ ...prev, to: nt, loading: !!(prev.from && nt), data: !!(prev.from && nt) ? null : prev.data, error: null }));
+                      }}
+                      style={{ border:"none",outline:"none",fontFamily:"'Outfit',sans-serif",fontSize:13,color:"#2A2118",background:"transparent",flex:1,minWidth:0 }} />
+                  </div>
+                  {isRange && !(vss.from && vss.to) && (
+                    <div style={{ fontSize:12,color:"#9A8070",padding:"4px 8px" }}>Select both dates to load</div>
+                  )}
                 </div>
               )}
-              {/* Error */}
-              {viewingStaffSummary.error && !viewingStaffSummary.loading && (
-                <div style={{ background:"#FFF1F2",border:"1px solid #FECDD3",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8 }}>
-                  <span>⚠️</span>
-                  <div style={{ flex:1,fontSize:12,color:"#991B1B" }}>{viewingStaffSummary.error}</div>
-                  <button onClick={() => setViewingStaffSummary(prev => ({ ...prev, loading:true, error:null }))} style={{ background:"#2A2118",color:"#fff",border:"none",borderRadius:6,padding:"4px 12px",fontFamily:"'Outfit',sans-serif",fontSize:11,fontWeight:700,cursor:"pointer" }}>↺ Retry</button>
+
+              {/* ── Loading skeleton ── */}
+              {vss.loading && (
+                <div>
+                  <div style={{ display:"flex",gap:10,marginBottom:14 }}>
+                    {[1,2,3].map(i => <div key={i} style={{ flex:1,height:88,borderRadius:14,background:"linear-gradient(90deg,#f0ebe3 25%,#e8e0d4 50%,#f0ebe3 75%)",backgroundSize:"200% 100%",animation:"sk-pulse 1.4s ease-in-out infinite" }} />)}
+                  </div>
+                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+                    {[1,2].map(i => <div key={i} style={{ height:200,borderRadius:14,background:"linear-gradient(90deg,#f0ebe3 25%,#e8e0d4 50%,#f0ebe3 75%)",backgroundSize:"200% 100%",animation:"sk-pulse 1.4s ease-in-out infinite" }} />)}
+                  </div>
                 </div>
               )}
-              {/* Summary cards */}
-              {!viewingStaffSummary.loading && viewingStaffSummary.data && (() => {
-                const d = viewingStaffSummary.data;
+
+              {/* ── Error ── */}
+              {vss.error && !vss.loading && (
+                <div style={{ background:"#FFF1F2",border:"1px solid #FECDD3",borderRadius:12,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:10 }}>
+                  <span style={{ fontSize:18 }}>⚠️</span>
+                  <div style={{ flex:1,fontSize:13,color:"#991B1B",fontWeight:500 }}>{vss.error}</div>
+                  <button onClick={() => setViewingStaffSummary(prev => ({ ...prev, loading:true, error:null }))}
+                    style={{ background:"#2A2118",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer" }}>↺ Retry</button>
+                </div>
+              )}
+
+              {/* ── Data ── */}
+              {!vss.loading && vss.data && (() => {
+                const d = vss.data;
+                // Format PKR compactly
+                const fmtPKR = v => {
+                  if (v >= 1000000) return 'PKR '+(v/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+                  if (v >= 1000)    return 'PKR '+(v/1000).toFixed(1).replace(/\.0$/,'')+'k';
+                  return 'PKR '+v.toLocaleString('en-PK');
+                };
+                const fmtDate = ds => {
+                  if (!ds) return '';
+                  const parts = ds.split('-');
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  return `${parseInt(parts[2])} ${months[parseInt(parts[1])-1]} ${parts[0]}`;
+                };
+                // Date label
+                let dateLabel = '';
+                if (vss.range === 'today') dateLabel = new Date(vss.date+'T12:00:00').toLocaleDateString('en-PK',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+                else if (vss.range === 'week') dateLabel = 'Last 7 days';
+                else if (vss.range === 'month') dateLabel = new Date().toLocaleDateString('en-PK',{month:'long',year:'numeric'});
+                else if (vss.range === 'range' && vss.from && vss.to) dateLabel = `${fmtDate(vss.from)} – ${fmtDate(vss.to)}`;
+
+                const PREVIEW_ROWS = 5;
+
                 return (
                   <>
-                    <div style={{ display:"flex",gap:8,marginBottom:14 }}>
-                      {[['✂️','Services',d.total_services,''],['👤','Clients',d.total_clients_served,''],['💰','Revenue','PKR '+(d.total_revenue_generated||0).toLocaleString('en-PK'),'']].map(([icon,label,val]) => (
-                        <div key={label} style={{ flex:1,background:"#fff",borderRadius:12,padding:"12px 14px",border:"1px solid #EDE6D8",textAlign:"center" }}>
-                          <div style={{ fontSize:18,marginBottom:4 }}>{icon}</div>
-                          <div style={{ fontSize:9,color:"#9A9088",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2 }}>{label}</div>
-                          <div style={{ fontSize:16,fontWeight:800,color:"#2A2118" }}>{val}</div>
+                    {dateLabel && (
+                      <div style={{ fontSize:12,color:"#9A8070",fontWeight:600,marginBottom:14,display:"flex",alignItems:"center",gap:6 }}>
+                        <span>📅</span> {dateLabel}
+                      </div>
+                    )}
+
+                    {/* Stat cards */}
+                    <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:18 }}>
+                      {[
+                        { icon:'✂️', label:'Services', val: d.total_services, sub:'performed', color:'#5B21B6', bg:'#F3F0FF' },
+                        { icon:'👥', label:'Clients',  val: d.total_clients_served, sub:'served', color:'#1D4ED8', bg:'#EFF6FF' },
+                        { icon:'💰', label:'Revenue',  val: fmtPKR(d.total_revenue_generated||0), sub:'generated', color:'#065F46', bg:'#ECFDF5' },
+                      ].map(c => (
+                        <div key={c.label} style={{ background:c.bg,borderRadius:14,padding:"16px 14px",border:`1px solid ${c.bg}` }}>
+                          <div style={{ fontSize:22,marginBottom:6 }}>{c.icon}</div>
+                          <div style={{ fontSize:9,color:"#9A9088",fontWeight:700,textTransform:"uppercase",letterSpacing:.8,marginBottom:4 }}>{c.label}</div>
+                          <div style={{ fontSize:20,fontWeight:900,color:c.color,lineHeight:1 }}>{c.val}</div>
+                          <div style={{ fontSize:10,color:"#9A9088",marginTop:3 }}>{c.sub}</div>
                         </div>
                       ))}
                     </div>
-                    {/* Services breakdown */}
-                    {d.services_breakdown?.length > 0 && (
-                      <div style={{ background:"#fff",borderRadius:12,border:"1px solid #EDE6D8",overflow:"hidden",marginBottom:10 }}>
-                        <div style={{ padding:"10px 14px",borderBottom:"1px solid #f5f0e8",fontSize:12,fontWeight:700,color:"#2A2118" }}>Services Breakdown</div>
-                        <div style={{ maxHeight:220,overflowY:"auto" }}>
-                          {d.services_breakdown.map((svc, i) => (
-                            <div key={i} style={{ display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,padding:"9px 14px",borderBottom:"1px solid #f9f5f0",background:i%2===0?"#fff":"#fdfaf7",alignItems:"center" }}>
-                              <div style={{ fontSize:12,fontWeight:600,color:"#2A2118",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{svc.service_name}</div>
-                              <div style={{ fontSize:11,color:"#9A9088",textAlign:"center",minWidth:36 }}>×{svc.count}</div>
-                              <div style={{ fontSize:12,fontWeight:700,color:"#065F46",textAlign:"right",minWidth:76 }}>PKR {svc.revenue.toLocaleString('en-PK')}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {d.total_services === 0 && (
-                      <div style={{ textAlign:"center",padding:"24px 16px",color:"#9A9088",fontSize:13 }}>
-                        <div style={{ fontSize:28,marginBottom:6 }}>✨</div>
+
+                    {d.total_services === 0 ? (
+                      <div style={{ textAlign:"center",padding:"32px 16px",color:"#9A9088",fontSize:14 }}>
+                        <div style={{ fontSize:36,marginBottom:8 }}>✨</div>
                         No services logged for this period.
+                      </div>
+                    ) : (
+                      /* ── Side-by-side tables ── */
+                      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignItems:"start" }}>
+
+                        {/* Services Breakdown */}
+                        {(() => {
+                          const rows = d.services_breakdown || [];
+                          const [showAll, setShowAll] = React.useState(false);
+                          const visible = showAll ? rows : rows.slice(0, PREVIEW_ROWS);
+                          const totalRev = rows.reduce((s,r) => s+r.revenue, 0);
+                          const totalCnt = rows.reduce((s,r) => s+r.count, 0);
+                          return (
+                            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #EDE6D8",overflow:"hidden" }}>
+                              <div style={{ padding:"12px 16px",borderBottom:"1px solid #F0EBE0",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+                                <div style={{ fontSize:13,fontWeight:800,color:"#2A2118" }}>Services Breakdown</div>
+                                <div style={{ fontSize:11,color:"#9A8070",fontWeight:600,background:"#F5F0E8",borderRadius:20,padding:"2px 10px" }}>{rows.length} types</div>
+                              </div>
+                              {/* Column headers */}
+                              <div style={{ display:"grid",gridTemplateColumns:"1fr 44px 80px",gap:4,padding:"6px 16px",background:"#FAF7F3",borderBottom:"1px solid #F0EBE0" }}>
+                                <div style={{ fontSize:10,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5 }}>Service</div>
+                                <div style={{ fontSize:10,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5,textAlign:"center" }}>Qty</div>
+                                <div style={{ fontSize:10,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5,textAlign:"right" }}>Revenue</div>
+                              </div>
+                              {visible.map((svc,i) => (
+                                <div key={i} style={{ display:"grid",gridTemplateColumns:"1fr 44px 80px",gap:4,padding:"9px 16px",borderBottom:"1px solid #F9F5F0",background:i%2===0?"#fff":"#FDFAF7",alignItems:"center" }}>
+                                  <div style={{ fontSize:12,fontWeight:600,color:"#2A2118",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }} title={svc.service_name}>{svc.service_name}</div>
+                                  <div style={{ fontSize:11,color:"#9A8070",textAlign:"center",fontWeight:600 }}>×{svc.count}</div>
+                                  <div style={{ fontSize:12,fontWeight:700,color:"#065F46",textAlign:"right" }}>PKR {svc.revenue.toLocaleString('en-PK')}</div>
+                                </div>
+                              ))}
+                              {/* View all / collapse */}
+                              {rows.length > PREVIEW_ROWS && (
+                                <button onClick={() => setShowAll(p=>!p)}
+                                  style={{ width:"100%",padding:"9px",border:"none",borderTop:"1px solid #F0EBE0",background:"#FDFAF7",fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:700,color:"#6B5030",cursor:"pointer" }}>
+                                  {showAll ? '▲ Show less' : `▼ View all ${rows.length} services`}
+                                </button>
+                              )}
+                              {/* Total row */}
+                              <div style={{ display:"grid",gridTemplateColumns:"1fr 44px 80px",gap:4,padding:"10px 16px",background:"#F5F0E8",borderTop:"2px solid #E8DECE" }}>
+                                <div style={{ fontSize:12,fontWeight:800,color:"#2A2118" }}>Total</div>
+                                <div style={{ fontSize:12,fontWeight:800,color:"#2A2118",textAlign:"center" }}>×{totalCnt}</div>
+                                <div style={{ fontSize:12,fontWeight:800,color:"#065F46",textAlign:"right" }}>PKR {totalRev.toLocaleString('en-PK')}</div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Service Log */}
+                        {(() => {
+                          const rows = d.service_log || [];
+                          const [showAll, setShowAll] = React.useState(false);
+                          const visible = showAll ? rows : rows.slice(0, PREVIEW_ROWS);
+                          const periodLabel = vss.range === 'today' ? "Today's" : vss.range === 'week' ? "Week's" : vss.range === 'month' ? "Month's" : "Period's";
+                          return (
+                            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #EDE6D8",overflow:"hidden" }}>
+                              <div style={{ padding:"12px 16px",borderBottom:"1px solid #F0EBE0",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+                                <div style={{ fontSize:13,fontWeight:800,color:"#2A2118" }}>{periodLabel} Service Log</div>
+                                <div style={{ fontSize:11,color:"#9A8070",fontWeight:600,background:"#F5F0E8",borderRadius:20,padding:"2px 10px" }}>{rows.length} entries</div>
+                              </div>
+                              {/* Column headers */}
+                              <div style={{ display:"grid",gridTemplateColumns:"1fr 36px 72px",gap:4,padding:"6px 16px",background:"#FAF7F3",borderBottom:"1px solid #F0EBE0" }}>
+                                <div style={{ fontSize:10,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5 }}>Service · Customer</div>
+                                <div style={{ fontSize:10,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5,textAlign:"center" }}>Qty</div>
+                                <div style={{ fontSize:10,fontWeight:700,color:"#9A8070",textTransform:"uppercase",letterSpacing:.5,textAlign:"right" }}>Revenue</div>
+                              </div>
+                              {rows.length === 0 ? (
+                                <div style={{ padding:"24px 16px",textAlign:"center",color:"#9A8070",fontSize:12 }}>No entries</div>
+                              ) : visible.map((e,i) => (
+                                <div key={i} style={{ padding:"9px 16px",borderBottom:"1px solid #F9F5F0",background:i%2===0?"#fff":"#FDFAF7",display:"grid",gridTemplateColumns:"1fr 36px 72px",gap:4,alignItems:"center" }}>
+                                  <div>
+                                    <div style={{ fontSize:12,fontWeight:600,color:"#2A2118",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }} title={e.service_name}>{e.service_name}</div>
+                                    <div style={{ fontSize:10,color:"#9A8070",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{e.customer} · {e.time}</div>
+                                  </div>
+                                  <div style={{ fontSize:11,color:"#9A8070",textAlign:"center",fontWeight:600 }}>×{e.qty}</div>
+                                  <div style={{ fontSize:12,fontWeight:700,color:"#065F46",textAlign:"right" }}>PKR {e.revenue.toLocaleString('en-PK')}</div>
+                                </div>
+                              ))}
+                              {/* View all / collapse */}
+                              {rows.length > PREVIEW_ROWS && (
+                                <button onClick={() => setShowAll(p=>!p)}
+                                  style={{ width:"100%",padding:"9px",border:"none",borderTop:"1px solid #F0EBE0",background:"#FDFAF7",fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:700,color:"#6B5030",cursor:"pointer" }}>
+                                  {showAll ? '▲ Show less' : `▼ View all ${rows.length} entries`}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
+
                       </div>
                     )}
                   </>
                 );
               })()}
+
+              {/* Footer */}
+              <div style={{ textAlign:"center",marginTop:20,fontSize:11,color:"#C4B49A",fontWeight:500 }}>
+                Noorkada Staff Portal · Read-only
+              </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
     </div >
   );
