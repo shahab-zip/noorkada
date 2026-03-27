@@ -2149,7 +2149,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
         {/* User stats (Desktop) */}
         <div className="hide-mobile" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, flex: "0 0 auto", maxWidth: "100%", overflow: "hidden" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", lineHeight: 1.2, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>{user.full_name || user.username}</span>
+            <div style={{ display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>{user.full_name || user.username}</span>
+              {user.floor && <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:100,letterSpacing:.4,textTransform:"uppercase",background:user.floor==='male'?"#EFF6FF":"#FDF2F8",color:user.floor==='male'?"#1D4ED8":"#9D174D",border:`1px solid ${user.floor==='male'?"#BFDBFE":"#FBCFE8"}`,whiteSpace:"nowrap" }}>{user.floor==='male'?'♂ Male':'♀ Female'}</span>}
+            </div>
             <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 500, color: "#9A9088", whiteSpace: "nowrap" }}>
               {now.toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long" })}
             </div>
@@ -4402,7 +4405,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         </div>
                       </div>
                       <button
-                        onClick={() => { setAddingUnified({ full_name: '', position: '', phone: '', email: '', address: '', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'staff' }); setEditingUser(null); setEditingStylist(null); }}
+                        onClick={() => { setAddingUnified({ full_name: '', position: '', phone: '', email: '', address: '', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'staff', floor: 'male' }); setEditingUser(null); setEditingStylist(null); }}
                         style={{ padding: "8px 18px", fontSize: 12, borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                       >+ Add Staff Member</button>
                     </div>
@@ -4486,6 +4489,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                 </select>
                               </div>
                               <div>
+                                <label style={lbl}>Floor</label>
+                                <select className="inp" value={addingUnified.floor || ''} onChange={e => setAddingUnified(p => ({ ...p, floor: e.target.value || null }))}>
+                                  <option value="">No restriction (both floors)</option>
+                                  <option value="male">♂ Male Floor</option>
+                                  <option value="female">♀ Female Floor</option>
+                                </select>
+                              </div>
+                              <div>
                                 <label style={lbl}>Password <span style={{ color: "#9A9088", fontWeight: 400 }}>(min 8 chars)</span></label>
                                 <input className="inp" type="password" autoComplete="new-password" value={addingUnified.password} onChange={e => setAddingUnified(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" style={shortPass || missingPass ? { borderColor: "#DC2626" } : {}} />
                                 {shortPass && <E msg="Minimum 8 characters" />}
@@ -4508,7 +4519,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                   if (shortPass) return showToast('Password must be at least 8 characters', 'error');
                                   const hasLogin = !!(nUser && addingUnified.password);
                                   const body = { full_name: addingUnified.full_name.trim(), position: addingUnified.position, phone: addingUnified.phone, email: addingUnified.email, address: addingUnified.address };
-                                  if (hasLogin) { body.username = nUser; body.password = addingUnified.password; body.role = addingUnified.role; }
+                                  if (hasLogin) { body.username = nUser; body.password = addingUnified.password; body.role = addingUnified.role; body.floor = addingUnified.floor || null; }
                                   const res = await fetch('/api/staff/create', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(body) });
                                   const data = await res.json();
                                   if (!res.ok) throw new Error(data.message || 'Error creating staff member');
@@ -4607,7 +4618,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                     {/* Access / Role */}
                                     <td style={{ padding: isMobile ? "10px 10px" : "14px 20px" }}>
                                       {row.user ? (
-                                        <span style={{ padding: "4px 10px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase", ...roleBadgeStyle(row.user.role) }}>{row.user.role}</span>
+                                        <div style={{ display:"flex",flexDirection:"column",gap:4,alignItems:"flex-start" }}>
+                                          <span style={{ padding: "4px 10px", borderRadius: 100, fontSize: 10, fontWeight: 800, letterSpacing: .5, textTransform: "uppercase", ...roleBadgeStyle(row.user.role) }}>{row.user.role}</span>
+                                          {row.user.floor && (
+                                            <span style={{ padding:"2px 8px",borderRadius:100,fontSize:9,fontWeight:700,letterSpacing:.4,textTransform:"uppercase",background:row.user.floor==='male'?"#EFF6FF":"#FDF2F8",color:row.user.floor==='male'?"#1D4ED8":"#9D174D",border:`1px solid ${row.user.floor==='male'?"#BFDBFE":"#FBCFE8"}` }}>
+                                              {row.user.floor==='male'?'♂ Male':'♀ Female'}
+                                            </span>
+                                          )}
+                                        </div>
                                       ) : (
                                         <span style={{ fontSize: 11, color: "#C4B9AB", fontStyle: "italic" }}>No login</span>
                                       )}
@@ -4634,7 +4652,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                         )}
                                         {row.user && (user.role === 'superadmin' || (ROLE_RANK[row.user.role] || 0) < (ROLE_RANK[user.role] || 0)) && (
                                           <button
-                                            onClick={() => { setEditingUser({ id: row.user.id, username: row.user.username, full_name: row.user.full_name || '', role: row.user.role, password: '' }); setEditingStylist(null); }}
+                                            onClick={() => { setEditingUser({ id: row.user.id, username: row.user.username, full_name: row.user.full_name || '', role: row.user.role, password: '', floor: row.user.floor || null }); setEditingStylist(null); }}
                                             style={{ background: "none", border: "none", color: "#4A7CB8", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
                                           >Edit Login</button>
                                         )}
@@ -4765,6 +4783,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                             );
                                           })()}
                                           <div>
+                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Floor</label>
+                                            <select className="inp" value={editingUser.floor || ''} onChange={e => setEditingUser(prev => ({ ...prev, floor: e.target.value || null }))}>
+                                              <option value="">No restriction (both floors)</option>
+                                              <option value="male">♂ Male Floor</option>
+                                              <option value="female">♀ Female Floor</option>
+                                            </select>
+                                          </div>
+                                          <div>
                                             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>New Password (optional)</label>
                                             <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Leave blank to keep" style={editShortPass ? { borderColor: "#DC2626" } : {}} />
                                             {editShortPass && eErr('Password must be at least 8 characters')}
@@ -4777,7 +4803,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                                 if (editDupUsername) return showToast('Username is already taken', 'error');
                                                 if (editShortPass) return showToast('Password must be at least 8 characters', 'error');
                                                 const targetUser = dbUsers.find(u => u.id === editingUser.id);
-                                                const body = { username: editingUser.username, full_name: editingUser.full_name || '' };
+                                                const body = { username: editingUser.username, full_name: editingUser.full_name || '', floor: editingUser.floor !== undefined ? (editingUser.floor || null) : undefined };
                                                 if ((ROLE_RANK[targetUser?.role] || 0) < (ROLE_RANK[user.role] || 0)) body.role = editingUser.role;
                                                 if (editingUser.password) body.password = editingUser.password;
                                                 const res = await fetch(`/api/users/${editingUser.id}`, {
@@ -4787,7 +4813,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                                 });
                                                 const data = await res.json();
                                                 if (!res.ok) throw new Error(data.message || 'Error updating login');
-                                                setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, username: data.username || editingUser.username, full_name: data.full_name ?? editingUser.full_name, role: data.role || x.role } : x));
+                                                setDbUsers(prev => prev.map(x => x.id === editingUser.id ? { ...x, username: data.username || editingUser.username, full_name: data.full_name ?? editingUser.full_name, role: data.role || x.role, floor: data.floor !== undefined ? data.floor : x.floor } : x));
                                                 setEditingUser(null);
                                                 showToast('Login updated!');
                                               } catch (err) {
@@ -6487,15 +6513,14 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     {/* ── KPI cards ── */}
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20 }}>
                       {[
-                        { icon:'✂️', label:'Services',  val: d.total_services, sub:'performed', accent:'#6D28D9', light:'#EDE9FE', mid:'#7C3AED' },
-                        { icon:'👥', label:'Clients',   val: d.total_clients_served, sub:'served', accent:'#1D4ED8', light:'#DBEAFE', mid:'#2563EB' },
-                        { icon:'💰', label:'Revenue',   val: fmtPKR(d.total_revenue_generated||0), sub:'generated', accent:'#065F46', light:'#D1FAE5', mid:'#059669' },
+                        { label:'Services', val: d.total_services,               sub:'performed' },
+                        { label:'Clients',  val: d.total_clients_served,         sub:'served' },
+                        { label:'Revenue',  val: fmtPKR(d.total_revenue_generated||0), sub:'generated', green:true },
                       ].map(c => (
-                        <div key={c.label} style={{ background:"#fff",borderRadius:18,padding:"20px 18px",border:`1.5px solid ${c.light}`,boxShadow:"0 2px 12px rgba(42,33,24,.06)" }}>
-                          <div style={{ fontSize:26,marginBottom:8 }}>{c.icon}</div>
-                          <div style={{ fontSize:10,color:"#9A9088",fontWeight:800,textTransform:"uppercase",letterSpacing:1,marginBottom:6 }}>{c.label}</div>
-                          <div style={{ fontSize:26,fontWeight:900,color:c.mid,letterSpacing:-.5,lineHeight:1,marginBottom:4 }}>{c.val}</div>
-                          <div style={{ fontSize:11,color:"#9A9088",fontWeight:500 }}>{c.sub}</div>
+                        <div key={c.label} style={{ background:"#fff",borderRadius:16,padding:"22px 20px",border:"1px solid #EDE6D8",boxShadow:"0 1px 4px rgba(42,33,24,.04)" }}>
+                          <div style={{ fontSize:10,color:"#9A8070",fontWeight:700,textTransform:"uppercase",letterSpacing:1.2,marginBottom:10 }}>{c.label}</div>
+                          <div style={{ fontSize:28,fontWeight:900,color:c.green?"#065F46":"#2A2118",letterSpacing:-.5,lineHeight:1,marginBottom:6 }}>{c.val}</div>
+                          <div style={{ fontSize:11,color:"#B0A090" }}>{c.sub}</div>
                         </div>
                       ))}
                     </div>

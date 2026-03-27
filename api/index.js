@@ -188,12 +188,12 @@ app.post('/api/login', loginRateLimit, async (req, res) => {
     return res.status(401).json({ message: 'Invalid username or password' });
   }
   const token = jwt.sign(
-    { id: user.id, username: user.username, full_name: user.full_name || '', role: user.role },
+    { id: user.id, username: user.username, full_name: user.full_name || '', role: user.role, floor: user.floor || null },
     JWT_SECRET,
     { expiresIn: '24h' }
   );
   log(user, 'LOGIN', 'user', user.id, null);
-  res.json({ token, username: user.username, full_name: user.full_name || '', role: user.role });
+  res.json({ token, username: user.username, full_name: user.full_name || '', role: user.role, floor: user.floor || null });
 });
 
 // forgot-password is not implemented (no SMTP configured)
@@ -375,8 +375,10 @@ app.delete('/api/staff-positions/:id', requireRole('manager'), async (req, res) 
 });
 
 // ── Transactions ───────────────────────────────────────────────────────────────
-app.get('/api/transactions', requireRole('receptionist'), async (_req, res) => {
-  const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(2000);
+app.get('/api/transactions', requireRole('receptionist'), async (req, res) => {
+  let q = supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(2000);
+  if (req.user.floor) q = q.eq('floor', req.user.floor);
+  const { data, error } = await q;
   if (error) return res.status(500).json({ message: 'Failed to fetch transactions' });
   res.json(data);
 });
@@ -404,7 +406,8 @@ app.post('/api/transactions', requireRole('receptionist'), async (req, res) => {
     pay_mode, disc_mode, disc_pct, disc_flat,
     disc_reason, disc_courtesy_by,
     note, staff_name,
-    split_cash, split_other_mode, split_other_amt
+    split_cash, split_other_mode, split_other_amt,
+    floor: req.user.floor || 'male'
   }).select().single();
   if (error) return res.status(500).json({ message: 'Failed to save transaction' });
   log(req.user, 'CREATE_TRANSACTION', 'transaction', data.id, {
@@ -494,7 +497,7 @@ app.put('/api/transactions/:id', requireRole('receptionist'), async (req, res) =
 
 // ── Users ──────────────────────────────────────────────────────────────────────
 app.get('/api/users', requireRole('manager'), async (_req, res) => {
-  const { data, error } = await supabase.from('users').select('id, username, full_name, email, role, created_at').order('id');
+  const { data, error } = await supabase.from('users').select('id, username, full_name, email, role, floor, created_at').order('id');
   if (error) return res.status(500).json({ message: 'Failed to fetch users' });
   res.json(data);
 });
@@ -505,6 +508,8 @@ app.post('/api/users', requireRole('manager'), async (req, res) => {
   const role = sanitizeStr(req.body.role, 20) || 'receptionist';
   const email = sanitizeStr(req.body.email, 200);
   const full_name = sanitizeStr(req.body.full_name, 100);
+  const floorRaw = sanitizeStr(req.body.floor, 10);
+  const floor = ['male', 'female'].includes(floorRaw) ? floorRaw : null;
   if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
   if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
   if (!(role in ROLE_RANK)) return res.status(400).json({ message: 'Invalid role' });
@@ -513,10 +518,10 @@ app.post('/api/users', requireRole('manager'), async (req, res) => {
   if (targetRank >= actorRank) return res.status(403).json({ message: 'Cannot create a user with equal or higher role' });
   const password_hash = await bcrypt.hash(password, 12);
   const { data, error } = await supabase.from('users')
-    .insert({ username, full_name, password_hash, role, email })
-    .select('id, username, full_name, email, role, created_at').single();
+    .insert({ username, full_name, password_hash, role, email, floor })
+    .select('id, username, full_name, email, role, floor, created_at').single();
   if (error) return res.status(500).json({ message: error.code === '23505' ? 'Username already exists' : 'Failed to create user' });
-  log(req.user, 'CREATE_USER', 'user', data.id, { username: data.username, full_name: data.full_name, role: data.role });
+  log(req.user, 'CREATE_USER', 'user', data.id, { username: data.username, full_name: data.full_name, role: data.role, floor: data.floor });
   res.json(data);
 });
 
@@ -564,12 +569,14 @@ app.put('/api/users/:id', requireRole('manager'), async (req, res) => {
     const { data: ex } = await supabase.from('users').select('id').eq('username', norm).neq('id', id).maybeSingle();
     if (ex) return res.status(400).json({ message: 'Username is already taken' });
   }
+  const floorRaw2 = req.body.hasOwnProperty('floor') ? sanitizeStr(req.body.floor, 10) : undefined;
   const updates = {};
   if (username) updates.username = username.toLowerCase();
   if (full_name !== undefined) updates.full_name = full_name;
   if (!isSelf && role && ROLE_RANK[role]) updates.role = role;
   if (password) updates.password_hash = await bcrypt.hash(password, 12);
-  const { data, error } = await supabase.from('users').update(updates).eq('id', id).select('id, username, full_name, email, role').single();
+  if (!isSelf && floorRaw2 !== undefined) updates.floor = ['male', 'female'].includes(floorRaw2) ? floorRaw2 : null;
+  const { data, error } = await supabase.from('users').update(updates).eq('id', id).select('id, username, full_name, email, role, floor').single();
   if (error) return res.status(500).json({ message: 'Failed to update user' });
   const changes = {};
   if (username) changes.username = username;
@@ -667,14 +674,16 @@ const buildSummary = (txns, staffName) => {
 
 // POST /api/staff/create — unified: creates stylist profile + optional login account atomically
 app.post('/api/staff/create', requireRole('manager'), async (req, res) => {
-  const full_name = sanitizeStr(req.body.full_name, 100);
-  const phone     = sanitizeStr(req.body.phone, 20);
-  const email     = sanitizeStr(req.body.email, 200);
-  const address   = sanitizeStr(req.body.address, 300);
-  const position  = sanitizeStr(req.body.position, 100);
-  const username  = sanitizeStr(req.body.username, 50) ? sanitizeStr(req.body.username, 50).toLowerCase().replace(/\s/g, '') : '';
-  const password  = typeof req.body.password === 'string' ? req.body.password : '';
-  const role      = sanitizeStr(req.body.role, 20) || 'staff';
+  const full_name  = sanitizeStr(req.body.full_name, 100);
+  const phone      = sanitizeStr(req.body.phone, 20);
+  const email      = sanitizeStr(req.body.email, 200);
+  const address    = sanitizeStr(req.body.address, 300);
+  const position   = sanitizeStr(req.body.position, 100);
+  const username   = sanitizeStr(req.body.username, 50) ? sanitizeStr(req.body.username, 50).toLowerCase().replace(/\s/g, '') : '';
+  const password   = typeof req.body.password === 'string' ? req.body.password : '';
+  const role       = sanitizeStr(req.body.role, 20) || 'staff';
+  const floorRaw3  = sanitizeStr(req.body.floor, 10);
+  const validFloor = ['male', 'female'].includes(floorRaw3) ? floorRaw3 : null;
 
   if (!full_name) return res.status(400).json({ message: 'Full name is required' });
 
@@ -718,8 +727,8 @@ app.post('/api/staff/create', requireRole('manager'), async (req, res) => {
       const password_hash = await bcrypt.hash(password, 12);
       const { data: u, error: uErr } = await supabase
         .from('users')
-        .insert({ username, full_name, password_hash, role, email: email || '' })
-        .select('id, username, full_name, email, role, created_at').single();
+        .insert({ username, full_name, password_hash, role, email: email || '', floor: validFloor })
+        .select('id, username, full_name, email, role, floor, created_at').single();
       if (uErr) {
         await supabase.from('stylists').delete().eq('id', stylistRecord.id);
         throw new Error(uErr.code === '23505' ? 'Username already exists' : (uErr.message || 'Failed to create login account'));

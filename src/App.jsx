@@ -30,10 +30,10 @@ function App() {
   });
 
   const handleLogin = (data) => {
-    // data = { token, username, full_name, role }
+    // data = { token, username, full_name, role, floor }
     localStorage.setItem('noorkada_token', data.token);
-    localStorage.setItem('noorkada_user', JSON.stringify({ username: data.username, full_name: data.full_name || '', role: data.role }));
-    setUser({ username: data.username, full_name: data.full_name || '', role: data.role });
+    localStorage.setItem('noorkada_user', JSON.stringify({ username: data.username, full_name: data.full_name || '', role: data.role, floor: data.floor || null }));
+    setUser({ username: data.username, full_name: data.full_name || '', role: data.role, floor: data.floor || null });
   };
 
   const handleLogout = () => {
