@@ -1413,6 +1413,12 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [summaryExpandBreakdown, setSummaryExpandBreakdown] = useState(false);
   const [summaryExpandLog, setSummaryExpandLog] = useState(false);
 
+  // Reset expand state whenever a different staff member is opened
+  React.useEffect(() => {
+    setSummaryExpandBreakdown(false);
+    setSummaryExpandLog(false);
+  }, [viewingStaffSummary?.userId]);
+
   // Fetch staff summary when admin opens the staff summary modal
   // NOTE: this effect MUST stay after the viewingStaffSummary useState above (TDZ guard)
   React.useEffect(() => {
