@@ -6387,9 +6387,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
             {/* ═══ HEADER BANNER ═══ */}
             <div style={{ background:"linear-gradient(135deg,#2A2118 0%,#3D2E1E 60%,#4A3828 100%)",padding:"28px 32px 24px",position:"relative",overflow:"hidden" }}>
-              {/* decorative circles */}
-              <div style={{ position:"absolute",top:-40,right:-40,width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,.04)",pointerEvents:"none" }} />
-              <div style={{ position:"absolute",bottom:-30,left:200,width:120,height:120,borderRadius:"50%",background:"rgba(196,168,130,.06)",pointerEvents:"none" }} />
 
               <div style={{ display:"flex",alignItems:"center",gap:18,position:"relative" }}>
                 {/* Avatar */}
@@ -6494,9 +6491,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         { icon:'👥', label:'Clients',   val: d.total_clients_served, sub:'served', accent:'#1D4ED8', light:'#DBEAFE', mid:'#2563EB' },
                         { icon:'💰', label:'Revenue',   val: fmtPKR(d.total_revenue_generated||0), sub:'generated', accent:'#065F46', light:'#D1FAE5', mid:'#059669' },
                       ].map(c => (
-                        <div key={c.label} style={{ background:"#fff",borderRadius:18,padding:"20px 18px",border:`1.5px solid ${c.light}`,position:"relative",overflow:"hidden",boxShadow:"0 2px 12px rgba(42,33,24,.06)" }}>
-                          <div style={{ position:"absolute",top:-16,right:-16,width:70,height:70,borderRadius:"50%",background:c.light,opacity:.7 }} />
-                          <div style={{ fontSize:26,marginBottom:8,position:"relative" }}>{c.icon}</div>
+                        <div key={c.label} style={{ background:"#fff",borderRadius:18,padding:"20px 18px",border:`1.5px solid ${c.light}`,boxShadow:"0 2px 12px rgba(42,33,24,.06)" }}>
+                          <div style={{ fontSize:26,marginBottom:8 }}>{c.icon}</div>
                           <div style={{ fontSize:10,color:"#9A9088",fontWeight:800,textTransform:"uppercase",letterSpacing:1,marginBottom:6 }}>{c.label}</div>
                           <div style={{ fontSize:26,fontWeight:900,color:c.mid,letterSpacing:-.5,lineHeight:1,marginBottom:4 }}>{c.val}</div>
                           <div style={{ fontSize:11,color:"#9A9088",fontWeight:500 }}>{c.sub}</div>
