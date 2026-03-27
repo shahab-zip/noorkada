@@ -4393,145 +4393,127 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         </div>
                       </div>
                       <button
-                        onClick={() => { setAddingUnified({ full_name: '', position: '', phone: '', email: '', address: '', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'staff', hasLogin: false }); setEditingUser(null); setEditingStylist(null); }}
+                        onClick={() => { setAddingUnified({ full_name: '', position: '', phone: '', email: '', address: '', username: '', password: '', role: creatableRoles(user.role)[0]?.[0] || 'staff' }); setEditingUser(null); setEditingStylist(null); }}
                         style={{ padding: "8px 18px", fontSize: 12, borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                       >+ Add Staff Member</button>
                     </div>
 
-                    {/* ── Unified Add Form ── */}
+                    {/* ── Add Staff Form ── */}
                     {addingUnified && (() => {
-                      // Real-time duplicate detection
                       const nPhone = addingUnified.phone.trim();
                       const nEmail = addingUnified.email.trim().toLowerCase();
                       const nUser  = addingUnified.username.trim();
+                      // A login is created only if username OR password is filled
+                      const wantsLogin = !!(nUser || addingUnified.password);
                       const dupPhone    = nPhone && dbStylists.some(s => s.phone?.trim() === nPhone);
-                      const dupEmail    = nEmail && (
-                        dbStylists.some(s => s.email?.toLowerCase() === nEmail) ||
-                        dbUsers.some(u => u.email?.toLowerCase() === nEmail)
-                      );
-                      const dupUsername = addingUnified.hasLogin && nUser && dbUsers.some(u => u.username === nUser);
-                      const shortPass   = addingUnified.hasLogin && addingUnified.password.length > 0 && addingUnified.password.length < 8;
-                      const hasErrors   = dupPhone || dupEmail || dupUsername || shortPass;
-                      const errHint = (msg) => <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>⚠ {msg}</div>;
+                      const dupEmail    = nEmail && (dbStylists.some(s => s.email?.toLowerCase() === nEmail) || dbUsers.some(u => u.email?.toLowerCase() === nEmail));
+                      const dupUsername = nUser && dbUsers.some(u => u.username === nUser);
+                      const shortPass   = addingUnified.password.length > 0 && addingUnified.password.length < 8;
+                      const missingUser = wantsLogin && !nUser;
+                      const missingPass = wantsLogin && !addingUnified.password;
+                      const hasErrors   = dupPhone || dupEmail || dupUsername || shortPass || missingUser || missingPass;
+                      const E = ({ msg }) => <p style={{ margin: "4px 0 0", fontSize: 11, color: "#DC2626", display: "flex", alignItems: "center", gap: 4 }}>⚠ {msg}</p>;
+                      const lbl = { display: "block", fontSize: 11, fontWeight: 600, color: "#6B7280", marginBottom: 5 };
                       return (
-                        <div style={{ padding: "20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New Staff Member</div>
-                          <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
-                          <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+                        <div style={{ padding: isMobile ? 16 : 24, borderBottom: "1px solid #EDE6D8", background: "#FAFAF9" }}>
+                          <input style={{ display: 'none' }} type="text" autoComplete="username" />
+                          <input style={{ display: 'none' }} type="password" autoComplete="current-password" />
 
-                          {/* Profile fields */}
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Profile</div>
-                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name *</label>
-                              <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" />
+                          {/* ── Profile ── */}
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                              <div style={{ width: 3, height: 16, borderRadius: 2, background: "#B08040" }} />
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", textTransform: "uppercase", letterSpacing: .6 }}>Staff Profile</span>
                             </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Position</label>
-                              <select className="inp" value={addingUnified.position} onChange={e => setAddingUnified(p => ({ ...p, position: e.target.value }))}>
-                                <option value="">— Select position —</option>
-                                {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Phone</label>
-                              <input className="inp" autoComplete="off" value={addingUnified.phone} onChange={e => setAddingUnified(p => ({ ...p, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" style={dupPhone ? { borderColor: "#DC2626" } : {}} />
-                              {dupPhone && errHint('Phone number already registered to another member')}
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
-                              <input className="inp" type="email" autoComplete="off" value={addingUnified.email} onChange={e => setAddingUnified(p => ({ ...p, email: e.target.value }))} placeholder="staff@example.com" style={dupEmail ? { borderColor: "#DC2626" } : {}} />
-                              {dupEmail && errHint('Email address is already in use')}
-                            </div>
-                            <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Address</label>
-                              <input className="inp" autoComplete="off" value={addingUnified.address} onChange={e => setAddingUnified(p => ({ ...p, address: e.target.value }))} placeholder="Residential address" />
-                            </div>
-                          </div>
-
-                          {/* Login access toggle */}
-                          <div style={{ borderTop: "1px solid #EDE6D8", paddingTop: 14, marginBottom: addingUnified.hasLogin ? 14 : 0 }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
-                              <div
-                                onClick={() => setAddingUnified(p => ({ ...p, hasLogin: !p.hasLogin }))}
-                                style={{ width: 38, height: 22, borderRadius: 11, background: addingUnified.hasLogin ? "#2A2118" : "#E8DECE", position: "relative", transition: "background .2s", cursor: "pointer", flexShrink: 0 }}
-                              >
-                                <div style={{ position: "absolute", top: 3, left: addingUnified.hasLogin ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+                            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12 }}>
+                              <div>
+                                <label style={lbl}>Full Name <span style={{ color: "#DC2626" }}>*</span></label>
+                                <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" />
                               </div>
                               <div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>Enable System Login</div>
-                                <div style={{ fontSize: 11, color: "#9A9088" }}>Allow this person to log into the POS</div>
+                                <label style={lbl}>Position</label>
+                                <select className="inp" value={addingUnified.position} onChange={e => setAddingUnified(p => ({ ...p, position: e.target.value }))}>
+                                  <option value="">— Select —</option>
+                                  {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                </select>
                               </div>
-                            </label>
-                          </div>
-
-                          {addingUnified.hasLogin && (
-                            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 14, padding: "14px 16px", background: "#F5F0E8", borderRadius: 10 }}>
+                              <div>
+                                <label style={lbl}>Phone</label>
+                                <input className="inp" autoComplete="off" value={addingUnified.phone} onChange={e => setAddingUnified(p => ({ ...p, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" style={dupPhone ? { borderColor: "#DC2626" } : {}} />
+                                {dupPhone && <E msg="Phone already registered" />}
+                              </div>
+                              <div>
+                                <label style={lbl}>Email</label>
+                                <input className="inp" type="email" autoComplete="off" value={addingUnified.email} onChange={e => setAddingUnified(p => ({ ...p, email: e.target.value }))} placeholder="staff@example.com" style={dupEmail ? { borderColor: "#DC2626" } : {}} />
+                                {dupEmail && <E msg="Email already in use" />}
+                              </div>
                               <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: "#6B5030", textTransform: "uppercase", letterSpacing: .5 }}>Login Credentials</div>
+                                <label style={lbl}>Address</label>
+                                <input className="inp" autoComplete="off" value={addingUnified.address} onChange={e => setAddingUnified(p => ({ ...p, address: e.target.value }))} placeholder="Residential address" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ── System Access ── */}
+                          <div style={{ borderRadius: 10, border: "1px solid #EDE6D8", background: "#fff", padding: isMobile ? 14 : 18 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 6 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 3, height: 16, borderRadius: 2, background: "#4A7CB8" }} />
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#2A2118", textTransform: "uppercase", letterSpacing: .6 }}>System Access</span>
+                              </div>
+                              <span style={{ fontSize: 11, color: "#9A9088", fontStyle: "italic" }}>Optional — leave blank for profile-only</span>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12 }}>
+                              <div>
+                                <label style={lbl}>Username</label>
+                                <input className="inp" autoComplete="off" value={addingUnified.username} onChange={e => setAddingUnified(p => ({ ...p, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="lowercase, no spaces" style={dupUsername || missingUser ? { borderColor: "#DC2626" } : {}} />
+                                {dupUsername && <E msg="Username already taken" />}
+                                {missingUser && <E msg="Username required when password is set" />}
                               </div>
                               <div>
-                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username *</label>
-                                <input className="inp" autoComplete="off" value={addingUnified.username} onChange={e => setAddingUnified(p => ({ ...p, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="No spaces" style={dupUsername ? { borderColor: "#DC2626" } : {}} />
-                                {dupUsername && errHint('Username is already taken')}
-                              </div>
-                              <div>
-                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role *</label>
+                                <label style={lbl}>Role</label>
                                 <select className="inp" value={addingUnified.role} onChange={e => setAddingUnified(p => ({ ...p, role: e.target.value }))}>
                                   {creatableRoles(user.role).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
                                 </select>
                               </div>
-                              <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password * (min 8 characters)</label>
-                                <input className="inp" type="password" autoComplete="new-password" value={addingUnified.password} onChange={e => setAddingUnified(p => ({ ...p, password: e.target.value }))} placeholder="Enter password" style={shortPass ? { borderColor: "#DC2626" } : {}} />
-                                {shortPass && errHint('Password must be at least 8 characters')}
+                              <div>
+                                <label style={lbl}>Password <span style={{ color: "#9A9088", fontWeight: 400 }}>(min 8 chars)</span></label>
+                                <input className="inp" type="password" autoComplete="new-password" value={addingUnified.password} onChange={e => setAddingUnified(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" style={shortPass || missingPass ? { borderColor: "#DC2626" } : {}} />
+                                {shortPass && <E msg="Minimum 8 characters" />}
+                                {missingPass && <E msg="Password required when username is set" />}
                               </div>
                             </div>
-                          )}
+                          </div>
 
+                          {/* ── Actions ── */}
                           <div style={{ display: "flex", gap: 10, marginTop: 18, alignItems: "center" }}>
                             <button
                               onClick={async () => {
                                 try {
                                   if (!addingUnified.full_name.trim()) return showToast('Full name is required', 'error');
-                                  if (dupPhone) return showToast('Phone number already registered to another staff member', 'error');
-                                  if (dupEmail) return showToast('Email address is already in use', 'error');
-                                  if (addingUnified.hasLogin && !addingUnified.username) return showToast('Username is required for login', 'error');
-                                  if (addingUnified.hasLogin && !addingUnified.password) return showToast('Password is required for login', 'error');
-                                  if (dupUsername) return showToast('Username is already taken', 'error');
+                                  if (dupPhone) return showToast('Phone number already registered', 'error');
+                                  if (dupEmail) return showToast('Email already in use', 'error');
+                                  if (missingUser) return showToast('Username required when password is set', 'error');
+                                  if (missingPass) return showToast('Password required when username is set', 'error');
+                                  if (dupUsername) return showToast('Username already taken', 'error');
                                   if (shortPass) return showToast('Password must be at least 8 characters', 'error');
-                                  const body = {
-                                    full_name: addingUnified.full_name,
-                                    position: addingUnified.position,
-                                    phone: addingUnified.phone,
-                                    email: addingUnified.email,
-                                    address: addingUnified.address,
-                                  };
-                                  if (addingUnified.hasLogin) {
-                                    body.username = addingUnified.username;
-                                    body.password = addingUnified.password;
-                                    body.role = addingUnified.role;
-                                  }
-                                  const res = await fetch('/api/staff/create', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify(body),
-                                  });
+                                  const hasLogin = !!(nUser && addingUnified.password);
+                                  const body = { full_name: addingUnified.full_name.trim(), position: addingUnified.position, phone: addingUnified.phone, email: addingUnified.email, address: addingUnified.address };
+                                  if (hasLogin) { body.username = nUser; body.password = addingUnified.password; body.role = addingUnified.role; }
+                                  const res = await fetch('/api/staff/create', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(body) });
                                   const data = await res.json();
                                   if (!res.ok) throw new Error(data.message || 'Error creating staff member');
                                   if (data.stylist) setDbStylists(prev => [...prev, data.stylist]);
                                   if (data.user) setDbUsers(prev => [...prev, data.user]);
                                   setAddingUnified(null);
-                                  showToast('Staff member added successfully!');
-                                } catch (err) {
-                                  showToast(err.message, 'error');
-                                }
+                                  showToast(hasLogin ? 'Staff member added with login access!' : 'Staff profile created!');
+                                } catch (err) { showToast(err.message, 'error'); }
                               }}
                               disabled={hasErrors}
                               style={{ padding: "10px 24px", borderRadius: 8, background: hasErrors ? "#C4B9AB" : "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700, cursor: hasErrors ? "not-allowed" : "pointer", transition: "background .2s" }}
                             >Create Staff Member</button>
                             <button onClick={() => setAddingUnified(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px", fontSize: 13 }}>Cancel</button>
-                            {hasErrors && <span style={{ fontSize: 11, color: "#DC2626", fontWeight: 600 }}>Fix the errors above before saving</span>}
+                            {hasErrors && <span style={{ fontSize: 11, color: "#DC2626", fontWeight: 600 }}>Fix errors above to continue</span>}
                           </div>
                         </div>
                       );
