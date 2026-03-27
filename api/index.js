@@ -900,16 +900,23 @@ app.get('/api/staff/admin/:staffId/summary', requireRole('manager'), async (req,
 
   const { data: staffUser } = await supabase.from('users').select('id, full_name, role').eq('id', staffUserId).single();
   if (!staffUser) return res.status(404).json({ message: 'Staff member not found' });
-  if (staffUser.role !== 'staff') return res.status(400).json({ message: 'User is not a staff member' });
 
   const staffName = staffUser.full_name;
   if (!staffName) return res.status(400).json({ message: 'Staff profile incomplete' });
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const range = sanitizeStr(req.query.range, 10);
+  const range     = sanitizeStr(req.query.range, 10);
+  const fromParam = sanitizeStr(req.query.from, 10);
+  const toParam   = sanitizeStr(req.query.to, 10);
   let dateStart, dateEnd, dateLabel;
 
-  if (range === 'week') {
+  if (fromParam && toParam) {
+    dateStart = parseDate(fromParam);
+    dateEnd   = parseDate(toParam);
+    if (!dateStart || !dateEnd) return res.status(400).json({ message: 'Invalid date range. Use YYYY-MM-DD' });
+    if (dateStart > dateEnd) return res.status(400).json({ message: 'from must be ≤ to' });
+    dateLabel = 'custom';
+  } else if (range === 'week') {
     const d = new Date(); d.setUTCDate(d.getUTCDate() - 6);
     dateStart = d.toISOString().slice(0, 10); dateEnd = todayStr; dateLabel = 'week';
   } else if (range === 'month') {
@@ -942,12 +949,26 @@ app.get('/api/staff/admin/:staffId/summary', requireRole('manager'), async (req,
         cur.setUTCDate(cur.getUTCDate() + 1);
       }
     }
+    // Build individual service log entries
+    const serviceLog = [];
+    for (const txn of (txns || [])) {
+      for (const item of (txn.cart || [])) {
+        if (item.stylist !== staffName) continue;
+        const qty = item.qty || 1;
+        const rev = (item.price || 0) * qty;
+        const slip = `NK${String(txn.id || '').slice(-6)}`;
+        const custLabel = txn.cust_name || 'Walk-in';
+        const timeStr = txn.created_at ? new Date(txn.created_at).toLocaleString('en-PK', { timeZone: 'Asia/Karachi', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+        serviceLog.push({ slip, service_name: item.service || 'Unknown', customer: custLabel, qty, revenue: rev, time: timeStr });
+      }
+    }
     res.json({
       staff_id: staffUser.id, staff_name: staffName,
       date: dateLabel, date_start: dateStart, date_end: dateEnd,
       total_services: totalServices, total_clients_served: totalClients,
       total_revenue_generated: totalRevenue, currency: 'PKR',
       services_breakdown: serviceBreakdown, daily_breakdown: dailyBreakdown,
+      service_log: serviceLog,
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load summary' });
