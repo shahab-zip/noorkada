@@ -1875,6 +1875,36 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const resetF = () => { setDashRange("30d"); setDashCFrom(""); setDashCTo(""); setFStylist(""); setFCat(""); setFPay(""); };
   const hasF = fStylist || fCat || fPay || dashCFrom || dashCTo;
 
+  // ── Staff Registry: memoized row merge (runs only when data changes, not every render) ─
+  const staffRows = useMemo(() => {
+    const matchedUserIds = new Set();
+    const rows = [];
+    dbStylists.forEach(s => {
+      const linkedUser = dbUsers.find(u => u.full_name === s.name);
+      if (linkedUser) matchedUserIds.add(linkedUser.id);
+      rows.push({ key: `s${s.id}`, stylist: s, user: linkedUser || null, name: s.name });
+    });
+    dbUsers.forEach(u => {
+      if (!matchedUserIds.has(u.id)) {
+        rows.push({ key: `u${u.id}`, stylist: null, user: u, name: u.full_name || u.username });
+      }
+    });
+    return rows;
+  }, [dbStylists, dbUsers]);
+
+  const filteredStaffRows = useMemo(() => {
+    const q = staffUnifiedSearch.toLowerCase().trim();
+    if (!q) return staffRows;
+    return staffRows.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.stylist?.position || '').toLowerCase().includes(q) ||
+      (r.user?.role || '').toLowerCase().includes(q) ||
+      (r.user?.username || '').toLowerCase().includes(q) ||
+      (r.stylist?.phone || '').includes(q) ||
+      (r.stylist?.email || r.user?.email || '').toLowerCase().includes(q)
+    );
+  }, [staffRows, staffUnifiedSearch]);
+
   const exportCSV = () => {
     const label = fMetric === "revenue" ? "Revenue (PKR)" : fMetric === "visits" ? "Visits" : fMetric === "avg" ? "Avg Ticket (PKR)" : "Discount (PKR)";
     const periodStr = dashCFrom ? `${dashCFrom} to ${dashCTo || "today"}` : dashRange;
@@ -4552,30 +4582,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                     {/* Unified Table */}
                     {(() => {
-                      // Build merged rows: stylists as primary, then unlinked users
-                      const matchedUserIds = new Set();
-                      const rows = [];
-                      dbStylists.forEach(s => {
-                        const linkedUser = dbUsers.find(u => u.full_name === s.name);
-                        if (linkedUser) matchedUserIds.add(linkedUser.id);
-                        rows.push({ key: `s${s.id}`, stylist: s, user: linkedUser || null, name: s.name });
-                      });
-                      dbUsers.forEach(u => {
-                        if (!matchedUserIds.has(u.id)) {
-                          rows.push({ key: `u${u.id}`, stylist: null, user: u, name: u.full_name || u.username });
-                        }
-                      });
-
-                      const q = staffUnifiedSearch.toLowerCase();
-                      const filtered = q ? rows.filter(r =>
-                        r.name.toLowerCase().includes(q) ||
-                        (r.stylist?.position || '').toLowerCase().includes(q) ||
-                        (r.user?.role || '').toLowerCase().includes(q) ||
-                        (r.user?.username || '').toLowerCase().includes(q) ||
-                        (r.stylist?.phone || '').includes(q) ||
-                        (r.stylist?.email || r.user?.email || '').toLowerCase().includes(q)
-                      ) : rows;
-
+                      const filtered = filteredStaffRows;
                       return (
                         <div style={{ overflowX: "auto" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 600 : "auto" }}>
