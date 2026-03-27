@@ -699,18 +699,21 @@ function StaffDashboardInner({ user, token, onLogout }) {
     fetchSummary(summaryUrl());
   }, [summaryUrl, fetchSummary]);
 
-  const needsSvcsList = (range === 'today' || range === 'custom');
+  // Derive from/to for each range so the service log always loads
+  const svcsFrom = range === 'week'   ? daysAgo(6)
+                 : range === 'month'  ? TODAY.slice(0, 7) + '-01'
+                 : range === 'custom' ? customFrom
+                 : null; // today uses ?date= param instead
+  const svcsTo   = (range === 'week' || range === 'month' || range === 'custom') ? TODAY : null;
 
   useEffect(() => {
-    if (!needsSvcsList) return;
     setSvcsPage(1);
-    if (range === 'custom') fetchSvcs(1, customFrom, customTo, null);
+    if (svcsFrom && svcsTo) fetchSvcs(1, svcsFrom, svcsTo, null);
     else fetchSvcs(1, null, null, TODAY);
   }, [range, customFrom, customTo]);
 
   useEffect(() => {
-    if (!needsSvcsList) return;
-    if (range === 'custom') fetchSvcs(svcsPage, customFrom, customTo, null);
+    if (svcsFrom && svcsTo) fetchSvcs(svcsPage, svcsFrom, svcsTo, null);
     else fetchSvcs(svcsPage, null, null, TODAY);
   }, [svcsPage]);
 
@@ -726,6 +729,8 @@ function StaffDashboardInner({ user, token, onLogout }) {
   };
 
   const svcLogTitle = () => {
+    if (range === 'week')  return "This Week's Service Log";
+    if (range === 'month') return "This Month's Service Log";
     if (range === 'custom') {
       if (customFrom === customTo) return `Service Log · ${fmtDate(customFrom, { day: 'numeric', month: 'short' })}`;
       return `Service Log · ${fmtDate(customFrom, { day: 'numeric', month: 'short' })} – ${fmtDate(customTo, { day: 'numeric', month: 'short' })}`;
@@ -940,8 +945,8 @@ function StaffDashboardInner({ user, token, onLogout }) {
           </div>
         )}
 
-        {/* ── Per-transaction log (Today + Custom) ─────────────────────────── */}
-        {needsSvcsList && (
+        {/* ── Per-transaction log (all ranges) ────────────────────────────── */}
+        {(
           <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #EDE6D8', overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ padding: '13px 16px 9px', borderBottom: '1px solid #f5f0e8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#2A2118' }}>{svcLogTitle()}</div>
@@ -961,7 +966,7 @@ function StaffDashboardInner({ user, token, onLogout }) {
                 <div style={{ fontSize: 12, color: '#A0303F', marginBottom: 10 }}>{svcsError}</div>
                 <button
                   onClick={() => {
-                    if (range === 'custom') fetchSvcs(svcsPage, customFrom, customTo, null);
+                    if (svcsFrom && svcsTo) fetchSvcs(svcsPage, svcsFrom, svcsTo, null);
                     else fetchSvcs(svcsPage, null, null, TODAY);
                   }}
                   style={{ background: '#2A2118', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>↺ Retry</button>
