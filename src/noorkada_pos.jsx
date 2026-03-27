@@ -1395,6 +1395,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [hSty, setHSty] = useState("");
   const [hCat, setHCat] = useState("");
   const [hPay, setHPay] = useState("");
+  const [hFloor, setHFloor] = useState("");
   const [hRange, setHRange] = useState("all");
   const [hFrom, setHFrom] = useState("");
   const [hTo, setHTo] = useState("");
@@ -1868,9 +1869,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
       (!hDate || x.date === hDate) &&
       (!hSty || (Array.isArray(x.cart) && x.cart.some(c => (c.stylist || "Unassigned") === hSty)) || (x.stylist || "").split(',').map(s => s.trim()).includes(hSty)) &&
       (!hCat || x.cart.some(c => c.category === hCat)) &&
-      (!hPay || x.payMode === hPay)
+      (!hPay || x.payMode === hPay) &&
+      (!hFloor || x.floor === hFloor)
     );
-  }, [transactions, hQ, hDate, hSty, hCat, hPay, hRange, hFrom, hTo]);
+  }, [transactions, hQ, hDate, hSty, hCat, hPay, hFloor, hRange, hFrom, hTo]);
   const fMetric = "revenue";
   const resetF = () => { setDashRange("30d"); setDashCFrom(""); setDashCTo(""); setFStylist(""); setFCat(""); setFPay(""); };
   const hasF = fStylist || fCat || fPay || dashCFrom || dashCTo;
@@ -1948,7 +1950,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
   };
   const exportHistCSV = () => {
-    const filename = `Noorkada_History${hSty ? "_" + hSty : ""}${hCat ? "_" + hCat : ""}${hPay ? "_" + hPay : ""}${hRange !== "all" ? "_" + hRange : ""}.csv`;
+    const filename = `Noorkada_History${hFloor ? "_" + hFloor : ""}${hSty ? "_" + hSty : ""}${hCat ? "_" + hCat : ""}${hPay ? "_" + hPay : ""}${hRange !== "all" ? "_" + hRange : ""}.csv`;
     const rows = [
       ["Noorkada Transaction History Export"],
       ["Generated", new Date().toLocaleString("en-PK")],
@@ -3847,12 +3849,22 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       ))}
                     </div>
                   </div>
+                  {!user.floor && (
+                    <div>
+                      <div className="filter-label">Floor</div>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {[["", "Both"], ["male", "♂ Male"], ["female", "♀ Female"]].map(([v, l]) => (
+                          <button key={v} className={`rbtn ${hFloor === v ? "on" : ""}`} onClick={() => setHFloor(v)}>{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
                     <div style={{ fontSize: 11, color: "#B8AFA5", whiteSpace: "nowrap", paddingBottom: 1 }}>
                       {histTxns.length} records · {fmt(histTxns.reduce((s, t) => s + t.total, 0), true)}
                     </div>
-                    {(hQ || hDate || hSty || hCat || hPay || hFrom || (hRange && hRange !== "all")) && (
-                      <button onClick={() => { setHQ(""); setHDate(""); setHSty(""); setHCat(""); setHPay(""); setHRange("all"); setHFrom(""); setHTo(""); }}
+                    {(hQ || hDate || hSty || hCat || hPay || hFloor || hFrom || (hRange && hRange !== "all")) && (
+                      <button onClick={() => { setHQ(""); setHDate(""); setHSty(""); setHCat(""); setHPay(""); setHFloor(""); setHRange("all"); setHFrom(""); setHTo(""); }}
                         style={{
                           fontFamily: "'Outfit',sans-serif", fontSize: 11, color: "#9A9088", background: "transparent",
                           border: "1.5px solid #E8E0D4", borderRadius: 7, padding: "7px 13px", cursor: "pointer", height: 34
@@ -3916,6 +3928,11 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        {txn.floor && (
+                          <span style={{ fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:100,background:txn.floor==='male'?"#EFF6FF":"#FDF2F8",color:txn.floor==='male'?"#1D4ED8":"#9D174D",border:`1px solid ${txn.floor==='male'?"#BFDBFE":"#FBCFE8"}`,whiteSpace:"nowrap" }}>
+                            {txn.floor==='male'?'♂ Male':'♀ Female'}
+                          </span>
+                        )}
                         <span style={{ fontSize: 11, fontWeight: 700, background: pc.bg, color: pc.color, padding: "3px 10px", borderRadius: 100 }}>{txn.payMode}</span>
                         <span style={{ fontSize: 16, fontWeight: 800, color: "#2A2118" }}>{fmt(txn.total)}</span>
                         <button onClick={() => printReceipt(txn, true)}
