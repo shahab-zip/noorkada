@@ -4404,8 +4404,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       const nPhone = addingUnified.phone.trim();
                       const nEmail = addingUnified.email.trim().toLowerCase();
                       const nUser  = addingUnified.username.trim();
-                      const nName  = addingUnified.full_name.trim().toLowerCase();
-                      const dupName     = nName  && dbStylists.some(s => s.name?.toLowerCase() === nName);
                       const dupPhone    = nPhone && dbStylists.some(s => s.phone?.trim() === nPhone);
                       const dupEmail    = nEmail && (
                         dbStylists.some(s => s.email?.toLowerCase() === nEmail) ||
@@ -4413,7 +4411,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                       );
                       const dupUsername = addingUnified.hasLogin && nUser && dbUsers.some(u => u.username === nUser);
                       const shortPass   = addingUnified.hasLogin && addingUnified.password.length > 0 && addingUnified.password.length < 8;
-                      const hasErrors   = dupName || dupPhone || dupEmail || dupUsername || shortPass;
+                      const hasErrors   = dupPhone || dupEmail || dupUsername || shortPass;
                       const errHint = (msg) => <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>⚠ {msg}</div>;
                       return (
                         <div style={{ padding: "20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
@@ -4426,8 +4424,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
                             <div>
                               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name *</label>
-                              <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" style={dupName ? { borderColor: "#DC2626" } : {}} />
-                              {dupName && errHint('A staff member with this name already exists')}
+                              <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" />
                             </div>
                             <div>
                               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Position</label>
@@ -4497,7 +4494,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                               onClick={async () => {
                                 try {
                                   if (!addingUnified.full_name.trim()) return showToast('Full name is required', 'error');
-                                  if (dupName) return showToast('A staff member with this name already exists', 'error');
                                   if (dupPhone) return showToast('Phone number already registered to another staff member', 'error');
                                   if (dupEmail) return showToast('Email address is already in use', 'error');
                                   if (addingUnified.hasLogin && !addingUnified.username) return showToast('Username is required for login', 'error');
@@ -4671,14 +4667,12 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                   {editingStylist && editingStylist.id === row.stylist?.id && editingStylist.id !== 'new' && (() => {
                                     const ePhone = editingStylist.phone?.trim();
                                     const eEmail = editingStylist.email?.trim().toLowerCase();
-                                    const eName  = editingStylist.name?.trim().toLowerCase();
-                                    const editDupName  = eName  && dbStylists.some(s => s.id !== editingStylist.id && s.name?.toLowerCase() === eName);
                                     const editDupPhone = ePhone && dbStylists.some(s => s.id !== editingStylist.id && s.phone?.trim() === ePhone);
                                     const editDupEmail = eEmail && (
                                       dbStylists.some(s => s.id !== editingStylist.id && s.email?.toLowerCase() === eEmail) ||
                                       dbUsers.some(u => u.email?.toLowerCase() === eEmail)
                                     );
-                                    const editHasErrors = editDupName || editDupPhone || editDupEmail;
+                                    const editHasErrors = editDupPhone || editDupEmail;
                                     const eErr = (msg) => <div style={{ fontSize: 11, color: "#DC2626", marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}>⚠ {msg}</div>;
                                     return (
                                       <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
@@ -4687,8 +4681,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
                                             <div>
                                               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
-                                              <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} style={editDupName ? { borderColor: "#DC2626" } : {}} />
-                                              {editDupName && eErr('Name already used by another member')}
+                                              <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} />
                                             </div>
                                             <div>
                                               <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Position</label>
@@ -4716,7 +4709,6 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                             <button
                                               onClick={async () => {
                                                 if (!editingStylist.name) return showToast('Name is required', 'error');
-                                                if (editDupName) return showToast('Name already used by another member', 'error');
                                                 if (editDupPhone) return showToast('Phone already registered to another member', 'error');
                                                 if (editDupEmail) return showToast('Email already in use', 'error');
                                                 const res = await fetch(`/api/stylists/${editingStylist.id}`, {

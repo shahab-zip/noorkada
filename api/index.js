@@ -322,8 +322,6 @@ app.put('/api/stylists/:id', requireRole('manager'), async (req, res) => {
   const position = sanitizeStr(req.body.position, 100);
   if (!name) return res.status(400).json({ message: 'Name is required' });
   // Uniqueness checks (exclude self)
-  { const { data: ex } = await supabase.from('stylists').select('id').eq('name', name).neq('id', id).maybeSingle();
-    if (ex) return res.status(400).json({ message: 'A staff member with this name already exists' }); }
   if (phone) {
     const { data: ex } = await supabase.from('stylists').select('id').eq('phone', phone).neq('id', id).maybeSingle();
     if (ex) return res.status(400).json({ message: 'Phone number is already registered to another staff member' });
@@ -691,8 +689,6 @@ app.post('/api/staff/create', requireRole('manager'), async (req, res) => {
   }
 
   // Uniqueness pre-checks
-  { const { data: ex } = await supabase.from('stylists').select('id').eq('name', full_name).maybeSingle();
-    if (ex) return res.status(400).json({ message: 'A staff member with this name already exists' }); }
   if (phone) {
     const { data: ex } = await supabase.from('stylists').select('id').eq('phone', phone).maybeSingle();
     if (ex) return res.status(400).json({ message: 'Phone number is already registered to another staff member' });
