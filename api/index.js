@@ -320,6 +320,19 @@ app.put('/api/stylists/:id', requireRole('manager'), async (req, res) => {
   const address = sanitizeStr(req.body.address, 300);
   const color = sanitizeStr(req.body.color, 20);
   const position = sanitizeStr(req.body.position, 100);
+  if (!name) return res.status(400).json({ message: 'Name is required' });
+  // Uniqueness checks (exclude self)
+  { const { data: ex } = await supabase.from('stylists').select('id').eq('name', name).neq('id', id).maybeSingle();
+    if (ex) return res.status(400).json({ message: 'A staff member with this name already exists' }); }
+  if (phone) {
+    const { data: ex } = await supabase.from('stylists').select('id').eq('phone', phone).neq('id', id).maybeSingle();
+    if (ex) return res.status(400).json({ message: 'Phone number is already registered to another staff member' });
+  }
+  if (email) {
+    const { data: ex1 } = await supabase.from('stylists').select('id').eq('email', email).neq('id', id).maybeSingle();
+    const { data: ex2 } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+    if (ex1 || ex2) return res.status(400).json({ message: 'Email address is already in use' });
+  }
   const { data, error } = await supabase.from('stylists').update({ name, phone, email, address, color, position }).eq('id', id).select().single();
   if (error) return res.status(500).json({ message: 'Failed to update staff member' });
   log(req.user, 'UPDATE_STAFF', 'staff', id, { name, position });
@@ -547,6 +560,12 @@ app.put('/api/users/:id', requireRole('manager'), async (req, res) => {
     if (role && (ROLE_RANK[role] || 0) >= actorRank) return res.status(403).json({ message: 'Cannot assign equal or higher role' });
   }
 
+  // Username uniqueness check (exclude self)
+  if (username) {
+    const norm = username.toLowerCase();
+    const { data: ex } = await supabase.from('users').select('id').eq('username', norm).neq('id', id).maybeSingle();
+    if (ex) return res.status(400).json({ message: 'Username is already taken' });
+  }
   const updates = {};
   if (username) updates.username = username.toLowerCase();
   if (full_name !== undefined) updates.full_name = full_name;
@@ -669,6 +688,23 @@ app.post('/api/staff/create', requireRole('manager'), async (req, res) => {
     if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
     const targetRank = ROLE_RANK[role];
     if (targetRank >= actorRank) return res.status(403).json({ message: 'Cannot assign equal or higher role' });
+  }
+
+  // Uniqueness pre-checks
+  { const { data: ex } = await supabase.from('stylists').select('id').eq('name', full_name).maybeSingle();
+    if (ex) return res.status(400).json({ message: 'A staff member with this name already exists' }); }
+  if (phone) {
+    const { data: ex } = await supabase.from('stylists').select('id').eq('phone', phone).maybeSingle();
+    if (ex) return res.status(400).json({ message: 'Phone number is already registered to another staff member' });
+  }
+  if (email) {
+    const { data: ex1 } = await supabase.from('stylists').select('id').eq('email', email).maybeSingle();
+    const { data: ex2 } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+    if (ex1 || ex2) return res.status(400).json({ message: 'Email address is already in use' });
+  }
+  if (hasLogin) {
+    const { data: ex } = await supabase.from('users').select('id').eq('username', username).maybeSingle();
+    if (ex) return res.status(400).json({ message: 'Username is already taken' });
   }
 
   let stylistRecord = null;

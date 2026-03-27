@@ -4399,117 +4399,147 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </div>
 
                     {/* ── Unified Add Form ── */}
-                    {addingUnified && (
-                      <div style={{ padding: "20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New Staff Member</div>
-                        <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
-                        <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
+                    {addingUnified && (() => {
+                      // Real-time duplicate detection
+                      const nPhone = addingUnified.phone.trim();
+                      const nEmail = addingUnified.email.trim().toLowerCase();
+                      const nUser  = addingUnified.username.trim();
+                      const nName  = addingUnified.full_name.trim().toLowerCase();
+                      const dupName     = nName  && dbStylists.some(s => s.name?.toLowerCase() === nName);
+                      const dupPhone    = nPhone && dbStylists.some(s => s.phone?.trim() === nPhone);
+                      const dupEmail    = nEmail && (
+                        dbStylists.some(s => s.email?.toLowerCase() === nEmail) ||
+                        dbUsers.some(u => u.email?.toLowerCase() === nEmail)
+                      );
+                      const dupUsername = addingUnified.hasLogin && nUser && dbUsers.some(u => u.username === nUser);
+                      const shortPass   = addingUnified.hasLogin && addingUnified.password.length > 0 && addingUnified.password.length < 8;
+                      const hasErrors   = dupName || dupPhone || dupEmail || dupUsername || shortPass;
+                      const errHint = (msg) => <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>⚠ {msg}</div>;
+                      return (
+                        <div style={{ padding: "20px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf8" }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: "#2A2118", marginBottom: 16 }}>New Staff Member</div>
+                          <input style={{ display: 'none' }} type="text" name="fakeusernameremembered" />
+                          <input style={{ display: 'none' }} type="password" name="fakepasswordremembered" />
 
-                        {/* Profile fields */}
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Profile</div>
-                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name *</label>
-                            <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Position</label>
-                            <select className="inp" value={addingUnified.position} onChange={e => setAddingUnified(p => ({ ...p, position: e.target.value }))}>
-                              <option value="">— Select position —</option>
-                              {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Phone</label>
-                            <input className="inp" autoComplete="off" value={addingUnified.phone} onChange={e => setAddingUnified(p => ({ ...p, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
-                            <input className="inp" type="email" autoComplete="off" value={addingUnified.email} onChange={e => setAddingUnified(p => ({ ...p, email: e.target.value }))} placeholder="staff@example.com" />
-                          </div>
-                          <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Address</label>
-                            <input className="inp" autoComplete="off" value={addingUnified.address} onChange={e => setAddingUnified(p => ({ ...p, address: e.target.value }))} placeholder="Residential address" />
-                          </div>
-                        </div>
-
-                        {/* Login access toggle */}
-                        <div style={{ borderTop: "1px solid #EDE6D8", paddingTop: 14, marginBottom: addingUnified.hasLogin ? 14 : 0 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
-                            <div
-                              onClick={() => setAddingUnified(p => ({ ...p, hasLogin: !p.hasLogin }))}
-                              style={{ width: 38, height: 22, borderRadius: 11, background: addingUnified.hasLogin ? "#2A2118" : "#E8DECE", position: "relative", transition: "background .2s", cursor: "pointer", flexShrink: 0 }}
-                            >
-                              <div style={{ position: "absolute", top: 3, left: addingUnified.hasLogin ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+                          {/* Profile fields */}
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Profile</div>
+                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Full Name *</label>
+                              <input className="inp" autoComplete="off" value={addingUnified.full_name} onChange={e => setAddingUnified(p => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Sana Ahmed" style={dupName ? { borderColor: "#DC2626" } : {}} />
+                              {dupName && errHint('A staff member with this name already exists')}
                             </div>
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>Enable System Login</div>
-                              <div style={{ fontSize: 11, color: "#9A9088" }}>Allow this person to log into the POS</div>
-                            </div>
-                          </label>
-                        </div>
-
-                        {addingUnified.hasLogin && (
-                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 14, padding: "14px 16px", background: "#F5F0E8", borderRadius: 10 }}>
-                            <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B5030", textTransform: "uppercase", letterSpacing: .5 }}>Login Credentials</div>
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username *</label>
-                              <input className="inp" autoComplete="off" value={addingUnified.username} onChange={e => setAddingUnified(p => ({ ...p, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="No spaces" />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role *</label>
-                              <select className="inp" value={addingUnified.role} onChange={e => setAddingUnified(p => ({ ...p, role: e.target.value }))}>
-                                {creatableRoles(user.role).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Position</label>
+                              <select className="inp" value={addingUnified.position} onChange={e => setAddingUnified(p => ({ ...p, position: e.target.value }))}>
+                                <option value="">— Select position —</option>
+                                {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                               </select>
                             </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Phone</label>
+                              <input className="inp" autoComplete="off" value={addingUnified.phone} onChange={e => setAddingUnified(p => ({ ...p, phone: e.target.value }))} placeholder="+92 3XX XXXXXXX" style={dupPhone ? { borderColor: "#DC2626" } : {}} />
+                              {dupPhone && errHint('Phone number already registered to another member')}
+                            </div>
+                            <div>
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Email</label>
+                              <input className="inp" type="email" autoComplete="off" value={addingUnified.email} onChange={e => setAddingUnified(p => ({ ...p, email: e.target.value }))} placeholder="staff@example.com" style={dupEmail ? { borderColor: "#DC2626" } : {}} />
+                              {dupEmail && errHint('Email address is already in use')}
+                            </div>
                             <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password * (min 8 characters)</label>
-                              <input className="inp" type="password" autoComplete="new-password" value={addingUnified.password} onChange={e => setAddingUnified(p => ({ ...p, password: e.target.value }))} placeholder="Enter password" />
+                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Address</label>
+                              <input className="inp" autoComplete="off" value={addingUnified.address} onChange={e => setAddingUnified(p => ({ ...p, address: e.target.value }))} placeholder="Residential address" />
                             </div>
                           </div>
-                        )}
 
-                        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-                          <button
-                            onClick={async () => {
-                              try {
-                                if (!addingUnified.full_name.trim()) return showToast('Full name is required', 'error');
-                                if (addingUnified.hasLogin && (!addingUnified.username || !addingUnified.password)) return showToast('Username and password are required for login', 'error');
-                                const body = {
-                                  full_name: addingUnified.full_name,
-                                  position: addingUnified.position,
-                                  phone: addingUnified.phone,
-                                  email: addingUnified.email,
-                                  address: addingUnified.address,
-                                };
-                                if (addingUnified.hasLogin) {
-                                  body.username = addingUnified.username;
-                                  body.password = addingUnified.password;
-                                  body.role = addingUnified.role;
+                          {/* Login access toggle */}
+                          <div style={{ borderTop: "1px solid #EDE6D8", paddingTop: 14, marginBottom: addingUnified.hasLogin ? 14 : 0 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+                              <div
+                                onClick={() => setAddingUnified(p => ({ ...p, hasLogin: !p.hasLogin }))}
+                                style={{ width: 38, height: 22, borderRadius: 11, background: addingUnified.hasLogin ? "#2A2118" : "#E8DECE", position: "relative", transition: "background .2s", cursor: "pointer", flexShrink: 0 }}
+                              >
+                                <div style={{ position: "absolute", top: 3, left: addingUnified.hasLogin ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "#2A2118" }}>Enable System Login</div>
+                                <div style={{ fontSize: 11, color: "#9A9088" }}>Allow this person to log into the POS</div>
+                              </div>
+                            </label>
+                          </div>
+
+                          {addingUnified.hasLogin && (
+                            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 14, padding: "14px 16px", background: "#F5F0E8", borderRadius: 10 }}>
+                              <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: "#6B5030", textTransform: "uppercase", letterSpacing: .5 }}>Login Credentials</div>
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Username *</label>
+                                <input className="inp" autoComplete="off" value={addingUnified.username} onChange={e => setAddingUnified(p => ({ ...p, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} placeholder="No spaces" style={dupUsername ? { borderColor: "#DC2626" } : {}} />
+                                {dupUsername && errHint('Username is already taken')}
+                              </div>
+                              <div>
+                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Role *</label>
+                                <select className="inp" value={addingUnified.role} onChange={e => setAddingUnified(p => ({ ...p, role: e.target.value }))}>
+                                  {creatableRoles(user.role).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                                </select>
+                              </div>
+                              <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 6 }}>Password * (min 8 characters)</label>
+                                <input className="inp" type="password" autoComplete="new-password" value={addingUnified.password} onChange={e => setAddingUnified(p => ({ ...p, password: e.target.value }))} placeholder="Enter password" style={shortPass ? { borderColor: "#DC2626" } : {}} />
+                                {shortPass && errHint('Password must be at least 8 characters')}
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ display: "flex", gap: 10, marginTop: 18, alignItems: "center" }}>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!addingUnified.full_name.trim()) return showToast('Full name is required', 'error');
+                                  if (dupName) return showToast('A staff member with this name already exists', 'error');
+                                  if (dupPhone) return showToast('Phone number already registered to another staff member', 'error');
+                                  if (dupEmail) return showToast('Email address is already in use', 'error');
+                                  if (addingUnified.hasLogin && !addingUnified.username) return showToast('Username is required for login', 'error');
+                                  if (addingUnified.hasLogin && !addingUnified.password) return showToast('Password is required for login', 'error');
+                                  if (dupUsername) return showToast('Username is already taken', 'error');
+                                  if (shortPass) return showToast('Password must be at least 8 characters', 'error');
+                                  const body = {
+                                    full_name: addingUnified.full_name,
+                                    position: addingUnified.position,
+                                    phone: addingUnified.phone,
+                                    email: addingUnified.email,
+                                    address: addingUnified.address,
+                                  };
+                                  if (addingUnified.hasLogin) {
+                                    body.username = addingUnified.username;
+                                    body.password = addingUnified.password;
+                                    body.role = addingUnified.role;
+                                  }
+                                  const res = await fetch('/api/staff/create', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify(body),
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) throw new Error(data.message || 'Error creating staff member');
+                                  if (data.stylist) setDbStylists(prev => [...prev, data.stylist]);
+                                  if (data.user) setDbUsers(prev => [...prev, data.user]);
+                                  setAddingUnified(null);
+                                  showToast('Staff member added successfully!');
+                                } catch (err) {
+                                  showToast(err.message, 'error');
                                 }
-                                const res = await fetch('/api/staff/create', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                  body: JSON.stringify(body),
-                                });
-                                const data = await res.json();
-                                if (!res.ok) throw new Error(data.message || 'Error creating staff member');
-                                if (data.stylist) setDbStylists(prev => [...prev, data.stylist]);
-                                if (data.user) setDbUsers(prev => [...prev, data.user]);
-                                setAddingUnified(null);
-                                showToast('Staff member added successfully!');
-                              } catch (err) {
-                                showToast(err.message, 'error');
-                              }
-                            }}
-                            style={{ padding: "10px 24px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-                          >Create Staff Member</button>
-                          <button onClick={() => setAddingUnified(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px", fontSize: 13 }}>Cancel</button>
+                              }}
+                              disabled={hasErrors}
+                              style={{ padding: "10px 24px", borderRadius: 8, background: hasErrors ? "#C4B9AB" : "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700, cursor: hasErrors ? "not-allowed" : "pointer", transition: "background .2s" }}
+                            >Create Staff Member</button>
+                            <button onClick={() => setAddingUnified(null)} className="btn-ghost" style={{ width: "auto", padding: "10px 20px", fontSize: 13 }}>Cancel</button>
+                            {hasErrors && <span style={{ fontSize: 11, color: "#DC2626", fontWeight: 600 }}>Fix the errors above before saving</span>}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Search */}
                     <div style={{ padding: "10px 16px", borderBottom: "1px solid #EDE6D8", background: "#fdfaf6" }}>
@@ -4638,58 +4668,85 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                   </tr>
 
                                   {/* Inline edit — profile */}
-                                  {editingStylist && editingStylist.id === row.stylist?.id && editingStylist.id !== 'new' && (
-                                    <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
-                                      <td colSpan={5} style={{ padding: 16 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Profile — {editingStylist.name}</div>
-                                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
-                                          <div>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
-                                            <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} />
+                                  {editingStylist && editingStylist.id === row.stylist?.id && editingStylist.id !== 'new' && (() => {
+                                    const ePhone = editingStylist.phone?.trim();
+                                    const eEmail = editingStylist.email?.trim().toLowerCase();
+                                    const eName  = editingStylist.name?.trim().toLowerCase();
+                                    const editDupName  = eName  && dbStylists.some(s => s.id !== editingStylist.id && s.name?.toLowerCase() === eName);
+                                    const editDupPhone = ePhone && dbStylists.some(s => s.id !== editingStylist.id && s.phone?.trim() === ePhone);
+                                    const editDupEmail = eEmail && (
+                                      dbStylists.some(s => s.id !== editingStylist.id && s.email?.toLowerCase() === eEmail) ||
+                                      dbUsers.some(u => u.email?.toLowerCase() === eEmail)
+                                    );
+                                    const editHasErrors = editDupName || editDupPhone || editDupEmail;
+                                    const eErr = (msg) => <div style={{ fontSize: 11, color: "#DC2626", marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}>⚠ {msg}</div>;
+                                    return (
+                                      <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
+                                        <td colSpan={5} style={{ padding: 16 }}>
+                                          <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Profile — {editingStylist.name}</div>
+                                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 6 : 10 }}>
+                                            <div>
+                                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Full Name</label>
+                                              <input className="inp" value={editingStylist.name} onChange={e => setEditingStylist(prev => ({ ...prev, name: e.target.value }))} style={editDupName ? { borderColor: "#DC2626" } : {}} />
+                                              {editDupName && eErr('Name already used by another member')}
+                                            </div>
+                                            <div>
+                                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Position</label>
+                                              <select className="inp" value={editingStylist.position || ''} onChange={e => setEditingStylist(prev => ({ ...prev, position: e.target.value }))}>
+                                                <option value="">— Select position —</option>
+                                                {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Phone</label>
+                                              <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} style={editDupPhone ? { borderColor: "#DC2626" } : {}} />
+                                              {editDupPhone && eErr('Phone already registered to another member')}
+                                            </div>
+                                            <div>
+                                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Email</label>
+                                              <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} style={editDupEmail ? { borderColor: "#DC2626" } : {}} />
+                                              {editDupEmail && eErr('Email already in use')}
+                                            </div>
+                                            <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                                              <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Address</label>
+                                              <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} />
+                                            </div>
                                           </div>
-                                          <div>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Position</label>
-                                            <select className="inp" value={editingStylist.position || ''} onChange={e => setEditingStylist(prev => ({ ...prev, position: e.target.value }))}>
-                                              <option value="">— Select position —</option>
-                                              {staffPositions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                                            </select>
+                                          <div style={{ display: "flex", gap: 10, marginTop: 12, alignItems: "center" }}>
+                                            <button
+                                              onClick={async () => {
+                                                if (!editingStylist.name) return showToast('Name is required', 'error');
+                                                if (editDupName) return showToast('Name already used by another member', 'error');
+                                                if (editDupPhone) return showToast('Phone already registered to another member', 'error');
+                                                if (editDupEmail) return showToast('Email already in use', 'error');
+                                                const res = await fetch(`/api/stylists/${editingStylist.id}`, {
+                                                  method: 'PUT',
+                                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                  body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email, position: editingStylist.position })
+                                                });
+                                                if (!res.ok) { const d = await res.json(); return showToast(d.message || 'Error updating profile', 'error'); }
+                                                fetchStylists();
+                                                setEditingStylist(null);
+                                                showToast('Profile updated!');
+                                              }}
+                                              disabled={editHasErrors}
+                                              style={{ padding: "8px 20px", borderRadius: 8, background: editHasErrors ? "#C4B9AB" : "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700, cursor: editHasErrors ? "not-allowed" : "pointer" }}
+                                            >Save Changes</button>
+                                            <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
                                           </div>
-                                          <div>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Phone</label>
-                                            <input className="inp" value={editingStylist.phone} onChange={e => setEditingStylist(prev => ({ ...prev, phone: e.target.value }))} />
-                                          </div>
-                                          <div>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Email</label>
-                                            <input className="inp" type="email" value={editingStylist.email || ''} onChange={e => setEditingStylist(prev => ({ ...prev, email: e.target.value }))} />
-                                          </div>
-                                          <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-                                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Address</label>
-                                            <input className="inp" value={editingStylist.address} onChange={e => setEditingStylist(prev => ({ ...prev, address: e.target.value }))} />
-                                          </div>
-                                        </div>
-                                        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                                          <button
-                                            onClick={async () => {
-                                              if (!editingStylist.name) return showToast('Name is required', 'error');
-                                              await fetch(`/api/stylists/${editingStylist.id}`, {
-                                                method: 'PUT',
-                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                                body: JSON.stringify({ name: editingStylist.name, phone: editingStylist.phone, address: editingStylist.address, email: editingStylist.email, position: editingStylist.position })
-                                              });
-                                              fetchStylists();
-                                              setEditingStylist(null);
-                                              showToast('Profile updated!');
-                                            }}
-                                            style={{ padding: "8px 20px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                          >Save Changes</button>
-                                          <button onClick={() => setEditingStylist(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })()}
 
                                   {/* Inline edit — login */}
-                                  {editingUser && editingUser.id === row.user?.id && editingUser.id !== 'new' && (
+                                  {editingUser && editingUser.id === row.user?.id && editingUser.id !== 'new' && (() => {
+                                    const eUser = editingUser.username?.trim();
+                                    const editDupUsername = eUser && dbUsers.some(u => u.id !== editingUser.id && u.username === eUser);
+                                    const editShortPass = editingUser.password?.length > 0 && editingUser.password.length < 8;
+                                    const editLoginErrors = editDupUsername || editShortPass;
+                                    const eErr = (msg) => <div style={{ fontSize: 11, color: "#DC2626", marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}>⚠ {msg}</div>;
+                                    return (
                                     <tr style={{ background: "#faf7f2", borderBottom: "1px solid #EDE6D8" }}>
                                       <td colSpan={5} style={{ padding: 16 }}>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: "#2A2118", marginBottom: 12 }}>✏️ Edit Login — {editingUser.full_name || editingUser.username}</div>
@@ -4702,7 +4759,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                           </div>
                                           <div>
                                             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>Username</label>
-                                            <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} />
+                                            <input className="inp" autoComplete="off" value={editingUser.username} onChange={e => setEditingUser(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} style={editDupUsername ? { borderColor: "#DC2626" } : {}} />
+                                            {editDupUsername && eErr('Username is already taken')}
                                           </div>
                                           {(() => {
                                             const targetUser = dbUsers.find(u => u.id === editingUser.id);
@@ -4725,13 +4783,16 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                           })()}
                                           <div>
                                             <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9A9088", textTransform: "uppercase", marginBottom: 4 }}>New Password (optional)</label>
-                                            <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Leave blank to keep" />
+                                            <input className="inp" type="password" autoComplete="new-password" value={editingUser.password || ''} onChange={e => setEditingUser(prev => ({ ...prev, password: e.target.value }))} placeholder="Leave blank to keep" style={editShortPass ? { borderColor: "#DC2626" } : {}} />
+                                            {editShortPass && eErr('Password must be at least 8 characters')}
                                           </div>
                                         </div>
-                                        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                                        <div style={{ display: "flex", gap: 10, marginTop: 12, alignItems: "center" }}>
                                           <button
                                             onClick={async () => {
                                               try {
+                                                if (editDupUsername) return showToast('Username is already taken', 'error');
+                                                if (editShortPass) return showToast('Password must be at least 8 characters', 'error');
                                                 const targetUser = dbUsers.find(u => u.id === editingUser.id);
                                                 const body = { username: editingUser.username, full_name: editingUser.full_name || '' };
                                                 if ((ROLE_RANK[targetUser?.role] || 0) < (ROLE_RANK[user.role] || 0)) body.role = editingUser.role;
@@ -4750,13 +4811,15 @@ export default function NoorKadaPOS({ user, onLogout }) {
                                                 showToast(err.message, 'error');
                                               }
                                             }}
-                                            style={{ padding: "8px 20px", borderRadius: 8, background: "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                            disabled={editLoginErrors}
+                                            style={{ padding: "8px 20px", borderRadius: 8, background: editLoginErrors ? "#C4B9AB" : "#2A2118", color: "#fff", border: "none", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700, cursor: editLoginErrors ? "not-allowed" : "pointer" }}
                                           >Save Changes</button>
                                           <button onClick={() => setEditingUser(null)} className="btn-ghost" style={{ width: "auto", padding: "8px 16px", fontSize: 12 }}>Cancel</button>
                                         </div>
                                       </td>
                                     </tr>
-                                  )}
+                                    );
+                                  })()}
                                 </React.Fragment>
                               ))}
                             </tbody>
