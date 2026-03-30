@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import ReactDOM from "react-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Suppress console output in production
 const isDev = import.meta.env.DEV;
@@ -858,6 +859,9 @@ function CourtesyPicker({ value, onChange, persons = [] }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NoorKadaPOS({ user, onLogout }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   React.useEffect(() => {
     const h = () => setIsMobile(window.innerWidth <= 1024);
@@ -872,6 +876,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   React.useEffect(() => {
     if (!hasNavAccess(user.role, view)) {
       setView("pos");
+      navigate("/pos", { replace: true });
     }
   }, [user.role, view]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1230,6 +1235,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
     }
   }, [user.role, token]);
   const [dashTab, setDashTab] = useState(() => localStorage.getItem('noorkada_dashTab') || "overview");
+  // Floor filter for admin/superadmin to switch between floors
+  const [activeFloor, setActiveFloor] = useState(user.floor || null); // null = all floors
+  // POS billing floor — which floor is this transaction for (allows covering other floor)
+  const [posFloor, setPosFloor] = useState(user.floor || 'male');
 
   React.useEffect(() => {
     localStorage.setItem('noorkada_view', view);
@@ -1511,8 +1520,13 @@ export default function NoorKadaPOS({ user, onLogout }) {
     localStorage.setItem('noorkada_cartWidth', cartWidth.toString());
   }, [cartWidth]);
 
+  // Floor-filtered transaction base (admin can switch floors via dropdown)
+  const flooredTxns = useMemo(() =>
+    activeFloor ? transactions.filter(t => t.floor === activeFloor) : transactions
+  , [transactions, activeFloor]);
+
   const ranged = useMemo(() => {
-    let t = transactions;
+    let t = flooredTxns;
     if (dashCFrom || dashCTo) t = t.filter(x => (!dashCFrom || x.date >= dashCFrom) && (!dashCTo || x.date <= dashCTo));
     else { const days = dashRange === "today" ? 1 : dashRange === "7d" ? 7 : dashRange === "30d" ? 30 : dashRange === "90d" ? 90 : 99999; const cut = new Date(); cut.setDate(cut.getDate() - days); t = t.filter(x => new Date(x.date) >= cut); }
     if (fStylist) t = t.filter(x =>
@@ -1522,7 +1536,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
     if (fPay) t = t.filter(x => x.payMode === fPay);
     if (fCat) t = t.filter(x => x.cart.some(c => c.category === fCat));
     return t;
-  }, [transactions, dashRange, dashCFrom, dashCTo, fStylist, fPay, fCat]);
+  }, [flooredTxns, dashRange, dashCFrom, dashCTo, fStylist, fPay, fCat]);
 
   const S = useMemo(() => {
     const t = ranged, td = todayStr(), todayT = t.filter(x => x.date === td);
@@ -1631,6 +1645,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       split_cash: splitCash || 0,
       split_other_mode: splitOtherMode || "ONLINE",
       split_other_amt: splitOtherAmt || 0,
+      floor: posFloor,
     };
 
     // Post to backend
@@ -1858,7 +1873,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
   const [expandedClient, setExpandedClient] = useState(null);
 
   const histTxns = useMemo(() => {
-    let t = transactions;
+    let t = flooredTxns;
     // Period filter
     if (hFrom || hTo) t = t.filter(x => (!hFrom || x.date >= hFrom) && (!hTo || x.date <= hTo));
     else if (hRange && hRange !== "all") { const days = hRange === "today" ? 1 : hRange === "7d" ? 7 : hRange === "30d" ? 30 : 90; const cut = new Date(); cut.setDate(cut.getDate() - days); t = t.filter(x => new Date(x.date) >= cut); }
@@ -1872,7 +1887,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
       (!hPay || x.payMode === hPay) &&
       (!hFloor || x.floor === hFloor)
     );
-  }, [transactions, hQ, hDate, hSty, hCat, hPay, hFloor, hRange, hFrom, hTo]);
+  }, [flooredTxns, hQ, hDate, hSty, hCat, hPay, hFloor, hRange, hFrom, hTo]);
   const fMetric = "revenue";
   const resetF = () => { setDashRange("30d"); setDashCFrom(""); setDashCTo(""); setFStylist(""); setFCat(""); setFPay(""); };
   const hasF = fStylist || fCat || fPay || dashCFrom || dashCTo;
@@ -1976,6 +1991,38 @@ export default function NoorKadaPOS({ user, onLogout }) {
   };
 
   // const getCatColor removed (already defined at top of NoorKadaPOS)
+
+  // ── URL Routing ────────────────────────────────────────────────────────────
+  // URL → state: syncs browser back/forward to internal view
+  React.useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/analytics')) {
+      const tab = path.split('/')[2] || 'overview';
+      setView(v => v !== 'dashboard' ? 'dashboard' : v);
+      setDashTab(t => t !== tab ? tab : t);
+    } else if (path.startsWith('/history')) {
+      const tab = path.split('/')[2] || 'transactions';
+      setView(v => v !== 'history' ? 'history' : v);
+      setHTab(t => t !== tab ? tab : t);
+    } else if (path.startsWith('/dashboard')) {
+      const tab = path.split('/')[2] || 'services';
+      setView(v => v !== 'settings' ? 'settings' : v);
+      setAdminTab(t => t !== tab ? tab : t);
+    } else {
+      setView(v => v !== 'pos' ? 'pos' : v);
+    }
+  }, [location.pathname]);
+
+  // Navigation helpers — change state AND push URL simultaneously
+  const navigateToView = (v) => {
+    setView(v);
+    const urls = { pos: '/pos', dashboard: '/analytics/overview', history: '/history/transactions', settings: '/dashboard/services' };
+    navigate(urls[v] || '/pos');
+  };
+  const navigateToDashTab = (t) => { setDashTab(t); navigate(`/analytics/${t}`); };
+  const navigateToAdminTab = (t) => { setAdminTab(t); navigate(`/dashboard/${t}`); };
+  const navigateToHTab = (t) => { setHTab(t); navigate(`/history/${t}`); };
+  const navigateToHistory = (tab = 'transactions') => { setView('history'); setHTab(tab); navigate(`/history/${tab}`); };
 
   const now = new Date();
 
@@ -2087,7 +2134,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
             hasNavAccess(user.role, 'history')   && ["history", "📋", "History"],
             hasNavAccess(user.role, 'settings')  && ["settings", "🛡️", "Dashboard"]
           ].filter(Boolean).map(([v, ic, l]) => (
-            <button key={v} className={`nav-tab ${view === v ? "on" : "off"}`} onClick={() => setView(v)}>
+            <button key={v} className={`nav-tab ${view === v ? "on" : "off"}`} onClick={() => navigateToView(v)}>
               <span style={{ marginRight: 6, fontSize: 13 }}>{ic}</span>{l}
             </button>
           ))}
@@ -2143,7 +2190,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                   <button
                     key={v}
                     className={`mobile-nav-item ${view === v ? "active" : ""}`}
-                    onClick={() => { setView(v); setMobileMenuOpen(false); }}
+                    onClick={() => { navigateToView(v); setMobileMenuOpen(false); }}
                   >
                     <span>{ic}</span>
                     {l}
@@ -2183,7 +2230,17 @@ export default function NoorKadaPOS({ user, onLogout }) {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", lineHeight: 1.2, minWidth: 0 }}>
             <div style={{ display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end" }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: "#2A2118", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>{user.full_name || user.username}</span>
+              {/* Floor-restricted users: fixed badge */}
               {user.floor && <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:100,letterSpacing:.4,textTransform:"uppercase",background:user.floor==='male'?"#EFF6FF":"#FDF2F8",color:user.floor==='male'?"#1D4ED8":"#9D174D",border:`1px solid ${user.floor==='male'?"#BFDBFE":"#FBCFE8"}`,whiteSpace:"nowrap" }}>{user.floor==='male'?'♂ Male':'♀ Female'}</span>}
+              {/* Admin/Superadmin: floor switcher dropdown */}
+              {!user.floor && ROLE_RANK[user.role] >= 2 && (
+                <select value={activeFloor || ''} onChange={e => setActiveFloor(e.target.value || null)}
+                  style={{ fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:100,letterSpacing:.3,textTransform:"uppercase",border:"1px solid #EDE6D8",background:activeFloor==='male'?"#EFF6FF":activeFloor==='female'?"#FDF2F8":"#F5F0E8",color:activeFloor==='male'?"#1D4ED8":activeFloor==='female'?"#9D174D":"#6B5540",cursor:"pointer",outline:"none",appearance:"none",paddingRight:18,backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%239A9088'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 6px center",whiteSpace:"nowrap" }}>
+                  <option value="">⊕ Both Floors</option>
+                  <option value="male">♂ Male</option>
+                  <option value="female">♀ Female</option>
+                </select>
+              )}
             </div>
             <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 500, color: "#9A9088", whiteSpace: "nowrap" }}>
               {now.toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long" })}
@@ -2322,6 +2379,10 @@ export default function NoorKadaPOS({ user, onLogout }) {
                         <option value="ONLINE">📱  Online</option>
                         <option value="CARD">💳  Card</option>
                         <option value="SPLIT">🔀  Split</option>
+                      </select>
+                      <select className="inp" value={posFloor} onChange={e => setPosFloor(e.target.value)} style={{ flex: "0 0 150px" }}>
+                        <option value="male">♂  Male Floor</option>
+                        <option value="female">♀  Female Floor</option>
                       </select>
                       {isMobile && cart.length > 0 && (
                         <button
@@ -3003,8 +3064,8 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, width: isMobile ? "100%" : "auto", overflowX: "auto", paddingBottom: isMobile ? 4 : 0 }} className="catstrip">
-              {[["overview", "Overview"], ["stylists", "Stylists"], ["services", "Services"], ["time", "Time"], ["discounts", "Discounts"]].map(([t, l]) => (
-                <button key={t} className={`tbtn ${dashTab === t ? "on" : ""}`} onClick={() => setDashTab(t)} style={{ flexShrink: 0 }}>{l}</button>
+              {[["overview", "Overview"], ["stylists", "Stylists"], ["services", "Services"], ["time", "Time"], ["discounts", "Discounts"], ["closing", "🔐 Closing"]].map(([t, l]) => (
+                <button key={t} className={`tbtn ${dashTab === t ? "on" : ""}`} onClick={() => navigateToDashTab(t)} style={{ flexShrink: 0 }}>{l}</button>
               ))}
             </div>
           </div>
@@ -3736,6 +3797,204 @@ export default function NoorKadaPOS({ user, onLogout }) {
               </div>
             );
           })()}
+          {/* ─ CLOSING ─ */}
+          {dashTab === "closing" && (() => {
+            // Uses the same filters as all other analytics tabs — no separate date picker
+            const floors = activeFloor ? [activeFloor] : (user.floor ? [user.floor] : ['male','female']);
+            const floorLabel = { male: '♂ Male Floor', female: '♀ Female Floor' };
+            const floorBg   = { male: '#EFF6FF',       female: '#FDF2F8' };
+            const floorBorder = { male: '#BFDBFE',     female: '#FBCFE8' };
+            const floorColor  = { male: '#1D4ED8',     female: '#9D174D' };
+            const floorAccent = { male: '#1D4ED8',     female: '#BE185D' };
+
+            // Build closing summary from the already-filtered `ranged` array (respects period, stylist, payment, category filters)
+            const buildClosing = (fl) => {
+              const txns = ranged.filter(t => t.floor === fl);
+              const totalRev  = txns.reduce((s, t) => s + t.total, 0);
+              const totalDisc = txns.reduce((s, t) => s + (t.discountAmt || 0), 0);
+              const cashTxns   = txns.filter(t => t.payMode === 'CASH');
+              const onlineTxns = txns.filter(t => t.payMode === 'ONLINE');
+              const cardTxns   = txns.filter(t => t.payMode === 'CARD');
+              const splitTxns  = txns.filter(t => t.payMode === 'SPLIT');
+              const cashRev   = cashTxns.reduce((s, t)  => s + t.total, 0);
+              const onlineRev = onlineTxns.reduce((s, t) => s + t.total, 0);
+              const cardRev   = cardTxns.reduce((s, t)  => s + t.total, 0);
+              const splitRev  = splitTxns.reduce((s, t) => s + t.total, 0);
+              const splitCashTotal   = splitTxns.reduce((s, t) => s + (t.splitCash || 0), 0);
+              const splitOnlineTotal = splitTxns.reduce((s, t) => s + (t.splitOtherAmt || 0), 0);
+              const effectiveCash   = cashRev + splitCashTotal;
+              const effectiveOnline = onlineRev + splitOnlineTotal;
+              // Staff breakdown
+              const styM = {};
+              txns.forEach(x => {
+                const txnSty = x.stylist && !x.stylist.includes(',') ? x.stylist : null;
+                x.cart.forEach(c => {
+                  const sty = c.stylist || txnSty || 'Unassigned';
+                  if (!styM[sty]) styM[sty] = { rev: 0, svcs: 0, txns: new Set() };
+                  styM[sty].rev  += c.price * (c.qty || 1);
+                  styM[sty].svcs += (c.qty || 1);
+                  styM[sty].txns.add(x.id);
+                });
+              });
+              const staffList = Object.entries(styM).map(([name, d]) => ({ name, rev: d.rev, svcs: d.svcs, cust: d.txns.size })).sort((a, b) => b.rev - a.rev);
+              // Service breakdown
+              const svcM = {};
+              txns.forEach(x => x.cart.forEach(c => { svcM[c.service] = (svcM[c.service] || 0) + (c.qty || 1); }));
+              const topSvcs = Object.entries(svcM).sort((a, b) => b[1] - a[1]).slice(0, 8);
+              return { txns, totalRev, totalDisc, cashRev, onlineRev, cardRev, splitRev, cashTxns, onlineTxns, cardTxns, splitTxns, splitCashTotal, splitOnlineTotal, effectiveCash, effectiveOnline, staffList, topSvcs };
+            };
+
+            // Friendly label for active period
+            const periodLabel = dashCFrom && dashCTo ? `${dashCFrom} → ${dashCTo}` : dashRange === 'today' ? 'Today' : dashRange === '7d' ? 'Last 7 days' : dashRange === '30d' ? 'Last 30 days' : dashRange === '90d' ? 'Last 90 days' : 'All time';
+
+            return (
+              <div className="fade">
+                {/* Period indicator — uses the analytics filters above, no separate date input */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: '#F5F0E8', border: '1px solid #EDE6D8', borderRadius: 10, padding: '10px 16px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#6B5540' }}>🔐 Closing Report</span>
+                  <span style={{ fontSize: 12, color: '#9A9088' }}>·</span>
+                  <span style={{ fontSize: 12, color: '#B08040', fontWeight: 600 }}>{periodLabel}</span>
+                  <span style={{ fontSize: 11, color: '#B0A090', marginLeft: 'auto' }}>Use the Period & filters above to change the date range</span>
+                </div>
+
+                {/* Floor cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: floors.length > 1 ? (isMobile ? '1fr' : '1fr 1fr') : '1fr', gap: 20 }}>
+                  {floors.map(fl => {
+                    const d = buildClosing(fl);
+                    const accentColor = floorAccent[fl];
+                    return (
+                      <div key={fl} style={{ background: '#FFF', border: `1.5px solid ${floorBorder[fl]}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(44,33,24,.06)' }}>
+                        {/* Floor header */}
+                        <div style={{ background: floorBg[fl], borderBottom: `1px solid ${floorBorder[fl]}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: floorColor[fl] }}>{floorLabel[fl]}</div>
+                          <div style={{ fontSize: 11, color: floorColor[fl], fontWeight: 600, opacity: .8 }}>{periodLabel}</div>
+                        </div>
+
+                        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                          {d.txns.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '30px 0', color: '#B0A090', fontSize: 14 }}>
+                              <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+                              No transactions for this period
+                            </div>
+                          ) : (<>
+                            {/* Summary KPIs */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                              {[
+                                { label: 'Transactions', val: d.txns.length, sub: 'total' },
+                                { label: 'Revenue', val: fmt(d.totalRev, true), sub: 'collected', green: true },
+                                { label: 'Discounts', val: fmt(d.totalDisc, true), sub: 'given', red: true },
+                              ].map(kpi => (
+                                <div key={kpi.label} style={{ background: '#FDFAF6', borderRadius: 10, padding: '12px', border: '1px solid #EDE6D8', textAlign: 'center' }}>
+                                  <div style={{ fontSize: 9, color: '#9A8070', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{kpi.label}</div>
+                                  <div style={{ fontSize: 18, fontWeight: 900, color: kpi.green ? '#065F46' : kpi.red ? '#A0303F' : '#2A2118' }}>{kpi.val}</div>
+                                  <div style={{ fontSize: 10, color: '#B0A090' }}>{kpi.sub}</div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Payment Breakdown */}
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#9A8070', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Payment Breakdown</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {[
+                                  { label: '💵 Cash',   amt: d.cashRev,   count: d.cashTxns.length,   color: '#065F46', bg: '#F0FDF4', border: '#BBF7D0' },
+                                  { label: '📱 Online', amt: d.onlineRev, count: d.onlineTxns.length, color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
+                                  ...(d.cardTxns.length  > 0 ? [{ label: '💳 Card',  amt: d.cardRev,   count: d.cardTxns.length,   color: '#4338CA', bg: '#EEF2FF', border: '#C7D2FE' }] : []),
+                                  ...(d.splitTxns.length > 0 ? [{ label: '🔀 Split', amt: d.splitRev,  count: d.splitTxns.length,  color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' }] : []),
+                                ].map(row => (
+                                  <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: row.bg, border: `1px solid ${row.border}`, borderRadius: 10, padding: '10px 14px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: row.color }}>{row.label}</span>
+                                      <span style={{ fontSize: 11, color: row.color, opacity: .7 }}>{row.count} txn{row.count !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    <span style={{ fontSize: 15, fontWeight: 800, color: row.color }}>{fmt(row.amt, true)}</span>
+                                  </div>
+                                ))}
+                                {/* Split breakdown detail */}
+                                {d.splitTxns.length > 0 && (
+                                  <div style={{ background: '#FDFAF6', border: '1px solid #EDE6D8', borderRadius: 8, padding: '8px 14px', fontSize: 11, color: '#9A8070', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                    <span>Split → Cash: <strong style={{ color: '#065F46' }}>{fmt(d.splitCashTotal, true)}</strong></span>
+                                    <span>Online: <strong style={{ color: '#1E40AF' }}>{fmt(d.splitOnlineTotal, true)}</strong></span>
+                                  </div>
+                                )}
+                                {/* Effective totals */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                                  <div style={{ background: '#2A2118', borderRadius: 10, padding: '11px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: 12, color: '#D4C4A8', fontWeight: 700 }}>💵 Effective Cash</span>
+                                    <span style={{ fontSize: 16, fontWeight: 900, color: '#F5E6C8' }}>{fmt(d.effectiveCash, true)}</span>
+                                  </div>
+                                  {(d.onlineRev > 0 || d.splitOnlineTotal > 0) && (
+                                    <div style={{ background: '#1E3A8A', borderRadius: 10, padding: '11px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: 12, color: '#BFDBFE', fontWeight: 700 }}>📱 Effective Online</span>
+                                      <span style={{ fontSize: 16, fontWeight: 900, color: '#EFF6FF' }}>{fmt(d.effectiveOnline, true)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Staff Performance */}
+                            {d.staffList.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9A8070', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Staff Performance</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                  {d.staffList.map((s, i) => (
+                                    <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: i === 0 ? '#FFFBEB' : '#FDFAF6', border: `1px solid ${i === 0 ? '#FDE68A' : '#EDE6D8'}`, borderRadius: 10 }}>
+                                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#FFF', flexShrink: 0 }}>{s.name[0]}</div>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: '#2A2118' }}>{s.name}</div>
+                                        <div style={{ fontSize: 10, color: '#9A9088' }}>{s.cust} client{s.cust !== 1 ? 's' : ''} · {s.svcs} service{s.svcs !== 1 ? 's' : ''}</div>
+                                      </div>
+                                      <div style={{ fontSize: 14, fontWeight: 800, color: '#2A2118' }}>{fmt(s.rev, true)}</div>
+                                      {i === 0 && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: '#FDE68A', color: '#92400E', flexShrink: 0 }}>Top ⭐</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Top Services */}
+                            {d.topSvcs.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9A8070', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Services Performed</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                  {d.topSvcs.map(([svc, qty]) => (
+                                    <div key={svc} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: '#F5F0E8', borderRadius: 8, border: '1px solid #EDE6D8' }}>
+                                      <span style={{ fontSize: 12, color: '#2A2118', fontWeight: 600 }}>{svc}</span>
+                                      <span style={{ fontSize: 10, background: '#2A2118', color: '#FFF', borderRadius: 4, padding: '1px 5px', fontWeight: 700 }}>×{qty}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Transaction list */}
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#9A8070', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>All Transactions ({d.txns.length})</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 300, overflowY: 'auto' }}>
+                                {d.txns.map((t, i) => (
+                                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#FDFAF6', border: '1px solid #EDE6D8', borderRadius: 9 }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: '#C4B9AB', width: 20, textAlign: 'center', flexShrink: 0 }}>{i+1}</span>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: '#2A2118', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.customerName}</div>
+                                      <div style={{ fontSize: 10, color: '#9A9088' }}>{t.date} {t.time} · #{t.slip} · {t.stylist || 'Unassigned'}</div>
+                                    </div>
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: t.payMode === 'CASH' ? '#F0FDF4' : t.payMode === 'ONLINE' ? '#EFF6FF' : t.payMode === 'CARD' ? '#EEF2FF' : '#FFFBEB', color: t.payMode === 'CASH' ? '#065F46' : t.payMode === 'ONLINE' ? '#1E40AF' : t.payMode === 'CARD' ? '#4338CA' : '#92400E', border: `1px solid ${t.payMode === 'CASH' ? '#BBF7D0' : t.payMode === 'ONLINE' ? '#BFDBFE' : t.payMode === 'CARD' ? '#C7D2FE' : '#FDE68A'}`, flexShrink: 0 }}>{t.payMode}</span>
+                                    <div style={{ fontSize: 13, fontWeight: 800, color: '#2A2118', flexShrink: 0 }}>{fmt(t.total, true)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </>)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       )
       }
@@ -3753,7 +4012,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
               <div style={{ display: "flex", background: "#F5F0E8", padding: 4, borderRadius: 10, gap: 2 }}>
                 {[["transactions", "📋 Transactions"], ...(ROLE_RANK[user.role] >= 3 ? [["clients", "👥 Clients"]] : [])].map(([t, l]) => (
                   <button key={t} className={`nav-tab ${hTab === t ? "on" : "off"}`}
-                    onClick={() => { setHTab(t); setHNavFromClient(null); if (t === "clients") setHQ(""); }} style={{ padding: "6px 16px", fontSize: 12 }}>{l}</button>
+                    onClick={() => { navigateToHTab(t); setHNavFromClient(null); if (t === "clients") setHQ(""); }} style={{ padding: "6px 16px", fontSize: 12 }}>{l}</button>
                 ))}
               </div>
             </div>
@@ -3779,7 +4038,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     </span>
                     {ROLE_RANK[user.role] >= 3 && clientKey && (
                       <button onClick={() => {
-                        setHTab("clients");
+                        navigateToHTab("clients");
                         setHQ("");
                         setHNavFromClient(null);
                         setExpandedClient(clientKey);
@@ -4155,8 +4414,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
 
                           {/* Jump to transactions */}
                           <button onClick={() => {
-                            setView("history");
-                            setHTab("transactions");
+                            navigateToHistory('transactions');
                             setHRange("all");
                             setHQ(cl.phone || cl.name);
                             setHNavFromClient({ name: cl.name, key: cl.key });
@@ -4211,7 +4469,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
               ].map(item => (
                 <div
                   key={item.id}
-                  onClick={() => { setAdminTab(item.id); setEditingSvc(null); setEditingStylist(null); setEditingUser(null); }}
+                  onClick={() => { navigateToAdminTab(item.id); setEditingSvc(null); setEditingStylist(null); setEditingUser(null); }}
                   style={{
                     padding: isMobile ? "14px 20px" : "12px 24px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
                     background: adminTab === item.id ? "#FBF6EE" : "transparent",
@@ -5809,7 +6067,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
                     style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, background: "#F5F0E8", color: "#6B5540", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer" }}>
                     ✕ Close
                   </button>
-                  <button onClick={() => { closeEditBill(); setView("history"); setHTab("transactions"); setHRange("all"); setHQ(editSavedTxn?.slip || ""); }}
+                  <button onClick={() => { closeEditBill(); navigateToHistory('transactions'); setHRange("all"); setHQ(editSavedTxn?.slip || ""); }}
                     style={{ flex: 1, fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 600, background: "#EDE6D8", color: "#2A2118", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer", whiteSpace: "nowrap" }}>
                     📋 View in History
                   </button>
@@ -6299,7 +6557,7 @@ export default function NoorKadaPOS({ user, onLogout }) {
               {/* Action buttons */}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button style={{ flex: "1 1 auto", fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 600, background: "#F5F0E8", color: "#6B5540", border: "none", borderRadius: 10, padding: "12px 10px", cursor: "pointer" }}
-                  onClick={() => { setDoneSlip(null); setView("history"); setHTab("transactions"); setHRange("all"); setHQ(doneSlip.slip || ""); }}>
+                  onClick={() => { setDoneSlip(null); navigateToHistory('transactions'); setHRange("all"); setHQ(doneSlip.slip || ""); }}>
                   📋 View in History
                 </button>
                 <button className="btn-gold" style={{ flex: "2 1 auto", padding: "12px 14px", fontSize: 14 }} onClick={() => { setDoneSlip(null); if (tabs.length === 0) addTab(); }}>New Transaction →</button>
